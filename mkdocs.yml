@@ -1,5 +1,6 @@
 site_name: depwatch
-site_description: Dependency drift (libyears) and viability, plotted as a quadrant.
+site_description: >-
+  Dependency drift (libyears) and viability, plotted as a quadrant.
 repo_url: https://github.com/fabiocicerchia/depwatch
 docs_dir: docs
 

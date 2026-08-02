@@ -10,7 +10,7 @@
     "depwatch": "./dist/cli.js"
   },
   "scripts": {
-    "build": "esbuild src/cli.ts --bundle --platform=node --target=node20 --format=esm --outfile=dist/cli.js --banner:js='#!/usr/bin/env node' --alias:@lib=../infra-toolbox/src/lib",
+    "build": "esbuild src/cli.ts --bundle --platform=node --target=node20 --format=esm --outfile=dist/cli.js --banner:js='#!/usr/bin/env node' --tsconfig=tsconfig.json",
     "typecheck": "tsc -p tsconfig.json",
     "test": "vitest run"
   },

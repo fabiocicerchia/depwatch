@@ -1,0 +1,7 @@
+# gandalf detects "python" from docs/requirements.txt (the Read the Docs build),
+# then runs the Python gates against a repo that has no Python in it. pytest
+# reports "no tests ran" as a failure and atheris wants a fuzz harness for
+# modules that do not exist. The TypeScript equivalents (node_test, tsc) are the
+# gates that actually cover this codebase.
+[gandalf]
+skip = ["tests", "atheris"]

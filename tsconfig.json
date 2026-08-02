@@ -14,9 +14,11 @@
     "lib": ["ES2022", "DOM"],
     "types": ["node"],
     "baseUrl": ".",
-    // The engine is imported from infra-toolbox, never copied. esbuild resolves
-    // these same paths at bundle time.
-    "paths": { "@lib/*": ["../infra-toolbox/src/lib/*"] }
+    // The engine comes from the infra-toolbox checkout when one sits beside this
+    // repo; src/lib is the fallback so a bare clone builds, type-checks and
+    // tests on its own. esbuild reads these same paths, in this same order, at
+    // bundle time.
+    "paths": { "@lib/*": ["../infra-toolbox/src/lib/*", "./src/lib/*"] }
   },
   "include": ["src"]
 }

@@ -1,0 +1,26 @@
+{
+  "name": "depwatch",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Dependency drift (libyears) + viability, plotted as a quadrant.",
+  "license": "Apache-2.0",
+  "author": "Fabio Cicerchia",
+  "bin": {
+    "depwatch": "./dist/cli.js"
+  },
+  "scripts": {
+    "build": "esbuild src/cli.ts --bundle --platform=node --target=node20 --format=esm --outfile=dist/cli.js --banner:js='#!/usr/bin/env node' --alias:@lib=../infra-toolbox/src/lib",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.1",
+    "esbuild": "^0.24.0",
+    "typescript": "^5.5.4",
+    "vitest": "^2.1.2"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

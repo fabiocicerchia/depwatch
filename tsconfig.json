@@ -1,0 +1,22 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "outDir": "dist",
+    "noEmit": true,
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    // DOM is here only because the shared registry-client caches in
+    // sessionStorage when it runs in a browser; under Node the access throws and
+    // is caught, so the cache is simply a no-op.
+    "lib": ["ES2022", "DOM"],
+    "types": ["node"],
+    "baseUrl": ".",
+    // The engine is imported from infra-toolbox, never copied. esbuild resolves
+    // these same paths at bundle time.
+    "paths": { "@lib/*": ["../infra-toolbox/src/lib/*"] }
+  },
+  "include": ["src"]
+}

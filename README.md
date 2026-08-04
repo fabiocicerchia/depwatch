@@ -17,6 +17,8 @@ than one 4 libyears behind under active development. Existing tools measure one
 axis or the other — **plotting both, the quadrant chart is the product** (and the
 screenshot that sells it).
 
+![depwatch quadrant chart — drift × viability for depwatch's own package-lock.json](docs/quadrant.svg)
+
 The libyear metric is from Cox, Bouwers, van Eekelen & Visser, "Measuring
 Dependency Freshness in Software Systems" (ICSE 2015) — credited prominently.
 Prior art to respect, not reinvent: libyear-bundler, libyear-npm,

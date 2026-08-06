@@ -5,6 +5,15 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.0.0 (2026-08-06)
+
+
+### Bug Fixes
+
+* **ci:** stop security workflows failing on private repos ([#6](https://github.com/fabiocicerchia/depwatch/issues/6)) ([b4cb3ba](https://github.com/fabiocicerchia/depwatch/commit/b4cb3badbefd1d48d1c9db44871c3bef5b893d22))
+* exempt tsconfig.json from check-json ([a4ffc59](https://github.com/fabiocicerchia/depwatch/commit/a4ffc5964a246a452afacc228b499bcb95ef9474))
+* **pre-commit:** stop check-yaml failing on Helm templates and multi-doc manifests ([11129e5](https://github.com/fabiocicerchia/depwatch/commit/11129e59c30647f55266dc8e7f57fd24020b9ffd))
+
 ## [Unreleased]
 
 ### Added

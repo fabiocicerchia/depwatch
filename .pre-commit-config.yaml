@@ -54,3 +54,12 @@ repos:
         # warning and above. The style/info notes are mostly SC1091 (a sourced
         # file the linter cannot see), which is noise in a repo of small scripts.
         args: [--severity=warning]
+
+  # Biome rather than eslint: one binary, no plugin matrix, and pre-commit
+  # installs it in its own environment so the repo takes no new dependency.
+  # Rules live in biome.json; the formatter is off, this is a linter only.
+  - repo: https://github.com/biomejs/pre-commit
+    rev: 94dfd97e59f6fcc5abec3bf328ed6108a82fa760  # v2.5.7
+    hooks:
+      - id: biome-ci
+        additional_dependencies: ["@biomejs/biome@2.5.7"]

@@ -12,6 +12,8 @@ repos:
         args: [--allow-multiple-documents]
         exclude: ^chart/templates/
       - id: check-json
+        # tsconfig.json is JSONC — comments are part of the format TypeScript reads.
+        exclude: ^tsconfig\.json$
       - id: check-added-large-files
       - id: check-merge-conflict
       - id: detect-private-key

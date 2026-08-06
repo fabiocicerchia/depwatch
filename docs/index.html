@@ -45,7 +45,7 @@ footer{margin-top:2.2rem;color:#5c6684;font-size:.82rem}
   <h1>📉 depwatch</h1>
   <p class="tagline">Dependency drift (libyears) + viability, plotted as a quadrant.</p>
   <p class="desc">Measures how far behind your dependencies are — <em>drift</em>, in libyears — and whether you can ever catch up — <em>viability</em>: maintainer activity, bus factor, release cadence, archived status. A dependency 0.2 libyears behind whose sole maintainer vanished is more dangerous than one 4 libyears behind under active development. Reads SBOMs, lock files or manifests across npm, PyPI, Cargo, Composer and RubyGems.</p>
-  <img class="chart" src="quadrant.svg" alt="depwatch quadrant chart — drift × viability for depwatch's own package-lock.json">
+  <img class="chart" src="quadrant.svg" loading="lazy" alt="depwatch quadrant chart — drift × viability for depwatch's own package-lock.json">
   <div class="install-label">Build &amp; run</div>
   <pre><code>git clone https://github.com/fabiocicerchia/depwatch
 npm install && npm run build

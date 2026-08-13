@@ -1,7 +1,6 @@
 node_modules
 dist
 coverage
-# repo-skeleton
 .DS_Store
 reports/
 site/

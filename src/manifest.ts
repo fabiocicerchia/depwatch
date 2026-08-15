@@ -49,10 +49,15 @@ export interface Manifest {
   sbom?: { format: string; skipped: Record<string, number>; total: number; scoped: boolean }
 }
 
+// Both separators: the CLI is handed POSIX paths, the editor extension is
+// handed whatever the host uses, and a Windows path read as one long filename
+// detects no ecosystem at all.
+export const basename = (file: string): string => file.split(/[/\\]/).pop() ?? file
+
 // Filenames are the reliable signal; content sniffing is not needed because
 // every ecosystem here has a conventional manifest name.
 export function detectEcosystem(file: string): SupportedEcosystem | null {
-  const base = file.split('/').pop() ?? file
+  const base = basename(file)
   if (LOCK_FILES[base]) return LOCK_FILES[base]
   if (base === 'package.json') return 'npm'
   if (base === 'requirements.txt' || base.startsWith('requirements')) return 'pep440'
@@ -89,7 +94,7 @@ export function parse(file: string, text: string, ecosystem?: SupportedEcosystem
 }
 
 function parseFor(eco: SupportedEcosystem, text: string, file = ''): Dep[] {
-  const base = file.split('/').pop() ?? file
+  const base = basename(file)
   switch (eco) {
     case 'npm': {
       // Detect rather than trust the filename: a lock read as a manifest (or

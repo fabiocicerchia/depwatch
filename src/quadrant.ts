@@ -7,12 +7,17 @@
 import type { DepReport, Quadrant, Thresholds } from './report.js'
 import { DEFAULT_THRESHOLDS } from './report.js'
 
-const COLOR: Record<Quadrant, string> = {
+// Exported because the chart is not the only thing that colours a quadrant —
+// the editor extension's report does too, and two palettes for one meaning is a
+// bug waiting to be filed.
+export const QUADRANT_COLOR: Record<Quadrant, string> = {
   healthy: '#4ec9a4',
   upgrade: '#e8b73a',
   watch: '#5aa9e6',
   replace: '#f2665e',
 }
+
+const COLOR = QUADRANT_COLOR
 
 const BG = '#0f1319'
 const GRID = '#20252e'
@@ -21,6 +26,9 @@ const TEXT = '#aab3c2'
 
 const W = 760
 const H = 520
+// Monospace at font-size 10: near enough to measure a label without a font
+// metric, and only ever used to decide which side of a point it goes on.
+const LABEL_CHAR_W = 6
 const PAD = { l: 62, r: 24, t: 44, b: 52 }
 
 export interface ChartOptions {
@@ -86,7 +94,15 @@ export function quadrantSVG(deps: DepReport[], opts: ChartOptions = {}): string 
     const c = COLOR[d.quadrant]
     parts.push(`<circle cx="${r2(cx)}" cy="${r2(cy)}" r="4.5" fill="${c}" fill-opacity="0.45" stroke="${c}" stroke-width="1"/>`)
     if (opts.labelAll || d.quadrant !== 'healthy') {
-      parts.push(text(cx + 8, cy + 3.5, d.name, { size: 10, fill: c, anchor: 'start' }))
+      // A label to the right of a point near the right edge runs off the
+      // viewBox and gets clipped — which is exactly where the worst
+      // dependencies sit, so it is always the name you most wanted to read.
+      const overflows = cx + 8 + d.name.length * LABEL_CHAR_W > W - PAD.r
+      parts.push(
+        overflows
+          ? text(cx - 8, cy + 3.5, d.name, { size: 10, fill: c, anchor: 'end' })
+          : text(cx + 8, cy + 3.5, d.name, { size: 10, fill: c, anchor: 'start' }),
+      )
     }
   }
 

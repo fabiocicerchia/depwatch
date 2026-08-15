@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { assertEcosystem, detectEcosystem, parse, SUPPORTED_ECOSYSTEMS } from './manifest.js'
 import { quadrantSVG } from './quadrant.js'
 import type { DepReport } from './report.js'
+import { NO_SIGNALS } from './viability.js'
 
 describe('detectEcosystem', () => {
   it('maps conventional manifest names', () => {
@@ -97,6 +98,7 @@ describe('quadrantSVG', () => {
     pulseYears: 0,
     viability: 1,
     quadrant: 'healthy',
+    signals: { ...NO_SIGNALS },
     ...over,
   })
 
@@ -116,6 +118,20 @@ describe('quadrantSVG', () => {
     const svg = quadrantSVG([dep({ name: '<script>&', quadrant: 'replace', libyearsBehind: 4, viability: 0.1 })])
     expect(svg).toContain('&lt;script&gt;&amp;')
     expect(svg).not.toContain('<script>')
+  })
+
+  // The worst dependencies plot furthest right, so a label that runs off the
+  // right edge is always the name you most wanted to read.
+  it('flips a label to the left of a point that would clip it', () => {
+    const svg = quadrantSVG([dep({ name: 'a-very-long-package-name', libyearsBehind: 8, quadrant: 'upgrade' })])
+    const label = svg.match(/<text x="([\d.]+)"[^>]*text-anchor="(\w+)"[^>]*>a-very-long-package-name<\/text>/)
+    expect(label?.[2]).toBe('end')
+    expect(Number(label?.[1])).toBeLessThan(760)
+  })
+
+  it('keeps a label on the right when there is room', () => {
+    const svg = quadrantSVG([dep({ name: 'ab', libyearsBehind: 0.1, quadrant: 'upgrade' })])
+    expect(svg).toMatch(/text-anchor="start"[^>]*>ab<\/text>/)
   })
 })
 

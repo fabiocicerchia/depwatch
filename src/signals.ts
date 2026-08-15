@@ -133,32 +133,58 @@ export function githubSlug(repoUrl: string | null): string | null {
 
 export interface GitHubMeta {
   archived: boolean
-  lastCommitAgeDays: number | null
+  // The commit timestamp, not an age in days: "how old is this" depends on when
+  // you ask, and a cached answer to that question is wrong the moment it is
+  // stored. Trend mode asks it once per sampled commit.
+  pushedAt: string | null
 }
 
-export async function fetchGitHub(slug: string, now = Date.now()): Promise<GitHubMeta | null> {
+export async function fetchGitHub(slug: string): Promise<GitHubMeta | null> {
   const token = process.env.GITHUB_TOKEN
   try {
     const d = await getJson(`https://api.github.com/repos/${slug}`, token ? { Authorization: `Bearer ${token}` } : {})
-    return {
-      archived: Boolean(d.archived),
-      lastCommitAgeDays: d.pushed_at ? Math.max(0, (now - Date.parse(d.pushed_at)) / MS_PER_DAY) : null,
-    }
+    return { archived: Boolean(d.archived), pushedAt: d.pushed_at ?? null }
   } catch {
     return null // rate limited or private; the cheap tier still scored the package
   }
 }
 
-export async function deepSignals(eco: Ecosystem, name: string, base: ViabilitySignals, now = Date.now()): Promise<ViabilitySignals> {
+// Everything the deep tier fetches, and nothing it derives — no value in here
+// depends on the current time, which is what makes it safe to cache for hours
+// and to reuse across the many `asOf` instants trend mode scores.
+export interface DeepMeta {
+  maintainerCount: number | null
+  hasFunding: boolean
+  archived: boolean
+  lastCommitAt: string | null
+}
+
+export async function fetchDeepMeta(eco: Ecosystem, name: string): Promise<DeepMeta> {
   const meta = await fetchRepoMeta(eco, name)
-  const merged: ViabilitySignals = {
+  const out: DeepMeta = {
+    maintainerCount: meta.maintainerCount,
+    hasFunding: meta.hasFunding,
+    archived: false,
+    lastCommitAt: null,
+  }
+  const slug = githubSlug(meta.repoUrl)
+  if (!slug) return out
+  const gh = await fetchGitHub(slug)
+  if (!gh) return out
+  return { ...out, archived: gh.archived, lastCommitAt: gh.pushedAt }
+}
+
+export function applyDeepMeta(base: ViabilitySignals, meta: DeepMeta, now = Date.now()): ViabilitySignals {
+  const commitAt = meta.lastCommitAt ? Date.parse(meta.lastCommitAt) : NaN
+  return {
     ...base,
     maintainerCount: meta.maintainerCount ?? base.maintainerCount,
     hasFunding: base.hasFunding || meta.hasFunding,
+    archived: base.archived || meta.archived,
+    lastCommitAgeDays: Number.isFinite(commitAt) ? Math.max(0, (now - commitAt) / MS_PER_DAY) : base.lastCommitAgeDays,
   }
-  const slug = githubSlug(meta.repoUrl)
-  if (!slug) return merged
-  const gh = await fetchGitHub(slug, now)
-  if (!gh) return merged
-  return { ...merged, archived: gh.archived, lastCommitAgeDays: gh.lastCommitAgeDays }
+}
+
+export async function deepSignals(eco: Ecosystem, name: string, base: ViabilitySignals, now = Date.now()): Promise<ViabilitySignals> {
+  return applyDeepMeta(base, await fetchDeepMeta(eco, name), now)
 }

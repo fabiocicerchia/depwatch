@@ -1,0 +1,356 @@
+{
+  "name": "depwatch-vscode",
+  "displayName": "depwatch",
+  "description": "Dependency drift (libyears) × viability, in the editor.",
+  "version": "0.1.0",
+  "private": true,
+  "license": "Apache-2.0",
+  "author": "Fabio Cicerchia",
+  "publisher": "fabiocicerchia",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/fabiocicerchia/depwatch.git",
+    "directory": "extensions/vscode"
+  },
+  "engines": {
+    "vscode": "^1.85.0",
+    "node": ">=20"
+  },
+  "categories": ["Linters", "Visualization", "Other"],
+  "keywords": ["dependencies", "libyear", "supply chain", "maintenance", "outdated"],
+  "main": "./dist/extension.js",
+  "activationEvents": [
+    "workspaceContains:**/package.json",
+    "workspaceContains:**/requirements*.txt",
+    "workspaceContains:**/Cargo.toml",
+    "workspaceContains:**/composer.json",
+    "workspaceContains:**/Gemfile.lock"
+  ],
+  "contributes": {
+    "viewsContainers": {
+      "panel": [
+        {
+          "id": "depwatch",
+          "title": "depwatch",
+          "icon": "media/quadrant.svg"
+        }
+      ]
+    },
+    "views": {
+      "depwatch": [
+        {
+          "id": "depwatch.findings",
+          "name": "Findings",
+          "contextualTitle": "depwatch"
+        }
+      ]
+    },
+    "viewsWelcome": [
+      {
+        "view": "depwatch.findings",
+        "contents": "No dependency scan yet.\n[Scan workspace](command:depwatch.scanWorkspace)\nScans run on save and on a slow timer — never while you type.\n[Open the report](command:depwatch.showReport)"
+      }
+    ],
+    "commands": [
+      {
+        "command": "depwatch.scanFile",
+        "title": "Scan the active manifest",
+        "category": "depwatch",
+        "icon": "$(file)"
+      },
+      {
+        "command": "depwatch.scanWorkspace",
+        "title": "Scan the workspace",
+        "category": "depwatch",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "depwatch.deepScan",
+        "title": "Deep scan (maintainers, archived, last commit)",
+        "category": "depwatch",
+        "icon": "$(telescope)"
+      },
+      {
+        "command": "depwatch.showReport",
+        "title": "Open the report",
+        "category": "depwatch",
+        "icon": "$(graph)"
+      },
+      {
+        "command": "depwatch.showTrend",
+        "title": "Show drift over git history",
+        "category": "depwatch",
+        "icon": "$(git-commit)"
+      },
+      {
+        "command": "depwatch.exportReport",
+        "title": "Export the report as HTML",
+        "category": "depwatch"
+      },
+      {
+        "command": "depwatch.exportChart",
+        "title": "Export the quadrant chart as SVG",
+        "category": "depwatch"
+      },
+      {
+        "command": "depwatch.checkGates",
+        "title": "Check the CI gates",
+        "category": "depwatch",
+        "icon": "$(check)"
+      },
+      {
+        "command": "depwatch.setScopeFile",
+        "title": "Show findings for the current file",
+        "category": "depwatch",
+        "icon": "$(list-selection)"
+      },
+      {
+        "command": "depwatch.setScopeProject",
+        "title": "Show findings for the whole project",
+        "category": "depwatch",
+        "icon": "$(list-tree)"
+      },
+      {
+        "command": "depwatch.clearCache",
+        "title": "Clear the registry cache",
+        "category": "depwatch"
+      },
+      {
+        "command": "depwatch.setGitHubToken",
+        "title": "Set the GitHub token used by deep scans",
+        "category": "depwatch"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "depwatch.setScopeProject",
+          "when": "view == depwatch.findings && depwatch.scope == 'file'",
+          "group": "navigation@1"
+        },
+        {
+          "command": "depwatch.setScopeFile",
+          "when": "view == depwatch.findings && depwatch.scope == 'project'",
+          "group": "navigation@1"
+        },
+        {
+          "command": "depwatch.showReport",
+          "when": "view == depwatch.findings",
+          "group": "navigation@2"
+        },
+        {
+          "command": "depwatch.scanWorkspace",
+          "when": "view == depwatch.findings",
+          "group": "navigation@3"
+        },
+        {
+          "command": "depwatch.deepScan",
+          "when": "view == depwatch.findings",
+          "group": "1_scan@1"
+        },
+        {
+          "command": "depwatch.checkGates",
+          "when": "view == depwatch.findings",
+          "group": "1_scan@2"
+        },
+        {
+          "command": "depwatch.showTrend",
+          "when": "view == depwatch.findings",
+          "group": "1_scan@3"
+        },
+        {
+          "command": "depwatch.exportReport",
+          "when": "view == depwatch.findings",
+          "group": "2_export@1"
+        },
+        {
+          "command": "depwatch.exportChart",
+          "when": "view == depwatch.findings",
+          "group": "2_export@2"
+        },
+        {
+          "command": "depwatch.clearCache",
+          "when": "view == depwatch.findings",
+          "group": "3_cache@1"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "depwatch",
+      "properties": {
+        "depwatch.enable": {
+          "type": "boolean",
+          "default": true,
+          "description": "Scan dependency manifests in this workspace."
+        },
+        "depwatch.manifests": {
+          "type": "array",
+          "items": { "type": "string" },
+          "default": [
+            "**/package.json",
+            "**/requirements*.txt",
+            "**/Cargo.toml",
+            "**/composer.json",
+            "**/Gemfile.lock",
+            "**/bom.json",
+            "**/*.cdx.json"
+          ],
+          "markdownDescription": "Globs for the files to scan. A lock file sitting beside a manifest is picked up automatically — list the manifests, not the locks."
+        },
+        "depwatch.exclude": {
+          "type": "string",
+          "default": "**/{node_modules,bower_components,dist,out,build,target,vendor,.git,.venv,venv,__pycache__}/**",
+          "description": "Glob excluded from manifest discovery."
+        },
+        "depwatch.maxManifests": {
+          "type": "number",
+          "default": 25,
+          "minimum": 1,
+          "description": "Stop after this many manifests. A monorepo with 300 package.json files is a scan nobody asked for."
+        },
+        "depwatch.deep": {
+          "type": "boolean",
+          "default": false,
+          "markdownDescription": "Fetch maintainer count, funding, archived status and last commit for every dependency. Two extra requests per package and GitHub rate-limits hard without a token — leave this off for scans on save and use the **Deep scan** command when you want the full picture."
+        },
+        "depwatch.transitive": {
+          "type": "boolean",
+          "default": false,
+          "description": "Score the whole dependency tree from the lock file, not just the dependencies you chose."
+        },
+        "depwatch.useLockFile": {
+          "type": "boolean",
+          "default": true,
+          "description": "Read the lock file beside a manifest when there is one. Off, drift is measured from version ranges and becomes an upper bound rather than a measurement."
+        },
+        "depwatch.concurrency": {
+          "type": "number",
+          "default": 6,
+          "minimum": 1,
+          "maximum": 32,
+          "description": "Registry requests in flight at once. Six has never tripped a 429 in practice."
+        },
+        "depwatch.thresholds.staleLibyears": {
+          "type": "number",
+          "default": 1,
+          "description": "Libyears above which a dependency counts as behind."
+        },
+        "depwatch.thresholds.riskyViability": {
+          "type": "number",
+          "default": 0.5,
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Viability below which a dependency counts as fading."
+        },
+        "depwatch.gates.maxLibyears": {
+          "type": ["number", "null"],
+          "default": null,
+          "markdownDescription": "Fail the gate above this much total drift — the editor's copy of `--max-libyears`. `null` disables it."
+        },
+        "depwatch.gates.maxReplace": {
+          "type": ["number", "null"],
+          "default": null,
+          "markdownDescription": "Fail the gate above this many dependencies in the replace quadrant — the editor's copy of `--max-replace`. `null` disables it."
+        },
+        "depwatch.scan.onStartup": {
+          "type": "boolean",
+          "default": true,
+          "description": "Scan when the workspace opens. Served from the cache when it is warm, so this is usually free."
+        },
+        "depwatch.scan.onSave": {
+          "type": "boolean",
+          "default": true,
+          "description": "Rescan a manifest when it is saved. Nothing is scanned while you type."
+        },
+        "depwatch.scan.debounceMs": {
+          "type": "number",
+          "default": 1500,
+          "minimum": 0,
+          "description": "Wait this long after a save before scanning, so a burst of saves costs one scan."
+        },
+        "depwatch.scan.refreshMinutes": {
+          "type": "number",
+          "default": 360,
+          "minimum": 0,
+          "description": "Re-check unchanged manifests this often, to catch releases published elsewhere. 0 turns the timer off. The timer only fires while the window has focus."
+        },
+        "depwatch.cache.registryTtlHours": {
+          "type": "number",
+          "default": 12,
+          "minimum": 0,
+          "description": "How long a registry version list stays fresh on disk. A published release is a fact that does not change, so this can be generous."
+        },
+        "depwatch.cache.deepTtlHours": {
+          "type": "number",
+          "default": 72,
+          "minimum": 0,
+          "description": "How long deep-scan metadata (maintainers, archived, last commit) stays fresh on disk."
+        },
+        "depwatch.cache.maxEntries": {
+          "type": "number",
+          "default": 5000,
+          "minimum": 0,
+          "description": "Cap on cached packages. The oldest are dropped past this."
+        },
+        "depwatch.diagnostics.enable": {
+          "type": "boolean",
+          "default": true,
+          "description": "Underline dependencies in the manifest."
+        },
+        "depwatch.diagnostics.replace": {
+          "type": "string",
+          "enum": ["error", "warning", "info", "hint", "off"],
+          "default": "warning",
+          "description": "Severity for behind and unmaintained."
+        },
+        "depwatch.diagnostics.upgrade": {
+          "type": "string",
+          "enum": ["error", "warning", "info", "hint", "off"],
+          "default": "info",
+          "description": "Severity for behind but alive."
+        },
+        "depwatch.diagnostics.watch": {
+          "type": "string",
+          "enum": ["error", "warning", "info", "hint", "off"],
+          "default": "info",
+          "description": "Severity for current but fading."
+        },
+        "depwatch.diagnostics.healthy": {
+          "type": "string",
+          "enum": ["error", "warning", "info", "hint", "off"],
+          "default": "off",
+          "description": "Severity for healthy dependencies."
+        },
+        "depwatch.diagnostics.degraded": {
+          "type": "string",
+          "enum": ["error", "warning", "info", "hint", "off"],
+          "default": "off",
+          "description": "Severity for dependencies the registry would not answer for."
+        },
+        "depwatch.statusBar": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show total drift in the status bar."
+        },
+        "depwatch.trend.maxPoints": {
+          "type": "number",
+          "default": 12,
+          "minimum": 2,
+          "description": "How many commits the trend command samples."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build": "node esbuild.mjs",
+    "watch": "node esbuild.mjs --watch",
+    "typecheck": "tsc -p tsconfig.json",
+    "package": "vsce package --no-dependencies"
+  },
+  "devDependencies": {
+    "@types/node": "^26.2.0",
+    "@types/vscode": "^1.85.0",
+    "esbuild": "^0.28.2",
+    "typescript": "^7.0.2"
+  }
+}

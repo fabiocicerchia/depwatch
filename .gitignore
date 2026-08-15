@@ -4,3 +4,4 @@ coverage
 .DS_Store
 reports/
 site/
+extensions/vscode/*.vsix

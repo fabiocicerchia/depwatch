@@ -1,0 +1,10 @@
+# The VSIX ships the bundle, not the sources it was built from. The engine under
+# ../../src is compiled into dist/extension.js by esbuild, so none of it is
+# listed here — it is already inside the bundle.
+src/**
+node_modules/**
+tsconfig.json
+esbuild.mjs
+**/*.map
+**/*.test.ts
+.vscode/**

@@ -41,9 +41,21 @@ node dist/cli.js check package.json --json    # machine-readable, for CI
 node dist/cli.js chart package.json --out q.svg
 ```
 
+## In your editor
+
+The [VS Code extension](extensions/vscode/) puts both axes on the manifest you
+are editing: quadrant squiggles with a hover that explains the score, a findings
+pane filtered to the current file or the whole project, the CI gates evaluated
+live, and the same quadrant report in a tab.
+
+```sh
+cd extensions/vscode && npm install && npm run build   # then F5, or vsce package
+```
+
 ## Documentation
 
-Full docs live in [`docs/`](docs/). Runnable examples live in [`examples/`](examples/).
+Full docs live in [`docs/`](docs/) — including [the extension's design](docs/vscode.md).
+Runnable examples live in [`examples/`](examples/).
 
 ## Contributing
 

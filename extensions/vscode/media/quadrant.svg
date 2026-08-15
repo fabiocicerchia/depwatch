@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" role="img" aria-label="depwatch">
+  <title>depwatch</title>
+  <path d="M3 3v18h18"/>
+  <path d="M12 3v18M3 12h18" stroke-dasharray="2 2" opacity="0.55"/>
+  <circle cx="7" cy="7" r="1.6" fill="currentColor" stroke="none"/>
+  <circle cx="17.5" cy="17" r="2.1" fill="currentColor" stroke="none"/>
+  <circle cx="16" cy="8" r="1.4" fill="currentColor" stroke="none" opacity="0.7"/>
+</svg>

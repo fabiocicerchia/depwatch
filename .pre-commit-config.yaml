@@ -24,8 +24,9 @@ repos:
         args: [--allow-multiple-documents]
         exclude: (^|/)templates/
       - id: check-json
-        # tsconfig.json is JSONC — comments are part of the format TypeScript reads.
-        exclude: ^tsconfig.*\.json$
+        # tsconfig.json is JSONC — comments are part of the format TypeScript
+        # reads. Not anchored to the repo root: extensions/vscode has one too.
+        exclude: (^|/)tsconfig.*\.json$
       - id: check-toml
       # Python only (types: [python]) — a no-op in a repo with no .py files, so
       # it stays in the baseline rather than the language block below.

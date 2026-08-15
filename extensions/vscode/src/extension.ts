@@ -1,0 +1,354 @@
+// Activation and wiring.
+//
+// The scan policy lives here, and it is deliberately dull: on startup, on save,
+// on a slow timer, or when asked. Never on a keystroke. Everything expensive is
+// behind the caches in cache.ts, and everything that could pile up is behind
+// the debouncer in schedule.ts.
+
+import * as vscode from 'vscode'
+import { dirname, relative } from 'node:path'
+import { basename, LOCK_FOR } from '../../../src/manifest.js'
+import { quadrantSVG } from '../../../src/quadrant.js'
+import { gateFailures } from '../../../src/gates.js'
+import { trend } from '../../../src/trend.js'
+import { Annotator } from './annotate.js'
+import { affectsResults, type Config, readConfig } from './config.js'
+import { findManifests, isExcluded, isScannable, Scanner } from './engine.js'
+import { locateDeps } from './locate.js'
+import { ReportPanel, showTrend } from './panel.js'
+import { Debouncer, Heartbeat } from './schedule.js'
+import { Results } from './state.js'
+import { StatusBar } from './status.js'
+import { FindingsTree } from './tree.js'
+
+const LOCK_NAMES = [...new Set(Object.values(LOCK_FOR).flat())]
+
+export async function activate(context: vscode.ExtensionContext): Promise<void> {
+  const log = vscode.window.createOutputChannel('depwatch', { log: true })
+  let cfg = readConfig()
+
+  const results = new Results()
+  let scanner = new Scanner(context.globalStorageUri, cfg)
+  const tree = new FindingsTree(results, cfg)
+  const annotator = new Annotator(results, cfg)
+  const status = new StatusBar(results, cfg)
+  const panel = new ReportPanel(results, cfg)
+  let debouncer = new Debouncer(cfg.debounceMs)
+
+  const view = vscode.window.createTreeView('depwatch.findings', { treeDataProvider: tree, showCollapseAll: true })
+  tree.setScope('file')
+
+  context.subscriptions.push(log, results, tree, annotator, status, panel, view, {
+    dispose: () => debouncer.dispose(),
+  })
+
+  // A token typed once, kept in the OS keychain rather than in settings.json
+  // where a repo's secret scanner would eventually find it.
+  const stored = await context.secrets.get('depwatch.githubToken')
+  if (stored && !process.env.GITHUB_TOKEN) process.env.GITHUB_TOKEN = stored
+
+  // --- scanning ---
+
+  let scanning = 0
+
+  async function scanOne(path: string, opts: { deep?: boolean; force?: boolean } = {}): Promise<void> {
+    scanning++
+    status.scanning(true)
+    try {
+      const scan = await scanner.scan(path, { deep: opts.deep ?? false, force: opts.force })
+      results.set(scan)
+      log.debug(`${scan.label}: ${scan.report.totalLibyears.toFixed(2)} libyears, ${scan.report.deps.length} deps`)
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : String(e)
+      const label = vscode.workspace.asRelativePath(path)
+      log.debug(`${label}: ${message}`)
+      // A manifest with no dependencies is a normal thing to have — a tooling
+      // package.json, an empty requirements.txt — and listing every one of them
+      // as a problem would bury the manifests that genuinely could not be read.
+      if (/no dependencies found/.test(message)) results.remove(path)
+      else results.fail({ path, label, message })
+    } finally {
+      scanning--
+      if (scanning === 0) status.scanning(false)
+    }
+  }
+
+  async function scanAll(opts: { deep?: boolean; force?: boolean; quiet?: boolean } = {}): Promise<void> {
+    if (!cfg.enable) return
+    const manifests = await findManifests(cfg)
+    if (manifests.length === 0) {
+      if (!opts.quiet) vscode.window.showInformationMessage('depwatch: no dependency manifests found in this workspace.')
+      return
+    }
+    // One manifest at a time: each already runs its own registry requests in
+    // parallel, and multiplying the two is how an editor extension ends up
+    // saturating someone's connection.
+    await vscode.window.withProgress({ location: { viewId: 'depwatch.findings' } }, async () => {
+      for (const path of manifests) await scanOne(path, opts)
+    })
+  }
+
+  const heartbeat = new Heartbeat({
+    intervalMs: cfg.refreshMs,
+    isFocused: () => vscode.window.state.focused,
+    run: () => {
+      log.debug('periodic refresh')
+      void scanAll({ force: true, quiet: true })
+    },
+  })
+  heartbeat.start()
+  context.subscriptions.push(
+    heartbeat,
+    vscode.window.onDidChangeWindowState((state) => {
+      if (state.focused) heartbeat.resumed()
+    }),
+  )
+
+  // --- triggers ---
+
+  function touched(path: string): void {
+    if (!cfg.enable || !cfg.onSave || isExcluded(path, cfg)) return
+    const base = basename(path)
+    // A lock file changing (npm install, cargo update) changes the versions of
+    // every manifest beside it, so those are what get rescanned.
+    const targets = LOCK_NAMES.includes(base)
+      ? results.all().filter((s) => dirname(s.path) === dirname(path)).map((s) => s.path)
+      : isScannable(path, cfg)
+        ? [path]
+        : []
+    for (const target of targets) {
+      scanner.forget(target)
+      debouncer.schedule(target, () => void scanOne(target))
+    }
+  }
+
+  const watched = [...new Set([...manifestNames(cfg), ...LOCK_NAMES])].join(',')
+  const watcher = vscode.workspace.createFileSystemWatcher(`**/{${watched}}`)
+  context.subscriptions.push(
+    watcher,
+    // Saves inside the editor and changes made by a package manager both land
+    // here; the debouncer makes the overlap free.
+    watcher.onDidChange((uri) => touched(uri.fsPath)),
+    watcher.onDidCreate((uri) => touched(uri.fsPath)),
+    watcher.onDidDelete((uri) => {
+      results.remove(uri.fsPath)
+      annotator.forget(uri.fsPath)
+    }),
+    vscode.workspace.onDidSaveTextDocument((doc) => {
+      if (doc.uri.scheme === 'file') touched(doc.uri.fsPath)
+    }),
+  )
+
+  // --- settings ---
+
+  context.subscriptions.push(
+    vscode.workspace.onDidChangeConfiguration((e) => {
+      if (!e.affectsConfiguration('depwatch')) return
+      const previous = cfg
+      cfg = readConfig()
+      tree.setConfig(cfg)
+      annotator.setConfig(cfg)
+      status.setConfig(cfg)
+      panel.setConfig(cfg)
+
+      if (previous.debounceMs !== cfg.debounceMs) {
+        debouncer.dispose()
+        debouncer = new Debouncer(cfg.debounceMs)
+      }
+      heartbeat.setIntervalMs(cfg.refreshMs)
+      // The scanner bakes in its TTLs, concurrency and thresholds, so it is
+      // rebuilt rather than mutated. Only the in-memory layer is lost — the
+      // disk cache is what makes the next scan fast, and that stays.
+      void scanner.flush()
+      scanner = new Scanner(context.globalStorageUri, cfg)
+      if (affectsResults(e)) void scanAll({ quiet: true })
+    }),
+  )
+
+  // --- commands ---
+
+  const register = (name: string, run: (...args: any[]) => unknown) =>
+    context.subscriptions.push(vscode.commands.registerCommand(name, run))
+
+  register('depwatch.scanWorkspace', () => scanAll())
+  register('depwatch.deepScan', () =>
+    vscode.window.withProgress(
+      { location: vscode.ProgressLocation.Notification, title: 'depwatch: deep scan' },
+      () => scanAll({ deep: true, force: true }),
+    ),
+  )
+  register('depwatch.scanFile', async () => {
+    const path = await activeManifest()
+    if (path) await scanOne(path, { force: true })
+  })
+
+  register('depwatch.showReport', async () => {
+    if (results.size === 0) await scanAll({ quiet: true })
+    panel.show()
+  })
+
+  register('depwatch.setScopeFile', () => tree.setScope('file'))
+  register('depwatch.setScopeProject', () => tree.setScope('project'))
+
+  register('depwatch.reveal', async (path: string, dep: string) => {
+    const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(path))
+    const editor = await vscode.window.showTextDocument(doc, { preview: true })
+    const span = locateDeps(doc.getText(), path, [dep]).get(dep)
+    if (!span) return
+    const range = new vscode.Range(doc.positionAt(span.start), doc.positionAt(span.end))
+    editor.selection = new vscode.Selection(range.start, range.end)
+    editor.revealRange(range, vscode.TextEditorRevealType.InCenterIfOutsideViewport)
+  })
+
+  register('depwatch.checkGates', async () => {
+    if (results.size === 0) await scanAll({ quiet: true })
+    if (!cfg.gatesConfigured) {
+      const pick = await vscode.window.showInformationMessage(
+        'depwatch: no gates configured. Set depwatch.gates.maxLibyears or depwatch.gates.maxReplace to fail on a budget, the same way depwatch check --ci does.',
+        'Open settings',
+      )
+      if (pick) await vscode.commands.executeCommand('workbench.action.openSettings', 'depwatch.gates')
+      return
+    }
+    const failures = results.all().flatMap((s) => gateFailures(s.report, cfg.gates).map((f) => `${s.label}: ${f.message}`))
+    if (failures.length === 0) {
+      vscode.window.showInformationMessage('depwatch: gates pass.')
+      return
+    }
+    const pick = await vscode.window.showWarningMessage(
+      `depwatch: ${failures.length} gate(s) failing — ${failures[0]}`,
+      'Show report',
+    )
+    if (pick) panel.show()
+  })
+
+  register('depwatch.showTrend', async () => {
+    const path = await activeManifest()
+    if (!path) return
+    const folder = vscode.workspace.getWorkspaceFolder(vscode.Uri.file(path))
+    if (!folder) {
+      vscode.window.showWarningMessage('depwatch: trend needs the manifest to sit inside a workspace folder.')
+      return
+    }
+    // git wants a repo-relative path, with forward slashes on every platform.
+    const rel = relative(folder.uri.fsPath, path).split(/[\\/]/).join('/')
+    await vscode.window.withProgress(
+      { location: vscode.ProgressLocation.Notification, title: `depwatch: reading history of ${rel}` },
+      async () => {
+        try {
+          const points = await trend(rel, undefined, {
+            cwd: folder.uri.fsPath,
+            maxPoints: cfg.trendMaxPoints,
+            thresholds: cfg.thresholds,
+          })
+          showTrend(rel, points)
+        } catch (e: unknown) {
+          vscode.window.showWarningMessage(`depwatch: ${e instanceof Error ? e.message : String(e)}`)
+        }
+      },
+    )
+  })
+
+  register('depwatch.exportReport', async () => {
+    if (results.size === 0) await scanAll({ quiet: true })
+    const uri = await vscode.window.showSaveDialog({
+      filters: { HTML: ['html'] },
+      saveLabel: 'Export report',
+      defaultUri: defaultExportUri('depwatch-report.html'),
+    })
+    if (!uri) return
+    await vscode.workspace.fs.writeFile(uri, new TextEncoder().encode(panel.export()))
+    const pick = await vscode.window.showInformationMessage(`depwatch: wrote ${basename(uri.fsPath)}`, 'Open')
+    if (pick) await vscode.env.openExternal(uri)
+  })
+
+  register('depwatch.exportChart', async () => {
+    const path = await activeManifest()
+    if (!path) return
+    let scan = results.get(path)
+    if (!scan) {
+      try {
+        scan = await scanner.scan(path, { deep: cfg.deep })
+        results.set(scan)
+      } catch (e: unknown) {
+        vscode.window.showWarningMessage(`depwatch: ${e instanceof Error ? e.message : String(e)}`)
+        return
+      }
+    }
+    const uri = await vscode.window.showSaveDialog({
+      filters: { SVG: ['svg'] },
+      saveLabel: 'Export chart',
+      defaultUri: defaultExportUri('depwatch-quadrant.svg'),
+    })
+    if (!uri) return
+    const svg = quadrantSVG(scan.report.deps, {
+      title: `${scan.report.file} — drift × viability (${scan.report.totalLibyears.toFixed(2)} libyears)`,
+      thresholds: cfg.thresholds,
+    })
+    await vscode.workspace.fs.writeFile(uri, new TextEncoder().encode(svg))
+  })
+
+  register('depwatch.clearCache', async () => {
+    await scanner.clear()
+    results.clear()
+    vscode.window.showInformationMessage('depwatch: registry cache cleared. The next scan will refetch.')
+  })
+
+  register('depwatch.setGitHubToken', async () => {
+    const token = await vscode.window.showInputBox({
+      title: 'GitHub token for depwatch deep scans',
+      prompt: 'Public-repo read access is enough. Stored in the OS keychain, never in settings.',
+      password: true,
+      ignoreFocusOut: true,
+    })
+    if (token === undefined) return
+    if (token === '') {
+      await context.secrets.delete('depwatch.githubToken')
+      delete process.env.GITHUB_TOKEN
+      vscode.window.showInformationMessage('depwatch: GitHub token cleared.')
+      return
+    }
+    await context.secrets.store('depwatch.githubToken', token)
+    process.env.GITHUB_TOKEN = token
+    vscode.window.showInformationMessage('depwatch: GitHub token stored. Deep scans will use it.')
+  })
+
+  // --- first run ---
+
+  // Pruning is the only maintenance the cache needs, and once per session is
+  // plenty. Deliberately not awaited: it must never delay the first scan.
+  void scanner.prune().catch(() => undefined)
+
+  if (cfg.enable && cfg.onStartup) void scanAll({ quiet: true })
+
+  context.subscriptions.push({ dispose: () => void scanner.flush() })
+
+  async function activeManifest(): Promise<string | undefined> {
+    const active = vscode.window.activeTextEditor?.document
+    if (active?.uri.scheme === 'file' && isScannable(active.uri.fsPath, cfg)) return active.uri.fsPath
+
+    const candidates = results.size > 0 ? results.all().map((s) => s.path) : await findManifests(cfg)
+    if (candidates.length === 0) {
+      vscode.window.showWarningMessage('depwatch: no dependency manifest found.')
+      return undefined
+    }
+    if (candidates.length === 1) return candidates[0]
+    return vscode.window.showQuickPick(
+      candidates.map((path) => ({ label: vscode.workspace.asRelativePath(path), path })),
+      { title: 'Which manifest?' },
+    ).then((pick) => pick?.path)
+  }
+}
+
+export function deactivate(): void {
+  // Everything is in context.subscriptions.
+}
+
+function manifestNames(cfg: Config): string[] {
+  return cfg.manifests.map((glob) => glob.split('/').pop() ?? glob)
+}
+
+function defaultExportUri(name: string): vscode.Uri | undefined {
+  const folder = vscode.workspace.workspaceFolders?.[0]
+  return folder ? vscode.Uri.joinPath(folder.uri, name) : undefined
+}

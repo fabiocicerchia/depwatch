@@ -16,8 +16,18 @@
     "vscode": "^1.85.0",
     "node": ">=20"
   },
-  "categories": ["Linters", "Visualization", "Other"],
-  "keywords": ["dependencies", "libyear", "supply chain", "maintenance", "outdated"],
+  "categories": [
+    "Linters",
+    "Visualization",
+    "Other"
+  ],
+  "keywords": [
+    "dependencies",
+    "libyear",
+    "supply chain",
+    "maintenance",
+    "outdated"
+  ],
   "main": "./dist/extension.js",
   "activationEvents": [
     "workspaceContains:**/package.json",
@@ -185,7 +195,9 @@
         },
         "depwatch.manifests": {
           "type": "array",
-          "items": { "type": "string" },
+          "items": {
+            "type": "string"
+          },
           "default": [
             "**/package.json",
             "**/requirements*.txt",
@@ -243,12 +255,18 @@
           "description": "Viability below which a dependency counts as fading."
         },
         "depwatch.gates.maxLibyears": {
-          "type": ["number", "null"],
+          "type": [
+            "number",
+            "null"
+          ],
           "default": null,
           "markdownDescription": "Fail the gate above this much total drift — the editor's copy of `--max-libyears`. `null` disables it."
         },
         "depwatch.gates.maxReplace": {
-          "type": ["number", "null"],
+          "type": [
+            "number",
+            "null"
+          ],
           "default": null,
           "markdownDescription": "Fail the gate above this many dependencies in the replace quadrant — the editor's copy of `--max-replace`. `null` disables it."
         },
@@ -299,31 +317,61 @@
         },
         "depwatch.diagnostics.replace": {
           "type": "string",
-          "enum": ["error", "warning", "info", "hint", "off"],
+          "enum": [
+            "error",
+            "warning",
+            "info",
+            "hint",
+            "off"
+          ],
           "default": "warning",
           "description": "Severity for behind and unmaintained."
         },
         "depwatch.diagnostics.upgrade": {
           "type": "string",
-          "enum": ["error", "warning", "info", "hint", "off"],
+          "enum": [
+            "error",
+            "warning",
+            "info",
+            "hint",
+            "off"
+          ],
           "default": "info",
           "description": "Severity for behind but alive."
         },
         "depwatch.diagnostics.watch": {
           "type": "string",
-          "enum": ["error", "warning", "info", "hint", "off"],
+          "enum": [
+            "error",
+            "warning",
+            "info",
+            "hint",
+            "off"
+          ],
           "default": "info",
           "description": "Severity for current but fading."
         },
         "depwatch.diagnostics.healthy": {
           "type": "string",
-          "enum": ["error", "warning", "info", "hint", "off"],
+          "enum": [
+            "error",
+            "warning",
+            "info",
+            "hint",
+            "off"
+          ],
           "default": "off",
           "description": "Severity for healthy dependencies."
         },
         "depwatch.diagnostics.degraded": {
           "type": "string",
-          "enum": ["error", "warning", "info", "hint", "off"],
+          "enum": [
+            "error",
+            "warning",
+            "info",
+            "hint",
+            "off"
+          ],
           "default": "off",
           "description": "Severity for dependencies the registry would not answer for."
         },
@@ -351,6 +399,7 @@
     "@types/node": "^26.2.0",
     "@types/vscode": "^1.85.0",
     "esbuild": "^0.28.2",
-    "typescript": "^7.0.2"
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.10"
   }
 }

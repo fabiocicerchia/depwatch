@@ -3,7 +3,11 @@
 // Both need the same thing — where in the file each dependency is written — so
 // they share one index, computed once per document version. Editing a manifest
 // without saving it therefore costs one re-index of that file and no scan at
-// all.
+// all — and that re-index is debounced, because typing a version number should
+// not rebuild a line table per keystroke.
+//
+// Only the manifests that actually changed are republished. Redoing all of them
+// on every scan turned a workspace scan into N x N file reads.
 
 import * as vscode from 'vscode'
 import type { DepReport } from '../../../src/report.js'
@@ -11,7 +15,8 @@ import { type Config, severityFor } from './config.js'
 import { readText, type Scan } from './engine.js'
 import { registryUrl, summarise, tooltip } from './explain.js'
 import { locateDeps } from './locate.js'
-import type { Results } from './state.js'
+import { Debouncer } from './schedule.js'
+import type { Results, ResultsChange } from './state.js'
 
 interface Indexed {
   version: number
@@ -22,6 +27,9 @@ export class Annotator implements vscode.Disposable {
   private readonly collection = vscode.languages.createDiagnosticCollection('depwatch')
   private readonly index = new Map<string, Indexed>()
   private readonly disposables: vscode.Disposable[] = []
+  // Typing moves every offset after the cursor, so the index has to be rebuilt
+  // — but only once you stop, not once per character.
+  private readonly reindex = new Debouncer(250)
 
   constructor(
     private readonly results: Results,
@@ -29,12 +37,13 @@ export class Annotator implements vscode.Disposable {
   ) {
     this.disposables.push(
       this.collection,
-      results.onDidChange(() => void this.refresh()),
+      results.onDidChange((change) => void this.apply(change)),
       // A manifest opened after its scan still gets its squiggles.
       vscode.workspace.onDidOpenTextDocument((doc) => void this.publish(doc.uri.fsPath)),
       // The offsets move as you type; the findings do not change until a save.
       vscode.workspace.onDidChangeTextDocument((e) => {
-        if (this.index.has(e.document.uri.fsPath)) void this.publish(e.document.uri.fsPath)
+        const path = e.document.uri.fsPath
+        if (this.index.has(path)) this.reindex.schedule(path, () => void this.publish(path))
       }),
       vscode.languages.registerHoverProvider(
         [{ scheme: 'file', pattern: '**/*' }],
@@ -48,15 +57,26 @@ export class Annotator implements vscode.Disposable {
     void this.refresh()
   }
 
+  /** Republish what moved — or everything, when the change was wholesale. */
+  private async apply(change: ResultsChange): Promise<void> {
+    if (change === null) return this.refresh()
+    for (const path of change) await this.publish(path)
+  }
+
   async refresh(): Promise<void> {
     this.collection.clear()
+    this.index.clear()
     if (!this.cfg.diagnostics) return
     for (const scan of this.results.all()) await this.publish(scan.path, scan)
   }
 
   private async publish(path: string, known?: Scan): Promise<void> {
     const scan = known ?? this.results.get(path)
-    if (!scan || !this.cfg.diagnostics) return
+    // Gone, or turned off: clear whatever this file was showing.
+    if (!scan || !this.cfg.diagnostics) {
+      this.forget(path)
+      return
+    }
 
     const ranges = await this.rangesFor(scan)
     const diagnostics: vscode.Diagnostic[] = []
@@ -124,6 +144,7 @@ export class Annotator implements vscode.Disposable {
   }
 
   dispose(): void {
+    this.reindex.dispose()
     for (const d of this.disposables) d.dispose()
   }
 }

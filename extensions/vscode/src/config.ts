@@ -32,6 +32,7 @@ export interface Config {
   registryTtlMs: number
   deepTtlMs: number
   maxEntries: number
+  maxInMemory: number
   diagnostics: boolean
   severities: Severities
   statusBar: boolean
@@ -68,6 +69,7 @@ export function readConfig(scope?: vscode.Uri): Config {
     registryTtlMs: c.get('cache.registryTtlHours', 12) * HOUR,
     deepTtlMs: c.get('cache.deepTtlHours', 72) * HOUR,
     maxEntries: c.get('cache.maxEntries', 5000),
+    maxInMemory: c.get('cache.maxInMemory', 200),
     diagnostics: c.get('diagnostics.enable', true),
     severities: {
       replace: severity(c.get('diagnostics.replace', 'warning')),

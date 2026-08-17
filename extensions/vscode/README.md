@@ -109,20 +109,42 @@ so the extension is built to do it rarely and remember the answers:
 | While typing | **never** |
 | Periodic re-check | every 6h, and only while the window has focus |
 
-Three things keep the cost down, in the order they get a chance to:
+Four things keep the cost down, in the order they get a chance to:
 
-1. **The dependency signature.** If the deps and their versions are unchanged
-   since the last scan, the previous report is reused and nothing runs. Editing
-   the `scripts` block of a `package.json` costs one parse.
-2. **The TTL cache** — memory in front of disk, under the extension's global
+1. **The file stamps.** Before anything is read, the manifest and its lock are
+   stat'd — mtime and size, or the editor's document version when the file is
+   open. Unchanged means the previous parse is reused. Reading and `JSON.parse`ing
+   a 1 MB lock file is ~10ms of blocking work on the extension host thread, and
+   a real monorepo lock is several times that; two stat calls are 0.004ms. The
+   six-hourly re-check takes this path every time — it exists to re-ask the
+   registries, not to re-read a file that has not moved.
+2. **The dependency signature.** If the deps and their versions are unchanged
+   since the last scan, the previous report is reused and nothing runs at all.
+   Editing the `scripts` block of a `package.json` costs one parse.
+3. **The TTL cache** — memory in front of disk, under the extension's global
    storage. A published release is a historical fact, so a version list is good
    for 12 hours (`depwatch.cache.registryTtlHours`) and deep metadata for 72.
    A second window, or tomorrow's session, starts warm. Failures are cached for
    ten minutes in memory only, so a package that 404s is asked about once rather
    than once per dependency. When a refetch fails, the stale entry is served —
    offline degrades to yesterday's report, not to a blank one.
-3. **Concurrency limiting**: six requests in flight (`depwatch.concurrency`),
+4. **Concurrency limiting**: six requests in flight (`depwatch.concurrency`),
    one manifest at a time.
+
+**Memory** is bounded by `depwatch.cache.maxInMemory` (200 packages). A busy
+package's version list is around 130 KB once parsed — react and typescript have
+shipped roughly 950 releases each — so an unbounded cache would grow with the
+size of your workspace: 400 packages measured at 54 MB, 3000 would be far worse.
+Past the cap the least recently used are dropped and re-read from disk in about
+a millisecond, so what the extension holds stays flat however big the monorepo.
+
+**UI updates are coalesced.** A workspace scan finishes one manifest at a time,
+and each result used to make every consumer redo its whole job — with 25
+manifests that was 25 tree rebuilds and 25 × 25 diagnostic republishes, each one
+a file read. Changes are now announced once per 150ms burst and carry which
+files moved, so only those are republished. Re-indexing a manifest you are
+typing in is debounced too: editing a version number does not rebuild a line
+table per keystroke.
 
 If you want it quieter still: set `depwatch.scan.refreshMinutes` to `0` to turn
 the timer off entirely, and `depwatch.scan.onSave` to `false` to make scanning

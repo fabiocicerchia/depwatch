@@ -48,8 +48,12 @@ Registries are the expensive part, so the extension is built to ask rarely:
 - the timer is skipped while the window is unfocused, and the missed tick runs
   once when focus returns.
 
-Three layers absorb the rest, in the order they get a chance to:
+Four layers absorb the rest, in the order they get a chance to:
 
+0. **The file stamps** — mtime and size, or the open document's version. The
+   parse is reused when nothing moved: ~10ms of blocking `JSON.parse` on a 1 MB
+   lock versus 0.004ms for two stats. The save path calls `Scanner.forget()`
+   first, so an edit always re-reads regardless of what the timestamps say.
 1. **The dependency signature** — the sorted `name@version` list, the deep flag
    and the thresholds. Unchanged means the previous report is returned and
    nothing else runs. Editing a `scripts` block costs one parse.
@@ -60,6 +64,13 @@ Three layers absorb the rest, in the order they get a chance to:
    rather than to nothing. Writes are queued one at a time; entries past twice
    their TTL, and anything beyond the cap, are pruned once per session.
 3. **Concurrency** — six in flight, one manifest at a time.
+
+Memory is bounded rather than left to grow: the cache's memory layer is an LRU
+capped at `depwatch.cache.maxInMemory`, because a parsed version list for a busy
+package is ~130 KB and a monorepo has hundreds of them. Eviction costs a disk
+read, not a request. `Results` announces changes once per 150ms burst and says
+which paths moved, so a workspace scan is one tree rebuild and one diagnostic
+publish per manifest rather than N of each.
 
 Deep metadata is cacheable at all only because `fetchDeepMeta()` returns what
 was fetched (`archived`, `lastCommitAt`) rather than what was derived from it

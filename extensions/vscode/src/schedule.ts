@@ -110,6 +110,45 @@ export class Heartbeat {
 }
 
 /**
+ * Leading edge, then trailing: the first event of a burst fires at once so a
+ * single change feels immediate, and everything arriving in the window after it
+ * is folded into one more.
+ *
+ * Scanning a workspace completes one manifest at a time, and a consumer that
+ * redoes its whole job per manifest turns 25 manifests into 25 rebuilds.
+ */
+export class Burst {
+  private timer: ReturnType<typeof setTimeout> | null = null
+  private pending = false
+
+  constructor(
+    private readonly windowMs: number,
+    private readonly emit: () => void,
+  ) {}
+
+  hit(): void {
+    this.pending = true
+    if (this.timer) return // inside the window; the trailing edge will cover it
+    this.fire()
+    this.timer = setTimeout(() => {
+      this.timer = null
+      if (this.pending) this.fire()
+    }, this.windowMs)
+    this.timer.unref?.()
+  }
+
+  private fire(): void {
+    this.pending = false
+    this.emit()
+  }
+
+  dispose(): void {
+    if (this.timer) clearTimeout(this.timer)
+    this.timer = null
+  }
+}
+
+/**
  * One run per key at a time. A save that lands while a scan of the same
  * manifest is in flight joins it rather than starting a second one.
  */

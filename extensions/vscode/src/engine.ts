@@ -8,6 +8,10 @@
 // Three things stop a scan from being expensive, in the order they get a
 // chance to:
 //
+//   0. the file stamps — mtime and size, or the document version when the file
+//      is open. Unchanged means the previous parse is reused: reading and
+//      JSON.parsing a megabyte lock file costs about 10ms of blocking work on
+//      the extension host thread, and two stat calls cost 0.004ms;
 //   1. the dependency signature — if the deps and their versions are the same
 //      as last time and the result is younger than the refresh interval, the
 //      previous report is returned and nothing else runs at all;
@@ -23,7 +27,7 @@ import { dirname, join } from 'node:path'
 import type { DeepMeta } from '../../../src/signals.js'
 import type { PackageInfo, RegistryError } from '@lib/registry-client'
 import { type InputFs, loadManifest } from '../../../src/input.js'
-import { basename, detectEcosystem, LOCK_FOR } from '../../../src/manifest.js'
+import { basename, detectEcosystem, LOCK_FOR, type Manifest } from '../../../src/manifest.js'
 import { analyse, type AnalyseCache, type Report } from '../../../src/report.js'
 import { TtlCache } from './cache.js'
 import { Coalescer } from './schedule.js'
@@ -47,21 +51,31 @@ export interface ScanFailure {
   message: string
 }
 
+/** The previous scan of a manifest, and what it was computed from. */
+interface Remembered {
+  scan: Scan
+  manifest: Manifest
+  /** mtime and size of every file that fed the parse, or the editor's version. */
+  stamps: string
+}
+
 export class Scanner {
   private readonly packages: TtlCache<PackageInfo | RegistryError>
   private readonly deepMeta: TtlCache<DeepMeta>
   private readonly coalescer = new Coalescer<Scan>()
-  private readonly previous = new Map<string, Scan>()
+  private readonly previous = new Map<string, Remembered>()
 
   constructor(storage: vscode.Uri, private readonly cfg: Config) {
     this.packages = new TtlCache({
       store: new FileCacheStore(vscode.Uri.joinPath(storage, 'registry')),
       ttlMs: cfg.registryTtlMs,
       isFailure: (value) => 'error' in value,
+      maxInMemory: cfg.maxInMemory,
     })
     this.deepMeta = new TtlCache({
       store: new FileCacheStore(vscode.Uri.joinPath(storage, 'deep')),
       ttlMs: cfg.deepTtlMs,
+      maxInMemory: cfg.maxInMemory,
     })
   }
 
@@ -73,17 +87,31 @@ export class Scanner {
   scan(path: string, opts: { deep: boolean; force?: boolean } = { deep: false }): Promise<Scan> {
     return this.coalescer.run(path, async () => {
       const label = vscode.workspace.asRelativePath(path)
-      const fs = await snapshot(path, this.cfg)
-      const { manifest, notes } = loadManifest(path, {
-        fs,
-        noLock: !this.cfg.useLockFile,
-        transitive: this.cfg.transitive,
-      })
+      const inputs = candidates(path, this.cfg)
+      const stamps = await stampsOf(inputs)
+      const last = this.previous.get(path)
+
+      // Nothing on disk moved, so the last parse still describes these files.
+      // The periodic refresh takes this path every time: it exists to re-ask the
+      // registries, not to re-read a lock file that has not changed.
+      let manifest: Manifest
+      let notes: string[]
+      if (last && last.stamps === stamps) {
+        manifest = last.manifest
+        notes = last.scan.notes
+      } else {
+        const loaded = loadManifest(path, {
+          fs: await snapshot(inputs),
+          noLock: !this.cfg.useLockFile,
+          transitive: this.cfg.transitive,
+        })
+        manifest = loaded.manifest
+        notes = loaded.notes
+      }
 
       const deep = opts.deep || this.cfg.deep
       const signature = signatureOf(manifest.deps, deep, this.cfg)
-      const last = this.previous.get(path)
-      if (!opts.force && last && last.signature === signature && this.isFresh(last)) return last
+      if (!opts.force && last && last.scan.signature === signature && this.isFresh(last.scan)) return last.scan
 
       const report = await analyse(manifest, {
         deep,
@@ -93,7 +121,7 @@ export class Scanner {
       })
 
       const scan: Scan = { path, label, report, notes, deep, scannedAt: Date.now(), signature }
-      this.previous.set(path, scan)
+      this.previous.set(path, { scan, manifest, stamps })
       return scan
     })
   }
@@ -141,20 +169,46 @@ function signatureOf(deps: { name: string; current: string; ecosystem?: string }
   return `${deep ? 'deep' : 'cheap'}|${cfg.thresholds.staleLibyears}|${cfg.thresholds.riskyViability}|${list}`
 }
 
-/**
- * The manifest and the lock files that could sit beside it, read once. The
- * editor's copy wins over the disk's — it is both fresher and free.
- */
-async function snapshot(path: string, cfg: Config): Promise<InputFs> {
-  const candidates = new Set([path])
+/** The manifest, plus the lock files that could sit beside it. */
+function candidates(path: string, cfg: Config): string[] {
+  const paths = new Set([path])
   if (cfg.useLockFile) {
     const eco = detectEcosystem(path)
-    if (eco) for (const lock of LOCK_FOR[eco]) candidates.add(join(dirname(path), lock))
+    if (eco) for (const lock of LOCK_FOR[eco]) paths.add(join(dirname(path), lock))
   }
+  return [...paths]
+}
 
+/**
+ * A cheap fingerprint of the inputs: mtime and size from a stat, or the
+ * editor's document version when the file is open — because an unsaved buffer
+ * is what would actually be read, and the disk's timestamp says nothing about
+ * it.
+ */
+async function stampsOf(paths: string[]): Promise<string> {
+  const stamps = await Promise.all(
+    paths.map(async (path) => {
+      const open = openDocument(path)
+      if (open) return `${path}@doc:${open.version}`
+      try {
+        const stat = await vscode.workspace.fs.stat(vscode.Uri.file(path))
+        return `${path}@fs:${stat.mtime}:${stat.size}`
+      } catch {
+        return `${path}@absent`
+      }
+    }),
+  )
+  return stamps.join('|')
+}
+
+/**
+ * The files, read once. The editor's copy wins over the disk's — it is both
+ * fresher and free.
+ */
+async function snapshot(paths: string[]): Promise<InputFs> {
   const files = new Map<string, string>()
   await Promise.all(
-    [...candidates].map(async (candidate) => {
+    paths.map(async (candidate) => {
       const text = await readText(candidate)
       if (text !== undefined) files.set(candidate, text)
     }),
@@ -170,8 +224,11 @@ async function snapshot(path: string, cfg: Config): Promise<InputFs> {
   }
 }
 
+const openDocument = (path: string): vscode.TextDocument | undefined =>
+  vscode.workspace.textDocuments.find((d) => d.uri.scheme === 'file' && d.uri.fsPath === path)
+
 export async function readText(path: string): Promise<string | undefined> {
-  const open = vscode.workspace.textDocuments.find((d) => d.uri.scheme === 'file' && d.uri.fsPath === path)
+  const open = openDocument(path)
   if (open) return open.getText()
   try {
     return new TextDecoder().decode(await vscode.workspace.fs.readFile(vscode.Uri.file(path)))

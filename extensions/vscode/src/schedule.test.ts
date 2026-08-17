@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { Coalescer, Debouncer, Heartbeat } from './schedule.js'
+import { Burst, Coalescer, Debouncer, Heartbeat } from './schedule.js'
 
 beforeEach(() => vi.useFakeTimers())
 afterEach(() => vi.useRealTimers())
@@ -126,5 +126,51 @@ describe('Coalescer', () => {
     const c = new Coalescer<void>()
     await expect(c.run('k', async () => Promise.reject(new Error('boom')))).rejects.toThrow('boom')
     expect(c.isRunning('k')).toBe(false)
+  })
+})
+
+describe('Burst', () => {
+  it('fires at once, then folds the rest of the window into one more', () => {
+    const emit = vi.fn()
+    const b = new Burst(150, emit)
+
+    b.hit()
+    expect(emit).toHaveBeenCalledTimes(1) // leading: a single change is immediate
+
+    for (let i = 0; i < 24; i++) b.hit() // a workspace scan finishing manifest by manifest
+    expect(emit).toHaveBeenCalledTimes(1)
+
+    vi.advanceTimersByTime(150)
+    expect(emit).toHaveBeenCalledTimes(2) // trailing: 25 changes, 2 updates
+    b.dispose()
+  })
+
+  it('does not fire a trailing edge when nothing else arrived', () => {
+    const emit = vi.fn()
+    const b = new Burst(150, emit)
+    b.hit()
+    vi.advanceTimersByTime(1000)
+    expect(emit).toHaveBeenCalledTimes(1)
+    b.dispose()
+  })
+
+  it('is immediate again once the window has passed', () => {
+    const emit = vi.fn()
+    const b = new Burst(150, emit)
+    b.hit()
+    vi.advanceTimersByTime(200)
+    b.hit()
+    expect(emit).toHaveBeenCalledTimes(2)
+    b.dispose()
+  })
+
+  it('drops a pending trailing edge when disposed', () => {
+    const emit = vi.fn()
+    const b = new Burst(150, emit)
+    b.hit()
+    b.hit()
+    b.dispose()
+    vi.advanceTimersByTime(1000)
+    expect(emit).toHaveBeenCalledTimes(1)
   })
 })

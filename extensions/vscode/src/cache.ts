@@ -12,6 +12,11 @@
 //     re-requested two hundred times because it appears in two hundred scans.
 //   * A stale entry beats no entry. Offline, or rate-limited, the last known
 //     answer is served rather than blanking the report.
+//   * The memory layer is bounded. A popular package's version list is around
+//     130 KB once parsed — react and typescript have shipped ~950 releases each
+//     — so an unbounded map would pin tens of megabytes in the extension host
+//     for the life of the window. Past the cap the oldest are dropped; the disk
+//     copy is still there, and reading one back is a millisecond.
 //
 // Deliberately free of any `vscode` import so it can be unit-tested without an
 // editor; the store below is the only thing that touches the disk.
@@ -38,6 +43,8 @@ export interface TtlCacheOptions<T> {
    */
   isFailure?: (value: T) => boolean
   failureTtlMs?: number
+  /** How many entries to keep parsed in memory. Beyond this, oldest out. */
+  maxInMemory?: number
   now?: () => number
 }
 
@@ -47,6 +54,7 @@ interface Entry<T> {
 }
 
 const DEFAULT_FAILURE_TTL = 10 * 60_000
+const DEFAULT_MAX_IN_MEMORY = 200
 
 export class TtlCache<T> {
   private readonly memory = new Map<string, Entry<T>>()
@@ -103,22 +111,42 @@ export class TtlCache<T> {
 
   private async lookup(key: string): Promise<Entry<T> | undefined> {
     const hot = this.memory.get(key)
-    if (hot) return hot
+    if (hot) {
+      this.hold(key, hot) // touch: least-recently-used is what gets dropped
+      return hot
+    }
     const raw = await this.opts.store.read(id(key))
     if (raw === undefined) return undefined
     try {
       const entry = JSON.parse(raw) as Entry<T>
       if (typeof entry?.savedAt !== 'number') return undefined
-      this.memory.set(key, entry)
+      this.hold(key, entry)
       return entry
     } catch {
       return undefined // a truncated file is a cache miss, not an error
     }
   }
 
+  /** Insert or touch, and evict the least recently used once over the cap. */
+  private hold(key: string, entry: Entry<T>): void {
+    this.memory.delete(key)
+    this.memory.set(key, entry)
+    const cap = this.opts.maxInMemory ?? DEFAULT_MAX_IN_MEMORY
+    while (this.memory.size > cap) {
+      const oldest = this.memory.keys().next().value
+      if (oldest === undefined) break
+      this.memory.delete(oldest)
+    }
+  }
+
+  /** How many entries are parsed in memory right now. */
+  get held(): number {
+    return this.memory.size
+  }
+
   private remember(key: string, value: T): void {
     const entry: Entry<T> = { savedAt: this.now(), value }
-    this.memory.set(key, entry)
+    this.hold(key, entry)
     // Failures stay in memory: they expire in minutes and are not worth a write.
     if (!this.failed(value)) this.writes.push(() => this.opts.store.write(id(key), JSON.stringify(entry)))
   }

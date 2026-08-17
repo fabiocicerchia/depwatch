@@ -342,7 +342,13 @@
           "type": "number",
           "default": 5000,
           "minimum": 0,
-          "description": "Cap on cached packages. The oldest are dropped past this."
+          "description": "Cap on packages cached on disk. The oldest are dropped past this."
+        },
+        "depwatch.cache.maxInMemory": {
+          "type": "number",
+          "default": 200,
+          "minimum": 1,
+          "markdownDescription": "Cap on packages kept parsed in memory. A busy package's version list is around 130 KB once parsed, so this is what bounds the extension's memory; past it the least recently used are dropped and re-read from disk, which costs about a millisecond."
         },
         "depwatch.diagnostics.enable": {
           "type": "boolean",

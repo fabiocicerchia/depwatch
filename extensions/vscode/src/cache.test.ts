@@ -170,4 +170,37 @@ describe('TtlCache', () => {
 
     expect(await cache<string>().wrap('a', async () => 'reloaded')).toBe('reloaded')
   })
+
+  // A busy package's version list is ~130 KB parsed, so an unbounded memory map
+  // would pin tens of megabytes in the extension host for the life of a window.
+  describe('memory cap', () => {
+    it('keeps only the most recently used, and re-reads the rest from disk', async () => {
+      const c = cache<string>({ maxInMemory: 2 })
+      for (const key of ['a', 'b', 'c']) await c.wrap(key, async () => key)
+      await c.flush()
+
+      expect(c.held).toBe(2)
+      expect(store.files.size).toBe(3) // evicted from memory, still on disk
+
+      const load = vi.fn(async () => 'refetched')
+      expect(await c.wrap('a', load)).toBe('a') // served from disk, not the network
+      expect(load).not.toHaveBeenCalled()
+    })
+
+    it('drops the least recently used, not the oldest written', async () => {
+      const c = cache<string>({ maxInMemory: 2 })
+      await c.wrap('a', async () => 'a')
+      await c.wrap('b', async () => 'b')
+      await c.wrap('a', async () => 'a') // touching 'a' makes 'b' the coldest
+      await c.wrap('c', async () => 'c')
+      await c.flush()
+
+      // 'b' left memory; a lookup for it has to go to the store, 'a' does not.
+      const reads = store.reads
+      await c.wrap('a', async () => 'a')
+      expect(store.reads).toBe(reads)
+      await c.wrap('b', async () => 'b')
+      expect(store.reads).toBe(reads + 1)
+    })
+  })
 })

@@ -22,19 +22,34 @@ your colour theme.
 
 ## Install
 
-```sh
-cd extensions/vscode
-npm install
-npm run build
-```
-
-Then either press <kbd>F5</kbd> in VS Code with this folder open (Extension
-Development Host), or package it:
+From the repository root:
 
 ```sh
-npx @vscode/vsce package --no-dependencies   # -> depwatch-vscode-0.1.0.vsix
-code --install-extension depwatch-vscode-0.1.0.vsix
+make ext-install
 ```
+
+That installs dependencies, type-checks, bundles, packages a VSIX and installs
+it. Reload the VS Code window afterwards.
+
+It needs the `code` CLI on your PATH. If `code` is not found — common on macOS —
+open the Command Palette and run *Shell Command: Install 'code' command in
+PATH*. Or skip the CLI entirely: `make ext-package` writes
+`extensions/vscode/depwatch-vscode-<version>.vsix`, and the Extensions view's
+`...` menu has *Install from VSIX…*.
+
+VSCodium and Cursor take the same flag — `codium --install-extension <file>.vsix`.
+
+### Trying it without installing
+
+Open `extensions/vscode` in VS Code and press <kbd>F5</kbd>. That builds and
+launches an Extension Development Host with depwatch loaded, and leaves your
+normal editor untouched.
+
+### First run
+
+The extension activates on a workspace containing a manifest it recognises. You
+should see a **depwatch** tab in the bottom panel, total drift in the status
+bar, and a scan starting on its own. `depwatch: Scan the workspace` forces one.
 
 ## Commands
 

@@ -4,14 +4,19 @@
 the same engine, on the manifest you are actually editing.
 
 ```sh
-cd extensions/vscode
-npm install && npm run build
+make ext-install     # build, package a VSIX, install it into VS Code
 ```
 
-Press <kbd>F5</kbd> to open an Extension Development Host, or
-`npx @vscode/vsce package --no-dependencies` for a VSIX. The extension's own
-README documents every command and setting; this page is about how it is built
-and why.
+Or press <kbd>F5</kbd> with `extensions/vscode` open to try it in an Extension
+Development Host without installing anything. The extension's own README
+documents every command and setting; this page is about how it is built and why.
+
+`ext-install` chains `ext-build` (install, typecheck, bundle) and `ext-package`
+(`vsce`). Two files exist only so that chain runs unattended:
+`extensions/vscode/LICENSE.md`, because vsce stops to ask whether you really
+mean to ship without a licence and offers no flag to answer in advance; and
+`media/icon.png`, because the Extensions list wants a PNG and the panel
+container's `quadrant.svg` is not eligible.
 
 ## The engine is imported, not shelled out to
 

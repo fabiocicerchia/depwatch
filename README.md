@@ -49,7 +49,7 @@ pane filtered to the current file or the whole project, the CI gates evaluated
 live, and the same quadrant report in a tab.
 
 ```sh
-cd extensions/vscode && npm install && npm run build   # then F5, or vsce package
+make ext-install   # build, package a VSIX and install it into VS Code
 ```
 
 ## Documentation

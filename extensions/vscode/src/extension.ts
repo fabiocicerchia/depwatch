@@ -19,7 +19,8 @@ import { ReportPanel, showTrend } from './panel.js'
 import { Debouncer, Heartbeat } from './schedule.js'
 import { Results } from './state.js'
 import { StatusBar } from './status.js'
-import { FindingsTree } from './tree.js'
+import { LENS_BLURB, LENS_LABEL, LENSES } from './totals.js'
+import { type Node as FindingNode, FindingsTree } from './tree.js'
 
 const LOCK_NAMES = [...new Set(Object.values(LOCK_FOR).flat())]
 
@@ -35,8 +36,13 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   const panel = new ReportPanel(results, cfg)
   let debouncer = new Debouncer(cfg.debounceMs)
 
-  const view = vscode.window.createTreeView('depwatch.findings', { treeDataProvider: tree, showCollapseAll: true })
+  const view = vscode.window.createTreeView<FindingNode>('depwatch.findings', {
+    treeDataProvider: tree,
+    showCollapseAll: true,
+  })
+  tree.attach(view)
   tree.setScope('file')
+  tree.setFilter(null)
 
   context.subscriptions.push(log, results, tree, annotator, status, panel, view, {
     dispose: () => debouncer.dispose(),
@@ -189,6 +195,30 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
   register('depwatch.setScopeFile', () => tree.setScope('file'))
   register('depwatch.setScopeProject', () => tree.setScope('project'))
+  register('depwatch.expandAll', () => tree.expandAll())
+  register('depwatch.clearFilter', () => tree.setFilter(null))
+
+  // A multi-select quick pick rather than a row of toggle buttons: five
+  // quadrants would be five more icons in a title bar that already has enough,
+  // and the counts belong next to the choice.
+  register('depwatch.filterFindings', async () => {
+    const counts = tree.scopeCounts()
+    const active = tree.getFilter()
+    const items = LENSES.map((lens) => ({
+      label: LENS_LABEL[lens],
+      description: `${counts[lens]} ${counts[lens] === 1 ? 'dep' : 'deps'}`,
+      detail: LENS_BLURB[lens],
+      lens,
+      picked: active ? active.has(lens) : true,
+    }))
+    const picked = await vscode.window.showQuickPick(items, {
+      canPickMany: true,
+      title: 'Show findings for',
+      placeHolder: 'Pick the quadrants to show — none picked shows everything',
+    })
+    if (!picked) return // cancelled: leave the filter alone
+    tree.setFilter(picked.length === 0 ? null : new Set(picked.map((p) => p.lens)))
+  })
 
   register('depwatch.reveal', async (path: string, dep: string) => {
     const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(path))

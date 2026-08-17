@@ -110,6 +110,24 @@
         "icon": "$(check)"
       },
       {
+        "command": "depwatch.expandAll",
+        "title": "Expand all findings",
+        "category": "depwatch",
+        "icon": "$(expand-all)"
+      },
+      {
+        "command": "depwatch.filterFindings",
+        "title": "Filter findings by quadrant",
+        "category": "depwatch",
+        "icon": "$(filter)"
+      },
+      {
+        "command": "depwatch.clearFilter",
+        "title": "Clear the findings filter",
+        "category": "depwatch",
+        "icon": "$(filter-filled)"
+      },
+      {
         "command": "depwatch.setScopeFile",
         "title": "Show findings for the current file",
         "category": "depwatch",
@@ -145,14 +163,29 @@
           "group": "navigation@1"
         },
         {
+          "command": "depwatch.filterFindings",
+          "when": "view == depwatch.findings && !depwatch.filtered",
+          "group": "navigation@2"
+        },
+        {
+          "command": "depwatch.clearFilter",
+          "when": "view == depwatch.findings && depwatch.filtered",
+          "group": "navigation@2"
+        },
+        {
+          "command": "depwatch.expandAll",
+          "when": "view == depwatch.findings",
+          "group": "navigation@3"
+        },
+        {
           "command": "depwatch.showReport",
           "when": "view == depwatch.findings",
-          "group": "navigation@2"
+          "group": "navigation@4"
         },
         {
           "command": "depwatch.scanWorkspace",
           "when": "view == depwatch.findings",
-          "group": "navigation@3"
+          "group": "navigation@5"
         },
         {
           "command": "depwatch.deepScan",

@@ -7,7 +7,9 @@ same numbers, same quadrant.
   quadrant, and the hover says why: how far behind, when the last release was,
   how many maintainers, whether the repository is archived.
 - **A findings pane**, in the bottom panel. Grouped by quadrant, worst first,
-  filtered to the manifest the current file belongs to or the whole project.
+  scoped to the manifest the current file belongs to or the whole project,
+  filterable by quadrant, and ending in the bottom line: how much drift, spread
+  over how many dependencies, and how many of them are work.
 - **The report**, as a tab: the totals, the quadrant chart and the table
   `depwatch check` prints. Click a row to jump to that dependency.
 - **The gates** from `depwatch check --ci` — `--max-libyears`, `--max-replace` —
@@ -63,8 +65,30 @@ bar, and a scan starting on its own. `depwatch: Scan the workspace` forces one.
 | `depwatch: Check the CI gates` | The same verdict `--ci` gives |
 | `depwatch: Export the report as HTML` | A standalone file, for a browser or a PR |
 | `depwatch: Export the quadrant chart as SVG` | The chart on its own |
+| `depwatch: Filter findings by quadrant` | Show only replace / upgrade / watch / healthy / no data |
+| `depwatch: Expand all findings` | The other half of the collapse-all button |
 | `depwatch: Clear the registry cache` | Forces the next scan to refetch |
 | `depwatch: Set the GitHub token` | Stored in the OS keychain, for deep scans |
+
+## The findings pane
+
+The title bar carries, in order: the scope toggle (current file ⇄ whole
+project), the quadrant filter, expand all, the report, and a rescan — plus VS
+Code's own collapse-all.
+
+**Filtering** opens a multi-select list of the five quadrants with a count
+beside each, so you can narrow to `replace` on a Monday and see everything again
+on a Friday. It is a lens on today's list, not a setting: it resets when the
+window reloads, and while one is active the view's subtitle says
+`filtered: replace` so a narrowed pane never passes for the whole picture.
+
+**The last row** is the total for whatever is in scope — say
+`20.76 libyears · 5 of 6 deps to address`, broken down as
+`1 replace · 2 upgrade · 2 watch · 1 no data`. "To address" is everything
+outside the healthy quadrant. Dependencies the registry would not answer for are
+reported separately and deliberately left out of that count: unknown is not a
+to-do, and counting it would turn a flaky registry into a growing backlog. The
+total ignores the filter — it is the bottom line, not a view of the list.
 
 ## When it scans, and what it costs
 

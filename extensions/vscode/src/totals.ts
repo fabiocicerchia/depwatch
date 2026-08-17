@@ -1,0 +1,87 @@
+// The bottom line of the findings pane.
+//
+// A list of findings answers "what is wrong"; it does not answer "how much is
+// there". That is what the last row is for — the drift you are carrying and how
+// many dependencies it is spread across — so the pane can be read from the
+// bottom as well as the top.
+//
+// Pure, and free of any `vscode` import, so the arithmetic is testable without
+// an editor.
+
+import { tally, type QuadrantCounts } from '../../../src/gates.js'
+import type { Quadrant, Report } from '../../../src/report.js'
+import { QUADRANT } from './explain.js'
+
+/** A quadrant, or the pseudo-quadrant for deps the registry would not answer for. */
+export type Lens = Quadrant | 'degraded'
+
+export const LENSES: Lens[] = ['replace', 'upgrade', 'watch', 'healthy', 'degraded']
+
+export const LENS_LABEL: Record<Lens, string> = {
+  replace: QUADRANT.replace.label,
+  upgrade: QUADRANT.upgrade.label,
+  watch: QUADRANT.watch.label,
+  healthy: QUADRANT.healthy.label,
+  degraded: 'no data',
+}
+
+export const LENS_BLURB: Record<Lens, string> = {
+  replace: QUADRANT.replace.blurb,
+  upgrade: QUADRANT.upgrade.blurb,
+  watch: QUADRANT.watch.blurb,
+  healthy: QUADRANT.healthy.blurb,
+  degraded: 'the registry did not answer for these packages',
+}
+
+export interface Totals {
+  libyears: number
+  /** Every dependency in scope, scored or not. */
+  deps: number
+  counts: QuadrantCounts
+  degraded: number
+  /**
+   * Everything off the healthy quadrant. Deps with no registry data are not in
+   * here: unknown is not a to-do, and putting it in the number would make a
+   * flaky registry look like work.
+   */
+  toAddress: number
+}
+
+export function totalsOf(reports: Report[]): Totals {
+  const counts: QuadrantCounts = { healthy: 0, upgrade: 0, watch: 0, replace: 0 }
+  let libyears = 0
+  let deps = 0
+  let degraded = 0
+
+  for (const report of reports) {
+    libyears += report.totalLibyears
+    deps += report.deps.length
+    degraded += report.deps.filter((d) => d.degraded).length
+    const own = tally(report)
+    for (const q of ['healthy', 'upgrade', 'watch', 'replace'] as Quadrant[]) counts[q] += own[q]
+  }
+
+  return {
+    libyears: Math.round(libyears * 100) / 100,
+    deps,
+    counts,
+    degraded,
+    toAddress: counts.replace + counts.upgrade + counts.watch,
+  }
+}
+
+export function summaryLabel(t: Totals): string {
+  const drift = `${t.libyears.toFixed(2)} libyears`
+  if (t.deps === 0) return drift
+  if (t.toAddress === 0) return `${drift} · nothing to address`
+  // The noun agrees with the set being counted from — "1 of 2 deps", not
+  // "1 of 2 dep".
+  return `${drift} · ${t.toAddress} of ${t.deps} ${t.deps === 1 ? 'dep' : 'deps'} to address`
+}
+
+export function summaryDetail(t: Totals): string {
+  const parts = (['replace', 'upgrade', 'watch'] as Quadrant[]).filter((q) => t.counts[q] > 0).map((q) => `${t.counts[q]} ${q}`)
+  if (t.counts.healthy > 0) parts.push(`${t.counts.healthy} healthy`)
+  if (t.degraded > 0) parts.push(`${t.degraded} no data`)
+  return parts.join(' · ')
+}

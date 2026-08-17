@@ -414,6 +414,21 @@
           "default": true,
           "description": "Show total drift in the status bar."
         },
+        "depwatch.badge": {
+          "type": "string",
+          "enum": [
+            "toAddress",
+            "total",
+            "off"
+          ],
+          "enumDescriptions": [
+            "Dependencies outside the healthy quadrant — the ones that are work.",
+            "Every dependency being watched.",
+            "No count on the tab."
+          ],
+          "default": "toAddress",
+          "description": "The count on the depwatch panel tab, the way the Problems tab carries one. It follows the pane's scope and ignores its filter."
+        },
         "depwatch.trend.maxPoints": {
           "type": "number",
           "default": 12,

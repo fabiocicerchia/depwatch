@@ -17,7 +17,18 @@ import type { Config } from './config.js'
 import type { Scan } from './engine.js'
 import { ORDER, tooltip } from './explain.js'
 import type { Results } from './state.js'
-import { type Lens, LENS_BLURB, LENS_LABEL, LENSES, summaryDetail, summaryLabel, type Totals, totalsOf } from './totals.js'
+import {
+  badgeTooltip,
+  badgeValue,
+  type Lens,
+  LENS_BLURB,
+  LENS_LABEL,
+  LENSES,
+  summaryDetail,
+  summaryLabel,
+  type Totals,
+  totalsOf,
+} from './totals.js'
 
 export type Scope = 'file' | 'project'
 
@@ -107,7 +118,7 @@ export class FindingsTree implements vscode.TreeDataProvider<Node>, vscode.Dispo
 
   refresh(): void {
     this.built = null
-    this.describe()
+    this.decorate()
     this.changed.fire(undefined)
   }
 
@@ -298,11 +309,27 @@ export class FindingsTree implements vscode.TreeDataProvider<Node>, vscode.Dispo
     return this.filter ? [...this.filter].map((l) => LENS_LABEL[l].toLowerCase()).join(', ') : ''
   }
 
-  // The view's subtitle says what you are looking at, so a filtered pane never
-  // passes for the whole picture.
-  private describe(): void {
-    if (!this.view) return
-    this.view.description = this.filter ? `filtered: ${this.filterLabel()}` : undefined
+  /**
+   * The two things the pane says about itself before you open it: a count on the
+   * tab, the way the Problems tab carries one, and a subtitle when a filter is
+   * on — so a filtered pane never passes for the whole picture.
+   *
+   * The badge counts the whole workspace, not the pane's scope, and ignores the
+   * filter. Problems does the same, and for the same reason: a number that
+   * changed every time you clicked a different file would be noise rather than
+   * a thing you could keep half an eye on. The last row of the pane is where
+   * the current scope is answered.
+   */
+  private decorate(): void {
+    const view = this.view
+    if (!view) return
+    view.description = this.filter ? `filtered: ${this.filterLabel()}` : undefined
+
+    const totals = totalsOf(this.results.all().map((s) => s.report))
+    const value = badgeValue(this.cfg.badge, totals)
+    // Zero is not worth a badge: an empty circle beside the tab reads as a
+    // problem, and "nothing to address" is the opposite of one.
+    view.badge = value === 0 ? undefined : { value, tooltip: badgeTooltip(this.cfg.badge, totals) }
   }
 
   dispose(): void {

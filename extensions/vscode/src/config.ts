@@ -3,6 +3,7 @@
 import * as vscode from 'vscode'
 import type { Gates } from '../../../src/gates.js'
 import type { Quadrant, Thresholds } from '../../../src/report.js'
+import type { BadgeMode } from './totals.js'
 
 export interface Severities {
   replace: vscode.DiagnosticSeverity | null
@@ -34,6 +35,7 @@ export interface Config {
   diagnostics: boolean
   severities: Severities
   statusBar: boolean
+  badge: BadgeMode
   trendMaxPoints: number
 }
 
@@ -75,6 +77,7 @@ export function readConfig(scope?: vscode.Uri): Config {
       degraded: severity(c.get('diagnostics.degraded', 'off')),
     },
     statusBar: c.get('statusBar', true),
+    badge: c.get<BadgeMode>('badge', 'toAddress'),
     trendMaxPoints: c.get('trend.maxPoints', 12),
   }
 }

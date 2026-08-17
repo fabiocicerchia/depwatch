@@ -79,6 +79,23 @@ export function summaryLabel(t: Totals): string {
   return `${drift} · ${t.toAddress} of ${t.deps} ${t.deps === 1 ? 'dep' : 'deps'} to address`
 }
 
+/** What the count on the panel tab means — the Problems tab's trick, for deps. */
+export type BadgeMode = 'toAddress' | 'total' | 'off'
+
+export function badgeValue(mode: BadgeMode, t: Totals): number {
+  if (mode === 'off') return 0
+  return mode === 'total' ? t.deps : t.toAddress
+}
+
+export function badgeTooltip(mode: BadgeMode, t: Totals): string {
+  const noun = (n: number) => `${n} ${n === 1 ? 'dependency' : 'dependencies'}`
+  if (mode === 'total') {
+    return `depwatch: ${noun(t.deps)} watched across the workspace, ${t.toAddress} to address`
+  }
+  const breakdown = summaryDetail({ ...t, counts: { ...t.counts, healthy: 0 }, degraded: 0 })
+  return `depwatch: ${noun(t.toAddress)} to address of ${t.deps} across the workspace${breakdown ? ` — ${breakdown}` : ''}`
+}
+
 export function summaryDetail(t: Totals): string {
   const parts = (['replace', 'upgrade', 'watch'] as Quadrant[]).filter((q) => t.counts[q] > 0).map((q) => `${t.counts[q]} ${q}`)
   if (t.counts.healthy > 0) parts.push(`${t.counts.healthy} healthy`)

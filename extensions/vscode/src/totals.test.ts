@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { DepReport, Quadrant, Report } from '../../../src/report.js'
 import { NO_SIGNALS } from '../../../src/viability.js'
-import { LENS_LABEL, LENSES, summaryDetail, summaryLabel, totalsOf } from './totals.js'
+import { badgeTooltip, badgeValue, LENS_LABEL, LENSES, summaryDetail, summaryLabel, totalsOf } from './totals.js'
 
 const dep = (name: string, quadrant: Quadrant, libyearsBehind = 0, degraded?: string): DepReport => ({
   name,
@@ -105,5 +105,43 @@ describe('lenses', () => {
   it('names every lens the filter can pick', () => {
     expect(LENSES).toHaveLength(5)
     for (const lens of LENSES) expect(LENS_LABEL[lens]).toBeTruthy()
+  })
+})
+
+describe('badge', () => {
+  const mixed = totalsOf([
+    report([
+      dep('a', 'replace', 3),
+      dep('b', 'upgrade', 2),
+      dep('c', 'upgrade', 1),
+      dep('d', 'watch'),
+      dep('e', 'healthy'),
+      dep('ghost', 'healthy', 0, 'not found in registry'),
+    ]),
+  ])
+
+  it('counts the work by default, not the whole manifest', () => {
+    expect(badgeValue('toAddress', mixed)).toBe(4)
+    expect(badgeValue('total', mixed)).toBe(6)
+    expect(badgeValue('off', mixed)).toBe(0)
+  })
+
+  // The number alone is ambiguous on a tab, so the hover has to carry the rest.
+  it('explains itself in the tooltip', () => {
+    expect(badgeTooltip('toAddress', mixed)).toBe(
+      'depwatch: 4 dependencies to address of 6 across the workspace — 1 replace · 2 upgrade · 1 watch',
+    )
+    expect(badgeTooltip('total', mixed)).toBe('depwatch: 6 dependencies watched across the workspace, 4 to address')
+  })
+
+  it('says "dependency" when there is one of them', () => {
+    const one = totalsOf([report([dep('a', 'upgrade', 2)])])
+    expect(badgeTooltip('toAddress', one)).toContain('1 dependency to address of 1')
+  })
+
+  // A healthy project must not carry a badge at all — the caller drops a zero,
+  // and this is the value it checks.
+  it('is zero when there is nothing to address', () => {
+    expect(badgeValue('toAddress', totalsOf([report([dep('a', 'healthy')])]))).toBe(0)
   })
 })

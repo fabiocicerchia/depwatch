@@ -82,6 +82,13 @@ on a Friday. It is a lens on today's list, not a setting: it resets when the
 window reloads, and while one is active the view's subtitle says
 `filtered: replace` so a narrowed pane never passes for the whole picture.
 
+**The tab carries a count**, the way `PROBLEMS 268` does: dependencies outside
+the healthy quadrant, hover for the breakdown. It counts the whole workspace and
+ignores both the scope toggle and the filter — a number that changed every time
+you clicked a different file would be noise rather than something you can keep
+half an eye on. `depwatch.badge` switches it to every watched dependency
+(`total`) or turns it off.
+
 **The last row** is the total for whatever is in scope — say
 `20.76 libyears · 5 of 6 deps to address`, broken down as
 `1 replace · 2 upgrade · 2 watch · 1 no data`. "To address" is everything
@@ -132,7 +139,8 @@ discovery globs (`manifests`, `exclude`, `maxManifests`), the analysis
 (`deep`, `transitive`, `useLockFile`, `concurrency`), the thresholds that draw
 the quadrants (`thresholds.staleLibyears`, `thresholds.riskyViability`), the
 gates (`gates.maxLibyears`, `gates.maxReplace`), scheduling (`scan.*`), caching
-(`cache.*`) and per-quadrant diagnostic severity (`diagnostics.*`).
+(`cache.*`), per-quadrant diagnostic severity (`diagnostics.*`) and what the tab
+counts (`badge`).
 
 Severity defaults: `replace` warns, `upgrade` and `watch` inform, `healthy` and
 unscorable dependencies say nothing.

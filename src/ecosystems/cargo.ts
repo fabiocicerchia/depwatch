@@ -1,4 +1,4 @@
-import { fetchPackage } from '@lib/registry-client'
+import { sharedVersions } from './shared.js'
 import type { EcosystemDef } from './types.js'
 import { type Dep, baseVersion } from './parse-util.js'
 import { getJson } from './http.js'
@@ -64,12 +64,6 @@ function parseCargoLock(text: string): Dep[] {
   return deps
 }
 
-async function shared(name: string) {
-  const info = await fetchPackage('cargo', name)
-  if ('error' in info) throw new Error(info.error)
-  return info.versions
-}
-
 export const cargo: EcosystemDef = {
   id: 'cargo',
   label: 'crates.io',
@@ -77,7 +71,7 @@ export const cargo: EcosystemDef = {
   manifests: ['Cargo.toml'],
   locks: ['Cargo.lock'],
   parse: (text, base) => (base === 'Cargo.lock' ? parseCargoLock(text) : parseCargoToml(text)),
-  fetchVersions: shared,
+  fetchVersions: sharedVersions('cargo'),
   async fetchRepoMeta(name) {
     const d = await getJson(`https://crates.io/api/v1/crates/${encodeURIComponent(name)}`)
     return { repoUrl: repoUrlOf(d.crate?.repository), maintainerCount: null, hasFunding: false }

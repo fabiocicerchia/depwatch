@@ -1,4 +1,4 @@
-import { fetchPackage } from '@lib/registry-client'
+import { sharedVersions } from './shared.js'
 import type { EcosystemDef } from './types.js'
 import { type Dep, baseVersion } from './parse-util.js'
 import { getJson } from './http.js'
@@ -31,12 +31,6 @@ function parseGemfileLock(text: string): Dep[] {
   return deps
 }
 
-async function shared(name: string) {
-  const info = await fetchPackage('rubygems', name)
-  if ('error' in info) throw new Error(info.error)
-  return info.versions
-}
-
 export const rubygems: EcosystemDef = {
   id: 'rubygems',
   label: 'RubyGems',
@@ -44,7 +38,7 @@ export const rubygems: EcosystemDef = {
   manifests: [],
   locks: ['Gemfile.lock'],
   parse: (text) => parseGemfileLock(text),
-  fetchVersions: shared,
+  fetchVersions: sharedVersions('rubygems'),
   async fetchRepoMeta(name) {
     const d = await getJson(`https://rubygems.org/api/v1/gems/${encodeURIComponent(name)}.json`)
     return {

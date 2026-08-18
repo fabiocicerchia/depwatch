@@ -2,7 +2,7 @@
 // and the Poetry/uv lock files. All resolve against PyPI, so they extend the
 // pep440 def rather than forming a separate registry.
 
-import { type Dep, baseVersion, parsePep508, parsePackageArrayLock } from './parse-util.js'
+import { type Dep, baseVersion, parsePep508 } from './parse-util.js'
 
 const isPythonPlatformReq = (name: string) => name.toLowerCase() === 'python'
 
@@ -70,5 +70,3 @@ export function parsePyproject(text: string): Dep[] {
   if (/\[tool\.poetry(\.|])/.test(text)) return parsePoetryPyproject(text)
   return parsePep621Pyproject(text)
 }
-
-export { parsePackageArrayLock as parsePythonLock }

@@ -136,3 +136,22 @@ describe('maven coordinates', () => {
     ])
   })
 })
+
+describe('maven version ordering', () => {
+  it('orders qualifiers and stable releases the Maven way', async () => {
+    const { mavenOps } = await import('./maven.js')
+    const sorted = (vs: string[]) => [...vs].sort(mavenOps.compare)
+    expect(sorted(['33.0.0-jre', '10.0', 'r03', '33.7.1-jre'])).toEqual(['r03', '10.0', '33.0.0-jre', '33.7.1-jre'])
+    // alpha < beta < rc < SNAPSHOT < release < sp
+    expect(sorted(['1.0', '1.0-alpha', '1.0-rc1', '1.0-beta', '1.0-SNAPSHOT', '1.0-sp1'])).toEqual([
+      '1.0-alpha', '1.0-beta', '1.0-rc1', '1.0-SNAPSHOT', '1.0', '1.0-sp1',
+    ])
+    expect(mavenOps.compare('1.0', '1.0.0')).toBe(0)
+  })
+
+  it('treats build qualifiers as stable and milestones as prerelease', async () => {
+    const { mavenOps } = await import('./maven.js')
+    for (const v of ['33.0.0-jre', '2.0.0.RELEASE', '1.5.0.Final', '1.0']) expect(mavenOps.isPrerelease(v)).toBe(false)
+    for (const v of ['1.0-SNAPSHOT', '1.0-rc1', '1.0-alpha1', '1.0-M3']) expect(mavenOps.isPrerelease(v)).toBe(true)
+  })
+})

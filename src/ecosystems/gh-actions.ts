@@ -22,9 +22,9 @@ async function ghJson(path: string): Promise<any> {
   return res.json()
 }
 
-// A full semver tag is a resolved pin; a moving major (v4) or a SHA is not.
+// A full semver tag is a resolved pin; a moving major (v4) or a SHA is not
+// (a SHA has no dotted numerics, so it never matches this).
 const isExactTag = (ref: string) => /^v?\d+\.\d+\.\d+$/.test(ref)
-const isSha = (ref: string) => /^[0-9a-f]{7,40}$/i.test(ref)
 
 // uses: owner/repo@ref | owner/repo/path@ref (reusable workflow). Skips ./local
 // and docker:// forms.
@@ -44,7 +44,7 @@ function parseUses(text: string): Dep[] {
     const name = `${parts[0]}/${parts[1]}`
     if (seen.has(name)) continue
     seen.add(name)
-    deps.push({ name, current: version, resolved: isExactTag(version) && !isSha(version) })
+    deps.push({ name, current: version, resolved: isExactTag(version) })
   }
   return deps
 }

@@ -92,8 +92,4 @@ export interface EcosystemDef {
   // Docker: honest dates, no orderable version series — pulse and viability only,
   // drift reported as "—" rather than 0. Default true.
   driftScorable?: boolean
-
-  // Helm: identity is (repository URL, chart name), not a bare name. The cache
-  // and fetchers split `Dep.name` accordingly. Default false.
-  scoped?: boolean
 }

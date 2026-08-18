@@ -67,7 +67,6 @@ export const helm: EcosystemDef = {
   purlTypes: ['helm'],
   manifests: ['Chart.yaml'],
   locks: ['Chart.lock'],
-  scoped: true,
   parse: (text, base) => parseDeps(text, base === 'Chart.lock'),
   async fetchVersions(name) {
     const { repo, chart } = split(name)

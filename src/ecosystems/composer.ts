@@ -1,4 +1,4 @@
-import { fetchPackage } from '@lib/registry-client'
+import { sharedVersions } from './shared.js'
 import type { EcosystemDef } from './types.js'
 import { type Dep, baseVersion } from './parse-util.js'
 import { getJson } from './http.js'
@@ -42,12 +42,6 @@ function parseComposerJson(text: string): Dep[] {
   return deps
 }
 
-async function shared(name: string) {
-  const info = await fetchPackage('composer', name)
-  if ('error' in info) throw new Error(info.error)
-  return info.versions
-}
-
 export const composer: EcosystemDef = {
   id: 'composer',
   label: 'Packagist',
@@ -55,7 +49,7 @@ export const composer: EcosystemDef = {
   manifests: ['composer.json'],
   locks: ['composer.lock'],
   parse: (text, base) => (base === 'composer.lock' ? parseComposerLock(text) : parseComposerJson(text)),
-  fetchVersions: shared,
+  fetchVersions: sharedVersions('composer'),
   async fetchRepoMeta(name) {
     const d = await getJson(`https://repo.packagist.org/packages/${name}.json`)
     const p = d.package

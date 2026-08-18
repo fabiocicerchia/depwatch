@@ -1,15 +1,9 @@
-import { fetchPackage } from '@lib/registry-client'
+import { sharedVersions } from './shared.js'
 import { detectKind, parseManifest as parseShared } from '@lib/libyear/engine'
 import type { EcosystemDef } from './types.js'
 import { getJson } from './http.js'
 import { repoUrlOf } from './meta.js'
 import { bunBinaryError, parseBunLock } from './bun.js'
-
-async function shared(name: string) {
-  const info = await fetchPackage('npm', name)
-  if ('error' in info) throw new Error(info.error)
-  return info.versions
-}
 
 export const npm: EcosystemDef = {
   id: 'npm',
@@ -29,7 +23,7 @@ export const npm: EcosystemDef = {
     if (base === 'pnpm-lock.yaml') return parseShared(text, 'pnpm-lock')
     return parseShared(text, 'npm')
   },
-  fetchVersions: shared,
+  fetchVersions: sharedVersions('npm'),
   async fetchRepoMeta(name) {
     const d = await getJson(`https://registry.npmjs.org/${encodeURIComponent(name)}`)
     const latest = d['dist-tags']?.latest

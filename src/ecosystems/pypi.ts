@@ -1,15 +1,10 @@
-import { fetchPackage } from '@lib/registry-client'
+import { sharedVersions } from './shared.js'
 import { parseManifest as parseShared } from '@lib/libyear/engine'
-import { parsePyproject, parsePythonLock } from './python.js'
+import { parsePyproject } from './python.js'
+import { parsePackageArrayLock } from './parse-util.js'
 import type { EcosystemDef } from './types.js'
 import { getJson } from './http.js'
 import { repoUrlOf } from './meta.js'
-
-async function shared(name: string) {
-  const info = await fetchPackage('pep440', name)
-  if ('error' in info) throw new Error(info.error)
-  return info.versions
-}
 
 export const pypi: EcosystemDef = {
   id: 'pep440',
@@ -20,11 +15,11 @@ export const pypi: EcosystemDef = {
   // Poetry and uv both pin exact versions; preferred over pyproject ranges.
   locks: ['poetry.lock', 'uv.lock'],
   parse(text, base) {
-    if (base === 'poetry.lock' || base === 'uv.lock') return parsePythonLock(text)
+    if (base === 'poetry.lock' || base === 'uv.lock') return parsePackageArrayLock(text)
     if (base === 'pyproject.toml') return parsePyproject(text)
     return parseShared(text, 'pep440') // requirements*.txt
   },
-  fetchVersions: shared,
+  fetchVersions: sharedVersions('pep440'),
   async fetchRepoMeta(name) {
     const d = await getJson(`https://pypi.org/pypi/${encodeURIComponent(name)}/json`)
     const urls: Record<string, string> = d.info?.project_urls ?? {}

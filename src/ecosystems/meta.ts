@@ -6,10 +6,6 @@ export function repoUrlOf(repo: unknown): string | null {
   return raw ? String(raw) : null
 }
 
-// Strip a leading "v" and any build/qualifier so the shared dot-integer
-// comparator sees a clean core. Used by registries that prefix tags with "v".
-export const stripV = (v: string): string => v.trim().replace(/^v/i, '')
-
 // Normalise a registry date string (ISO, RFC 1123, epoch float) to ISO 8601,
 // or null when it cannot be parsed — an undatable version is "unknown", never a
 // guess.

@@ -1,8 +1,8 @@
 {
   "name": "depwatch-vscode",
   "displayName": "depwatch",
-  "description": "Dependency drift (libyears) \u00d7 viability, in the editor.",
-  "version": "0.1.0",
+  "description": "Dependency drift (libyears) × viability, in the editor.",
+  "version": "1.0.1",
   "private": true,
   "license": "Apache-2.0",
   "author": "Fabio Cicerchia",
@@ -11,6 +11,14 @@
     "type": "git",
     "url": "https://github.com/fabiocicerchia/depwatch.git",
     "directory": "extensions/vscode"
+  },
+  "homepage": "https://github.com/fabiocicerchia/depwatch/tree/main/extensions/vscode#readme",
+  "bugs": {
+    "url": "https://github.com/fabiocicerchia/depwatch/issues"
+  },
+  "galleryBanner": {
+    "color": "#0f1319",
+    "theme": "dark"
   },
   "engines": {
     "vscode": "^1.85.0",
@@ -59,7 +67,7 @@
     "viewsWelcome": [
       {
         "view": "depwatch.findings",
-        "contents": "No dependency scan yet.\n[Scan workspace](command:depwatch.scanWorkspace)\nScans run on save and on a slow timer \u2014 never while you type.\n[Open the report](command:depwatch.showReport)"
+        "contents": "No dependency scan yet.\n[Scan workspace](command:depwatch.scanWorkspace)\nScans run on save and on a slow timer — never while you type.\n[Open the report](command:depwatch.showReport)"
       }
     ],
     "commands": [
@@ -282,7 +290,7 @@
             "**/bom.json",
             "**/*.cdx.json"
           ],
-          "markdownDescription": "Globs for the files to scan. A lock file sitting beside a manifest is picked up automatically \u2014 list the manifests, not the locks."
+          "markdownDescription": "Globs for the files to scan. A lock file sitting beside a manifest is picked up automatically — list the manifests, not the locks."
         },
         "depwatch.exclude": {
           "type": "array",
@@ -317,7 +325,7 @@
         "depwatch.deep": {
           "type": "boolean",
           "default": false,
-          "markdownDescription": "Fetch maintainer count, funding, archived status and last commit for every dependency. Two extra requests per package and GitHub rate-limits hard without a token \u2014 leave this off for scans on save and use the **Deep scan** command when you want the full picture."
+          "markdownDescription": "Fetch maintainer count, funding, archived status and last commit for every dependency. Two extra requests per package and GitHub rate-limits hard without a token — leave this off for scans on save and use the **Deep scan** command when you want the full picture."
         },
         "depwatch.transitive": {
           "type": "boolean",
@@ -354,7 +362,7 @@
             "null"
           ],
           "default": null,
-          "markdownDescription": "Fail the gate above this much total drift \u2014 the editor's copy of `--max-libyears`. `null` disables it."
+          "markdownDescription": "Fail the gate above this much total drift — the editor's copy of `--max-libyears`. `null` disables it."
         },
         "depwatch.gates.maxReplace": {
           "type": [
@@ -362,7 +370,7 @@
             "null"
           ],
           "default": null,
-          "markdownDescription": "Fail the gate above this many dependencies in the replace quadrant \u2014 the editor's copy of `--max-replace`. `null` disables it."
+          "markdownDescription": "Fail the gate above this many dependencies in the replace quadrant — the editor's copy of `--max-replace`. `null` disables it."
         },
         "depwatch.scan.onStartup": {
           "type": "boolean",
@@ -493,7 +501,7 @@
             "off"
           ],
           "enumDescriptions": [
-            "Dependencies outside the healthy quadrant \u2014 the ones that are work.",
+            "Dependencies outside the healthy quadrant — the ones that are work.",
             "Every dependency being watched.",
             "No count on the tab."
           ],

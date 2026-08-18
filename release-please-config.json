@@ -1,0 +1,27 @@
+{
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "packages": {
+    ".": {
+      "release-type": "simple",
+      "package-name": "depwatch",
+      "include-component-in-tag": false,
+      "extra-files": [
+        {
+          "type": "json",
+          "path": "extensions/vscode/package.json",
+          "jsonpath": "$.version"
+        },
+        {
+          "type": "json",
+          "path": "extensions/vscode/package-lock.json",
+          "jsonpath": "$.version"
+        },
+        {
+          "type": "json",
+          "path": "extensions/vscode/package-lock.json",
+          "jsonpath": "$.packages[''].version"
+        }
+      ]
+    }
+  }
+}

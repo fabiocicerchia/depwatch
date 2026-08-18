@@ -1,0 +1,125 @@
+name: publish-extension
+
+# Publishes the VS Code extension when a GitHub Release is published — which is
+# what merging release-please's PR does. The version comes from the tag, so the
+# extension and the CLI ship as one version and there is no second number to
+# keep in step.
+#
+# Nothing happens without the tokens: each publish step is skipped when its
+# secret is missing, so this file is inert until VSCE_PAT (VS Marketplace) and
+# OVSX_PAT (Open VSX) are set in the repository's secrets. Marketplace versions
+# are immutable — a version published once can never be replaced, only
+# superseded — so the version check below is deliberately strict.
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to publish, without the leading v (e.g. 1.0.2)"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # attach the VSIX to the release
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: extensions/vscode/package-lock.json
+
+      - name: Resolve the version
+        id: version
+        env:
+          TAG: ${{ github.event.release.tag_name }}
+          INPUT: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          VERSION="${INPUT:-${TAG#v}}"
+          # The Marketplace takes x.y.z and nothing else, and refuses a version
+          # it has seen before — better to fail here than half way through.
+          if ! printf '%s' "$VERSION" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "::error::'$VERSION' is not a publishable version (want x.y.z)"
+            exit 1
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          # release-please already writes this version into the manifest (see
+          # release-please-config.json), so this is normally a no-op. It stays
+          # for workflow_dispatch, and so that a mismatch can never ship.
+          node -e '
+            const fs = require("node:fs")
+            const path = "extensions/vscode/package.json"
+            const pkg = JSON.parse(fs.readFileSync(path, "utf8"))
+            pkg.version = process.argv[1]
+            fs.writeFileSync(path, `${JSON.stringify(pkg, null, 2)}\n`)
+          ' "$VERSION"
+          echo "publishing depwatch-vscode $VERSION"
+
+      - name: Install
+        run: npm --prefix extensions/vscode ci
+
+      - name: Typecheck
+        run: npm --prefix extensions/vscode run typecheck
+
+      - name: Build
+        run: npm --prefix extensions/vscode run build
+
+      # The Changelog tab on the Marketplace listing, from the one changelog
+      # release-please maintains. Gitignored inside the extension, so this is
+      # the same copy `make ext-package` does.
+      - name: Package
+        working-directory: extensions/vscode
+        run: |
+          cp ../../CHANGELOG.md CHANGELOG.md
+          npx --yes @vscode/vsce@3.9.2 package --no-dependencies
+
+      # `secrets` cannot be read from a job-level `if`, so which registries are
+      # reachable is decided here and read back as step outputs.
+      - name: Which registries are configured
+        id: tokens
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+          OVSX_PAT: ${{ secrets.OVSX_PAT }}
+        run: |
+          {
+            echo "marketplace=$([ -n "$VSCE_PAT" ] && echo true || echo false)"
+            echo "openvsx=$([ -n "$OVSX_PAT" ] && echo true || echo false)"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Publish to the VS Marketplace
+        if: steps.tokens.outputs.marketplace == 'true'
+        working-directory: extensions/vscode
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+        run: npx --yes @vscode/vsce@3.9.2 publish --no-dependencies --packagePath "depwatch-vscode-${{ steps.version.outputs.version }}.vsix"
+
+      # Where VSCodium and Cursor look. A separate registry with its own
+      # namespace and token, not a mirror of the Marketplace.
+      - name: Publish to Open VSX
+        if: steps.tokens.outputs.openvsx == 'true'
+        working-directory: extensions/vscode
+        env:
+          OVSX_PAT: ${{ secrets.OVSX_PAT }}
+        run: npx --yes ovsx@1.1.1 publish "depwatch-vscode-${{ steps.version.outputs.version }}.vsix" -p "$OVSX_PAT"
+
+      - name: Attach the VSIX to the release
+        if: github.event_name == 'release'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "${{ github.event.release.tag_name }}" "extensions/vscode/depwatch-vscode-${{ steps.version.outputs.version }}.vsix" --clobber
+
+      - name: Say what happened
+        run: |
+          echo "### depwatch-vscode ${{ steps.version.outputs.version }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- VS Marketplace: ${{ steps.tokens.outputs.marketplace == 'true' && 'published' || 'skipped (no VSCE_PAT)' }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Open VSX: ${{ steps.tokens.outputs.openvsx == 'true' && 'published' || 'skipped (no OVSX_PAT)' }}" >> "$GITHUB_STEP_SUMMARY"

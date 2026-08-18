@@ -16,7 +16,48 @@ documents every command and setting; this page is about how it is built and why.
 `extensions/vscode/LICENSE.md`, because vsce stops to ask whether you really
 mean to ship without a licence and offers no flag to answer in advance; and
 `media/icon.png`, because the Extensions list wants a PNG and the panel
-container's `quadrant.svg` is not eligible.
+container's `quadrant.svg` is not eligible. A third, `CHANGELOG.md`, is copied
+in from the repo root at package time and gitignored — the Marketplace renders
+one as a tab, and a second changelog beside the generated one would only ever be
+out of date.
+
+## Releasing
+
+The extension has no version of its own. `release-please-config.json` lists
+`extensions/vscode/package.json` (and its lock) as extra files, so the release
+PR that bumps `version.txt` bumps the extension in the same commit, and the tag
+means one thing for both surfaces.
+
+Merging that PR publishes a GitHub Release, and `publish-extension.yml` takes it
+from there: version from the tag, `npm ci`, typecheck, build, `vsce package`,
+then publish to the VS Marketplace and to Open VSX, attach the VSIX to the
+release. It re-stamps the version from the tag before packaging — normally a
+no-op, but `workflow_dispatch` takes a version too, and a manifest that
+disagrees with the tag must never ship.
+
+The workflow is inert until the tokens exist. Each publish step is skipped when
+its secret is missing, and the job summary says which registries were skipped
+and why, so a run without secrets is a package-and-attach rather than a failure.
+
+Two one-time setup steps only the repository owner can do:
+
+| | VS Marketplace | Open VSX |
+| --- | --- | --- |
+| Account | [Azure DevOps](https://dev.azure.com) organisation | GitHub, via [open-vsx.org](https://open-vsx.org) |
+| Namespace | publisher `fabiocicerchia`, created at [marketplace.visualstudio.com/manage](https://marketplace.visualstudio.com/manage) | namespace `fabiocicerchia`, `ovsx create-namespace` |
+| Token | PAT scoped **All accessible organizations** + **Marketplace → Manage** | access token from the Open VSX profile page |
+| Secret | `VSCE_PAT` | `OVSX_PAT` |
+
+The PAT's organisation scope is the one that catches people out: a PAT limited
+to a single Azure DevOps organisation authenticates and then fails to publish.
+
+`make ext-publish` does the same thing from a laptop when CI is not an option.
+It needs the same two environment variables and it publishes whatever is in the
+working tree, which is why it is the escape hatch rather than the route.
+
+Marketplace versions are immutable — a version can be superseded, never
+replaced — so the workflow rejects anything that is not `x.y.z` before it starts
+rather than half way through.
 
 ## The engine is imported, not shelled out to
 

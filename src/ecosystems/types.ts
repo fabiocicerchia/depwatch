@@ -29,6 +29,10 @@ export type EcoId =
   | 'cocoapods'
   | 'conda'
   | 'helm'
+  | 'go'
+  | 'maven'
+  | 'terraform'
+  | 'githubactions'
 // Grows one line per ecosystem added. Because REGISTRY is Record<EcoId,
 // EcosystemDef>, adding a member here without a def — or a def without a member —
 // is a compile error, which is the whole point of the seam.
@@ -64,6 +68,10 @@ export interface EcosystemDef {
   manifests: string[]
   // Manifests matched by shape rather than exact name (requirements*.txt).
   manifestPattern?: RegExp
+  // Matched against the whole path, not the basename — for files whose name is
+  // too generic to detect (a workflow ci.yml is only meaningful under
+  // .github/workflows/). Checked before manifestPattern.
+  pathPattern?: RegExp
   // Lock basenames in preference order (resolved versions — resolved:true).
   locks: string[]
 

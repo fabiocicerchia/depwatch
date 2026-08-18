@@ -32,18 +32,18 @@ describe('ecosystem registry', () => {
     expect(byFile('Cargo.lock')?.id).toBe('cargo')
     expect(byFile('composer.json')?.id).toBe('composer')
     expect(byFile('Gemfile.lock')?.id).toBe('rubygems')
-    expect(byFile('pom.xml')).toBeNull()
+    expect(byFile('deps.edn')).toBeNull()
   })
 
   it('maps PURL types', () => {
     expect(byPurlType('pypi')?.id).toBe('pep440')
     expect(byPurlType('gem')?.id).toBe('rubygems')
-    expect(byPurlType('golang')).toBeNull()
+    expect(byPurlType('deb')).toBeNull()
   })
 
   it('validates ecosystem ids', () => {
     for (const id of ECO_IDS) expect(isEcoId(id)).toBe(true)
-    expect(isEcoId('maven')).toBe(false)
+    expect(isEcoId('brew')).toBe(false)
     expect(byId('nope')).toBeNull()
   })
 })

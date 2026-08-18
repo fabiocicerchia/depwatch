@@ -17,6 +17,10 @@ import { nuget } from './nuget.js'
 import { cocoapods } from './cocoapods.js'
 import { conda } from './conda.js'
 import { helm } from './helm.js'
+import { go } from './go.js'
+import { maven } from './maven.js'
+import { terraform } from './terraform.js'
+import { githubActions } from './gh-actions.js'
 
 export const REGISTRY: Record<EcoId, EcosystemDef> = {
   npm,
@@ -30,6 +34,10 @@ export const REGISTRY: Record<EcoId, EcosystemDef> = {
   cocoapods,
   conda,
   helm,
+  go,
+  maven,
+  terraform,
+  githubactions: githubActions,
 }
 
 export const ALL: EcosystemDef[] = Object.values(REGISTRY)
@@ -50,6 +58,9 @@ export function byFile(file: string): EcosystemDef | null {
   const base = file.split('/').pop() ?? file
   for (const def of ALL) if (def.locks.includes(base)) return def
   for (const def of ALL) if (def.manifests.includes(base)) return def
+  // Whole-path patterns before basename patterns: a generic name (ci.yml) is
+  // only classifiable from its directory.
+  for (const def of ALL) if (def.pathPattern?.test(file)) return def
   for (const def of ALL) if (def.manifestPattern?.test(base)) return def
   return null
 }

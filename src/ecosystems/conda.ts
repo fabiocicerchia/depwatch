@@ -6,7 +6,7 @@
 // conda versions carry a PEP-440-ish epoch (`1!1.2.3`) the shared comparator
 // does not understand, so this def supplies its own ops.
 
-import { compareVersions as sharedCompare, isPrerelease as sharedPre } from '@lib/semver'
+import { compareVersions as sharedCompare, isPrerelease as sharedPre } from '../lib/semver.js'
 import type { EcosystemDef, VersionOps } from './types.js'
 import { getJson } from './http.js'
 import { parseYaml } from './yaml.js'

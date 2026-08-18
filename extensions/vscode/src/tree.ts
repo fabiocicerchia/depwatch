@@ -95,10 +95,6 @@ export class FindingsTree implements vscode.TreeDataProvider<Node>, vscode.Dispo
     this.refresh()
   }
 
-  getScope(): Scope {
-    return this.scope
-  }
-
   /** Pass null to show everything again. */
   setFilter(lenses: Set<Lens> | null): void {
     this.filter = lenses && lenses.size > 0 && lenses.size < LENSES.length ? lenses : null

@@ -6,7 +6,7 @@
 // here is the second axis (viability), the quadrant, and the CLI itself.
 
 import { writeFileSync } from 'node:fs'
-import { analyse, DEFAULT_THRESHOLDS, type DepReport, type Report, type Thresholds } from './report.js'
+import { analyse, compareDeps, DEFAULT_THRESHOLDS, REPORT_COLUMNS, type Report, type Thresholds } from './report.js'
 import { assertEcosystem, type SupportedEcosystem } from './manifest.js'
 import { gateFailures, tally } from './gates.js'
 import { loadManifest, resolveInput } from './input.js'
@@ -113,29 +113,15 @@ function emit(text: string, out?: string) {
 
 // --- rendering ---
 
-const QUAD_ORDER: Record<DepReport['quadrant'], number> = { replace: 0, upgrade: 1, watch: 2, healthy: 3 }
-
 function table(r: Report, t: Thresholds): string {
-  const rows = [...r.deps].sort(
-    (a, b) => QUAD_ORDER[a.quadrant] - QUAD_ORDER[b.quadrant] || b.libyearsBehind - a.libyearsBehind || a.name.localeCompare(b.name),
-  )
-  const cols: [string, (d: DepReport) => string][] = [
-    ['dep', (d) => d.name],
-    ['current', (d) => d.current],
-    ['eco', (d) => (d.ecosystem ? String(d.ecosystem) : '')],
-    ['latest', (d) => d.latest ?? '—'],
-    ['drift', (d) => (d.degraded ? '—' : d.libyearsBehind.toFixed(2))],
-    ['pulse', (d) => (d.pulseYears === null ? '—' : d.pulseYears.toFixed(2))],
-    ['viability', (d) => (d.degraded ? '—' : d.viability.toFixed(2))],
-    ['quadrant', (d) => (d.degraded ? 'no data' : d.quadrant)],
-  ]
-  const widths = cols.map(([h, get]) => Math.max(h.length, ...rows.map((d) => get(d).length)))
+  const rows = [...r.deps].sort(compareDeps)
+  const widths = REPORT_COLUMNS.map((c) => Math.max(c.header.length, ...rows.map((d) => c.of(d).length)))
   const line = (cells: string[]) => cells.map((c, i) => c.padEnd(widths[i])).join('  ').trimEnd()
 
   const out = [
-    line(cols.map(([h]) => h)),
+    line(REPORT_COLUMNS.map((c) => c.header)),
     line(widths.map((w) => '─'.repeat(w))),
-    ...rows.map((d) => line(cols.map(([, get]) => get(d)))),
+    ...rows.map((d) => line(REPORT_COLUMNS.map((c) => c.of(d)))),
     '',
     `total drift: ${r.totalLibyears.toFixed(2)} libyears across ${r.deps.length} deps  (${r.ecosystem}, ${r.file})`,
   ]

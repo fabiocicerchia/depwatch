@@ -1,5 +1,7 @@
 // The report, as a page: the same layout the depwatch page in docs/ uses — a
-// heading, the stats, the quadrant chart, then the table the CLI prints.
+// heading, the stats, the quadrant chart, then the table the CLI prints. Its
+// columns and their order come from REPORT_COLUMNS in core, so the two renderings
+// cannot drift apart the way they had already started to.
 //
 // It renders twice over, same structure and two palettes. Into a webview, where
 // every colour and font is the editor's own theme token, so the report is VS
@@ -9,7 +11,7 @@
 
 import type { GateFailure, QuadrantCounts } from '../../../src/gates.js'
 import { escapeXml as esc, QUADRANT_COLOR } from '../../../src/quadrant.js'
-import type { DepReport, Quadrant, Report, Thresholds } from '../../../src/report.js'
+import { compareDeps, type DepReport, type Quadrant, REPORT_COLUMNS, type Report, type Thresholds } from '../../../src/report.js'
 import type { TrendPoint } from '../../../src/trend.js'
 import { ORDER, QUADRANT, reasons } from './explain.js'
 
@@ -113,37 +115,34 @@ function manifestSection(m: ManifestView, view: ReportView): string {
   return out.join('')
 }
 
-const RANK: Record<string, number> = { replace: 0, upgrade: 1, watch: 2, healthy: 3 }
-
 function table(m: ManifestView, view: ReportView): string {
-  const rows = [...m.report.deps].sort(
-    (a, b) => RANK[a.quadrant] - RANK[b.quadrant] || b.libyearsBehind - a.libyearsBehind || a.name.localeCompare(b.name),
-  )
-  const head = ['dep', 'current', 'latest', 'drift', 'pulse', 'viability', 'quadrant']
-    .map((h, i) => `<th data-col="${i}"${i >= 3 ? ' class="num"' : ''}>${h}</th>`)
-    .join('')
-
+  const rows = [...m.report.deps].sort(compareDeps)
+  const head = REPORT_COLUMNS.map(
+    (c, i) => `<th data-col="${i}"${c.numeric ? ' class="num"' : ''}>${c.header}</th>`,
+  ).join('')
   const cells = rows.map((d) => row(d, m, view)).join('')
   return `<table><thead><tr>${head}</tr></thead><tbody>${cells}</tbody></table>`
 }
 
+// The columns and their text come from the shared spec; only two of them get a
+// treatment a terminal cannot give — a bar behind the viability score, and the
+// quadrant in its colour.
 function row(d: DepReport, m: ManifestView, view: ReportView): string {
   const why = reasons(d)
     .map((r) => r.replace(/\*\*/g, ''))
     .join(' · ')
-  const q = d.degraded ? 'no data' : QUADRANT[d.quadrant].label
-  const colour = d.degraded ? 'var(--dim)' : QUADRANT_CSS[d.quadrant]
-  const num = (v: string) => `<td class="num">${v}</td>`
-  return (
-    `<tr data-dep="${esc(d.name)}" data-file="${esc(m.path)}" data-sort-quadrant="${RANK[d.quadrant]}" title="${esc(why)}">` +
-    `<td class="dep">${esc(d.name)}</td>` +
-    `<td class="ver">${esc(d.current)}</td>` +
-    `<td class="ver">${esc(d.latest ?? '—')}</td>` +
-    num(d.degraded ? '—' : d.libyearsBehind.toFixed(2)) +
-    num(d.pulseYears === null ? '—' : d.pulseYears.toFixed(2)) +
-    num(d.degraded ? '—' : bar(d.viability, view.thresholds)) +
-    `<td><span class="q" style="color:${colour}">${esc(q)}</span></td></tr>`
-  )
+  const cells = REPORT_COLUMNS.map((c) => {
+    const text = c.of(d)
+    if (c.header === 'viability' && !d.degraded) return `<td class="num">${bar(d.viability, view.thresholds)}</td>`
+    if (c.header === 'quadrant') {
+      const colour = d.degraded ? 'var(--dim)' : QUADRANT_CSS[d.quadrant]
+      const label = d.degraded ? text : QUADRANT[d.quadrant].label
+      return `<td><span class="q" style="color:${colour}">${esc(label)}</span></td>`
+    }
+    const kind = c.numeric ? 'num' : c.header === 'dep' ? 'dep' : 'ver'
+    return `<td class="${kind}">${esc(text)}</td>`
+  }).join('')
+  return `<tr data-dep="${esc(d.name)}" data-file="${esc(m.path)}" title="${esc(why)}">${cells}</tr>`
 }
 
 // The viability number with the score drawn behind it: the table is where you
@@ -197,7 +196,6 @@ export function trendHtml(file: string, points: TrendPoint[], opts: PageOptions 
     return page('depwatch trend', body.join(''), opts)
   }
 
-  body.push(`<div class="chart">${trendSvg(points)}</div>`)
   const rows = points
     .map(
       (p) =>
@@ -219,53 +217,6 @@ export function trendHtml(file: string, points: TrendPoint[], opts: PageOptions 
   }
   return page('depwatch trend', body.join(''), opts)
 }
-
-const TW = 760
-const TH = 260
-const TPAD = { l: 54, r: 20, t: 20, b: 40 }
-
-/** Total drift over sampled commits. Deliberately the same palette as the quadrant. */
-export function trendSvg(points: TrendPoint[]): string {
-  const innerW = TW - TPAD.l - TPAD.r
-  const innerH = TH - TPAD.t - TPAD.b
-  const max = Math.max(1, ...points.map((p) => p.totalLibyears))
-  const x = (i: number) => TPAD.l + (points.length < 2 ? innerW / 2 : (i / (points.length - 1)) * innerW)
-  const y = (v: number) => TPAD.t + innerH - (v / max) * innerH
-
-  const parts: string[] = [`<rect width="${TW}" height="${TH}" fill="#0f1319"/>`]
-  for (let i = 0; i <= 4; i++) {
-    const v = (max / 4) * i
-    parts.push(`<line x1="${TPAD.l}" y1="${r2(y(v))}" x2="${TW - TPAD.r}" y2="${r2(y(v))}" stroke="#20252e"/>`)
-    parts.push(
-      `<text x="${TPAD.l - 8}" y="${r2(y(v) + 3.5)}" font-size="10" fill="#6b7585" text-anchor="end" font-family="ui-monospace, monospace">${v.toFixed(1)}</text>`,
-    )
-  }
-
-  const line = points.map((p, i) => `${r2(x(i))},${r2(y(p.totalLibyears))}`).join(' ')
-  parts.push(
-    `<polyline points="${line}" fill="none" stroke="${QUADRANT_COLOR.watch}" stroke-width="2" stroke-linejoin="round"/>`,
-  )
-  points.forEach((p, i) => {
-    const colour = p.replace > 0 ? QUADRANT_COLOR.replace : QUADRANT_COLOR.healthy
-    parts.push(
-      `<circle cx="${r2(x(i))}" cy="${r2(y(p.totalLibyears))}" r="3.5" fill="${colour}"><title>${esc(`${p.date.slice(0, 10)} ${p.commit}: ${p.totalLibyears.toFixed(2)} libyears, ${p.deps} deps, ${p.replace} replace`)}</title></circle>`,
-    )
-  })
-
-  // Only the ends are labelled: a dozen dates along a 760px axis is a smudge.
-  const ends = points.length > 1 ? [0, points.length - 1] : [0]
-  for (const i of ends) {
-    parts.push(
-      `<text x="${r2(x(i))}" y="${TH - 14}" font-size="10" fill="#6b7585" text-anchor="${i === 0 ? 'start' : 'end'}" font-family="ui-monospace, monospace">${esc(points[i].date.slice(0, 10))}</text>`,
-    )
-  }
-  parts.push(
-    `<text x="16" y="${TPAD.t + innerH / 2}" font-size="10" fill="#aab3c2" text-anchor="middle" font-family="ui-monospace, monospace" transform="rotate(-90 16 ${TPAD.t + innerH / 2})">libyears</text>`,
-  )
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${TW} ${TH}" width="${TW}" height="${TH}" role="img" aria-label="Total drift over sampled commits">${parts.join('')}</svg>`
-}
-
-const r2 = (n: number) => Math.round(n * 100) / 100
 
 // --- the shell ---
 

@@ -22,8 +22,10 @@ export type QuadrantCounts = Record<DepReport['quadrant'], number>
 // Degraded deps are left out: one we could not reach is unknown, not unhealthy,
 // and counting unknowns towards a threshold turns a flaky registry into what
 // looks like a regression in the manifest.
+export const emptyCounts = (): QuadrantCounts => ({ healthy: 0, upgrade: 0, watch: 0, replace: 0 })
+
 export function tally(r: Report): QuadrantCounts {
-  const counts: QuadrantCounts = { healthy: 0, upgrade: 0, watch: 0, replace: 0 }
+  const counts = emptyCounts()
   for (const d of r.deps) if (!d.degraded) counts[d.quadrant]++
   return counts
 }

@@ -8,14 +8,14 @@
 // Pure, and free of any `vscode` import, so the arithmetic is testable without
 // an editor.
 
-import { tally, type QuadrantCounts } from '../../../src/gates.js'
-import type { Quadrant, Report } from '../../../src/report.js'
+import { emptyCounts, tally, type QuadrantCounts } from '../../../src/gates.js'
+import { QUADRANT_ORDER, type Quadrant, type Report } from '../../../src/report.js'
 import { QUADRANT } from './explain.js'
 
 /** A quadrant, or the pseudo-quadrant for deps the registry would not answer for. */
 export type Lens = Quadrant | 'degraded'
 
-export const LENSES: Lens[] = ['replace', 'upgrade', 'watch', 'healthy', 'degraded']
+export const LENSES: Lens[] = [...QUADRANT_ORDER, 'degraded']
 
 export const LENS_LABEL: Record<Lens, string> = {
   replace: QUADRANT.replace.label,
@@ -48,7 +48,7 @@ export interface Totals {
 }
 
 export function totalsOf(reports: Report[]): Totals {
-  const counts: QuadrantCounts = { healthy: 0, upgrade: 0, watch: 0, replace: 0 }
+  const counts = emptyCounts()
   let libyears = 0
   let deps = 0
   let degraded = 0
@@ -58,7 +58,7 @@ export function totalsOf(reports: Report[]): Totals {
     deps += report.deps.length
     degraded += report.deps.filter((d) => d.degraded).length
     const own = tally(report)
-    for (const q of ['healthy', 'upgrade', 'watch', 'replace'] as Quadrant[]) counts[q] += own[q]
+    for (const q of QUADRANT_ORDER) counts[q] += own[q]
   }
 
   return {
@@ -97,7 +97,8 @@ export function badgeTooltip(mode: BadgeMode, t: Totals): string {
 }
 
 export function summaryDetail(t: Totals): string {
-  const parts = (['replace', 'upgrade', 'watch'] as Quadrant[]).filter((q) => t.counts[q] > 0).map((q) => `${t.counts[q]} ${q}`)
+  const actionable = QUADRANT_ORDER.filter((q) => q !== 'healthy')
+  const parts = actionable.filter((q) => t.counts[q] > 0).map((q) => `${t.counts[q]} ${q}`)
   if (t.counts.healthy > 0) parts.push(`${t.counts.healthy} healthy`)
   if (t.degraded > 0) parts.push(`${t.degraded} no data`)
   return parts.join(' · ')

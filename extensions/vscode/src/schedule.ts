@@ -162,8 +162,4 @@ export class Coalescer<T> {
     this.running.set(key, started)
     return started
   }
-
-  isRunning(key: string): boolean {
-    return this.running.has(key)
-  }
 }

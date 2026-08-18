@@ -281,9 +281,3 @@ function matches(base: string, glob: string): boolean {
     .replace(/\?/g, '.')
   return new RegExp(`^${pattern}$`).test(base)
 }
-
-/** The lock file a changed path belongs to, so saving a lock rescans its manifest. */
-export function manifestForLock(path: string, candidates: string[]): string[] {
-  const dir = dirname(path)
-  return candidates.filter((c) => dirname(c) === dir)
-}

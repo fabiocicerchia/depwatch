@@ -94,12 +94,6 @@ export class TtlCache<T> {
     return task
   }
 
-  /** The cached value whether or not it is still fresh, for offline reads. */
-  async peek(key: string): Promise<{ value: T; fresh: boolean } | undefined> {
-    const entry = await this.lookup(key)
-    return entry && { value: entry.value, fresh: this.isFresh(entry) }
-  }
-
   private isFresh(entry: Entry<T>): boolean {
     const ttl = this.failed(entry.value) ? (this.opts.failureTtlMs ?? DEFAULT_FAILURE_TTL) : this.opts.ttlMs
     return this.now() - entry.savedAt < ttl

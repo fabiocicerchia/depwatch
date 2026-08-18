@@ -108,7 +108,6 @@ describe('Coalescer', () => {
     const [a, b] = await Promise.all([c.run('key', task), c.run('key', task)])
     expect([a, b]).toEqual(['done', 'done'])
     expect(calls).toBe(1)
-    expect(c.isRunning('key')).toBe(false) // and it lets go afterwards
   })
 
   it('lets the next request start once the first finished', async () => {
@@ -121,11 +120,12 @@ describe('Coalescer', () => {
     expect(await c.run('k', task)).toBe(2)
   })
 
+  // A failed scan must not wedge the key: the next save has to be able to run.
   it('releases the key when the task rejects', async () => {
     vi.useRealTimers()
-    const c = new Coalescer<void>()
+    const c = new Coalescer<number>()
     await expect(c.run('k', async () => Promise.reject(new Error('boom')))).rejects.toThrow('boom')
-    expect(c.isRunning('k')).toBe(false)
+    expect(await c.run('k', async () => 1)).toBe(1)
   })
 })
 

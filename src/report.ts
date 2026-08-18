@@ -26,6 +26,37 @@ export interface Report {
   worst: DepReport[]
 }
 
+// Worst first. Every surface that lists dependencies sorts this way, so the
+// order lives here rather than being spelled out again in each of them.
+export const QUADRANT_ORDER: Quadrant[] = ['replace', 'upgrade', 'watch', 'healthy']
+
+const RANK: Record<Quadrant, number> = { replace: 0, upgrade: 1, watch: 2, healthy: 3 }
+
+export function compareDeps(a: DepReport, b: DepReport): number {
+  return RANK[a.quadrant] - RANK[b.quadrant] || b.libyearsBehind - a.libyearsBehind || a.name.localeCompare(b.name)
+}
+
+export interface ReportColumn {
+  header: string
+  /** A number, so every rendering right-aligns it. */
+  numeric?: boolean
+  of(dep: DepReport): string
+}
+
+// The columns of the report, in order. The CLI pads them into a text table and
+// the editor's report puts them in a <table>; adding one here adds it to both,
+// which is the point — the HTML report had already drifted a column behind.
+export const REPORT_COLUMNS: ReportColumn[] = [
+  { header: 'dep', of: (d) => d.name },
+  { header: 'current', of: (d) => d.current },
+  { header: 'eco', of: (d) => (d.ecosystem ? String(d.ecosystem) : '') },
+  { header: 'latest', of: (d) => d.latest ?? '—' },
+  { header: 'drift', numeric: true, of: (d) => (d.degraded ? '—' : d.libyearsBehind.toFixed(2)) },
+  { header: 'pulse', numeric: true, of: (d) => (d.pulseYears === null ? '—' : d.pulseYears.toFixed(2)) },
+  { header: 'viability', numeric: true, of: (d) => (d.degraded ? '—' : d.viability.toFixed(2)) },
+  { header: 'quadrant', of: (d) => (d.degraded ? 'no data' : d.quadrant) },
+]
+
 export interface Thresholds {
   staleLibyears: number // above this, "behind"
   riskyViability: number // below this, "fading"

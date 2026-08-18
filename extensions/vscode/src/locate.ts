@@ -15,7 +15,7 @@ export interface Span {
   end: number
 }
 
-type Shape = 'json-sections' | 'npm-lock' | 'requirements' | 'cargo-toml' | 'cargo-lock' | 'gemfile-lock' | 'yaml-lock' | 'generic'
+type Shape = 'json-sections' | 'requirements' | 'cargo-toml' | 'cargo-lock' | 'gemfile-lock' | 'generic'
 
 // Dependency sections, by the file that has them.
 const SECTIONS: Record<string, string[]> = {
@@ -26,11 +26,9 @@ const SECTIONS: Record<string, string[]> = {
 export function shapeOf(filename: string): Shape {
   const base = filename.split(/[/\\]/).pop() ?? filename
   if (SECTIONS[base]) return 'json-sections'
-  if (base === 'package-lock.json') return 'npm-lock'
   if (base === 'Cargo.toml') return 'cargo-toml'
   if (base === 'Cargo.lock') return 'cargo-lock'
   if (base === 'Gemfile.lock') return 'gemfile-lock'
-  if (base === 'yarn.lock' || base === 'pnpm-lock.yaml') return 'yaml-lock'
   if (/^requirements.*\.txt$/.test(base)) return 'requirements'
   return 'generic'
 }
@@ -68,8 +66,6 @@ function buildIndex(text: string, filename: string, shape: Shape): Map<string, S
   switch (shape) {
     case 'json-sections':
       return jsonSections(text, SECTIONS[base] ?? [])
-    case 'npm-lock':
-      return npmLock(text)
     case 'requirements':
       return byLine(text, /^\s*([A-Za-z0-9._-]+)/)
     case 'cargo-toml':
@@ -78,8 +74,6 @@ function buildIndex(text: string, filename: string, shape: Shape): Map<string, S
       return byLine(text, /^\s*name\s*=\s*"([^"]+)"/)
     case 'gemfile-lock':
       return byLine(text, /^ {4}([A-Za-z0-9._-]+) \(/)
-    case 'yaml-lock':
-      return yamlLock(text)
     default:
       return quotedNames(text)
   }
@@ -99,19 +93,6 @@ function jsonSections(text: string, sections: string[]): Map<string, Span> {
     const brace = text.indexOf('{', at.end)
     if (brace === -1) continue
     for (const [name, span] of objectKeys(text, brace)) if (!out.has(name)) out.set(name, span)
-  }
-  return out
-}
-
-// "node_modules/@scope/pkg" -> "@scope/pkg". v1 locks nest instead, and their
-// keys are bare names, which the same walk picks up from the top-level object.
-function npmLock(text: string): Map<string, Span> {
-  const out = new Map<string, Span>()
-  const marker = 'node_modules/'
-  for (const [key, span] of quotedNames(text)) {
-    const at = key.lastIndexOf(marker)
-    const name = at === -1 ? key : key.slice(at + marker.length)
-    if (name && !out.has(name)) out.set(name, at === -1 ? span : { start: span.start + at + marker.length, end: span.end })
   }
   return out
 }
@@ -145,25 +126,6 @@ function cargoToml(text: string): Map<string, Span> {
 
 const isDepTable = (segment: string | undefined) =>
   segment === 'dependencies' || segment === 'dev-dependencies' || segment === 'build-dependencies'
-
-// yarn v1 ("pkg@^1.0.0:") and berry / pnpm ('"pkg@npm:^1.0.0":', "/pkg/1.2.3:")
-// all put the name at the start of an unindented or two-space key line.
-function yamlLock(text: string): Map<string, Span> {
-  const out = new Map<string, Span>()
-  eachLine(text, (line, offset) => {
-    if (!line.trim() || line.trimStart().startsWith('#') || !line.trim().endsWith(':')) return
-    for (const spec of line.replace(/:\s*$/, '').split(',')) {
-      const raw = spec.trim().replace(/^["']|["']$/g, '')
-      const bare = raw.startsWith('/') ? raw.slice(1) : raw
-      const at = bare.lastIndexOf('@')
-      const name = at > 0 ? bare.slice(0, at) : bare.replace(/\/[^/]*$/, '')
-      if (!name || out.has(name)) continue
-      const start = line.indexOf(name)
-      if (start !== -1) out.set(name, { start: offset + start, end: offset + start + name.length })
-    }
-  })
-  return out
-}
 
 function byLine(text: string, pattern: RegExp): Map<string, Span> {
   const out = new Map<string, Span>()

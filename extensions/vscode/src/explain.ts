@@ -6,7 +6,7 @@
 // comes from the report — nothing is inferred here that the engine did not
 // measure.
 
-import type { DepReport, Quadrant, Thresholds } from '../../../src/report.js'
+import { type DepReport, QUADRANT_ORDER, type Quadrant, type Thresholds } from '../../../src/report.js'
 import type { ViabilitySignals } from '../../../src/viability.js'
 
 export interface QuadrantInfo {
@@ -35,7 +35,8 @@ export const QUADRANT: Record<Quadrant, QuadrantInfo> = {
   healthy: { label: 'healthy', action: 'Nothing to do', blurb: 'current, and maintained' },
 }
 
-export const ORDER: Quadrant[] = ['replace', 'upgrade', 'watch', 'healthy']
+/** Worst first, as core defines it. */
+export const ORDER = QUADRANT_ORDER
 
 /** The one-line message that goes on the diagnostic. */
 export function summarise(dep: DepReport, t: Thresholds): string {
@@ -137,7 +138,7 @@ export function years(n: number): string {
   return `${n.toFixed(1)} years`
 }
 
-export function days(n: number): string {
+function days(n: number): string {
   const whole = Math.round(n)
   if (whole < 45) return `${whole} days`
   if (whole < 365) return `${Math.round(whole / 30)} months`

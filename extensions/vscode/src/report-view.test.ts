@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { DepReport, Report } from '../../../src/report.js'
 import { NO_SIGNALS, type ViabilitySignals } from '../../../src/viability.js'
 import { reasons, summarise, tooltip } from './explain.js'
-import { reportHtml, type ReportView, trendSvg } from './html.js'
+import { reportHtml, type ReportView, trendHtml } from './html.js'
 
 const dep = (over: Partial<DepReport> = {}, signals: Partial<ViabilitySignals> = {}): DepReport => ({
   name: 'left-pad',
@@ -166,21 +166,22 @@ describe('reportHtml', () => {
   })
 })
 
-describe('trendSvg', () => {
+describe('trendHtml', () => {
   const points = [
     { commit: 'aaaaaaaa', date: '2024-01-01T00:00:00Z', totalLibyears: 1, deps: 4, replace: 0 },
     { commit: 'bbbbbbbb', date: '2025-01-01T00:00:00Z', totalLibyears: 3, deps: 5, replace: 2 },
   ]
 
-  it('plots a point per commit and labels both ends', () => {
-    const svg = trendSvg(points)
-    expect(svg).toContain('<polyline')
-    expect((svg.match(/<circle/g) ?? []).length).toBe(2)
-    expect(svg).toContain('2024-01-01')
-    expect(svg).toContain('2025-01-01')
+  // The same rows `depwatch trend` prints, rather than a second chart type.
+  it('lists a row per sampled commit and says which way it went', () => {
+    const html = trendHtml('package.json', points)
+    expect(html).toContain('2024-01-01')
+    expect(html).toContain('aaaaaaaa')
+    expect(html).toContain('+2.00 libyears over 2 sampled commits')
+    expect(html).toContain('drifting further behind')
   })
 
-  it('survives a single commit without dividing by zero', () => {
-    expect(trendSvg(points.slice(0, 1))).not.toContain('NaN')
+  it('says so when there is no history', () => {
+    expect(trendHtml('package.json', [])).toContain('No commits touched this file')
   })
 })

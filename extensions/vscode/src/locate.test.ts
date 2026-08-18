@@ -17,7 +17,7 @@ const lineOf = (text: string, filename: string, name: string): string | undefine
 describe('shapeOf', () => {
   it('recognises the files depwatch reads', () => {
     expect(shapeOf('/a/b/package.json')).toBe('json-sections')
-    expect(shapeOf('C:\\proj\\package-lock.json')).toBe('npm-lock')
+    expect(shapeOf('C:\\proj\\Cargo.lock')).toBe('cargo-lock')
     expect(shapeOf('requirements-dev.txt')).toBe('requirements')
     expect(shapeOf('Cargo.toml')).toBe('cargo-toml')
     expect(shapeOf('Gemfile.lock')).toBe('gemfile-lock')
@@ -66,41 +66,6 @@ describe('package.json', () => {
 })
 
 describe('lock files', () => {
-  it('strips the install path from package-lock keys', () => {
-    const lock = `{
-  "lockfileVersion": 3,
-  "packages": {
-    "": { "name": "demo" },
-    "node_modules/react": { "version": "18.2.0" },
-    "node_modules/a/node_modules/b": { "version": "1.0.0" }
-  }
-}`
-    expect(at(lock, 'package-lock.json', 'react')).toBe('react')
-    expect(at(lock, 'package-lock.json', 'b')).toBe('b')
-  })
-
-  it('reads yarn and pnpm entry headers', () => {
-    const yarn = `# yarn lockfile v1
-
-"@babel/core@^7.0.0":
-  version "7.24.0"
-
-left-pad@^1.3.0:
-  version "1.3.0"
-`
-    expect(at(yarn, 'yarn.lock', '@babel/core')).toBe('@babel/core')
-    expect(at(yarn, 'yarn.lock', 'left-pad')).toBe('left-pad')
-
-    const pnpm = `lockfileVersion: '6.0'
-
-packages:
-
-  /react/18.2.0:
-    resolution: {integrity: sha512-x}
-`
-    expect(at(pnpm, 'pnpm-lock.yaml', 'react')).toBe('react')
-  })
-
   it('reads Cargo.lock and Gemfile.lock', () => {
     const cargo = `[[package]]
 name = "serde"

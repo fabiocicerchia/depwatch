@@ -54,42 +54,53 @@ function scalar(raw: string): Node {
   return s
 }
 
+const isSeq = (content: string) => content === '-' || content.startsWith('- ')
+
 // Parse the block starting at lines[i] with the given minimum indent, returning
 // the node and the index of the first line not consumed.
 function parseBlock(lines: Line[], i: number, indent: number): [Node, number] {
-  // Sequence?
-  if (lines[i].content.startsWith('- ') || lines[i].content === '-') {
-    const arr: Node[] = []
-    while (i < lines.length && lines[i].indent === indent && (lines[i].content === '-' || lines[i].content.startsWith('- '))) {
-      const rest = lines[i].content === '-' ? '' : lines[i].content.slice(2)
-      if (rest === '') {
-        // Nested block on following deeper lines.
-        const [node, next] = parseBlock(lines, i + 1, lines[i + 1]?.indent ?? indent + 2)
-        arr.push(node)
-        i = next
-      } else if (/^[^:]+:(\s|$)/.test(rest)) {
-        // "- key: value" — an inline mapping whose remaining keys sit indented
-        // under the dash's content column.
-        const childIndent = indent + 2
-        const synthetic: Line[] = [{ indent: childIndent, content: rest }]
-        // Pull subsequent lines that belong to this item (deeper than the dash).
-        let j = i + 1
-        while (j < lines.length && lines[j].indent > indent) {
-          synthetic.push(lines[j])
-          j++
-        }
-        const [node] = parseBlock(synthetic, 0, childIndent)
-        arr.push(node)
-        i = j
-      } else {
-        arr.push(scalar(rest))
-        i++
-      }
-    }
-    return [arr, i]
-  }
+  return isSeq(lines[i].content) ? parseSequence(lines, i, indent) : parseMapping(lines, i, indent)
+}
 
-  // Mapping.
+// One sequence item's value: the rest of the "- ..." line, or the deeper block
+// that follows it. Returns the value and the next unconsumed line index.
+function parseSeqItem(lines: Line[], i: number, indent: number): [Node, number] {
+  const rest = lines[i].content === '-' ? '' : lines[i].content.slice(2)
+  if (rest === '') {
+    // Nested block on the following deeper lines.
+    return parseBlock(lines, i + 1, lines[i + 1]?.indent ?? indent + 2)
+  }
+  if (!/^[^:]+:(\s|$)/.test(rest)) return [scalar(rest), i + 1]
+  // "- key: value": an inline mapping whose further keys sit indented under the
+  // dash's content column. Gather them and parse as one synthetic block.
+  const childIndent = indent + 2
+  const synthetic: Line[] = [{ indent: childIndent, content: rest }]
+  let j = i + 1
+  while (j < lines.length && lines[j].indent > indent) synthetic.push(lines[j++])
+  return [parseBlock(synthetic, 0, childIndent)[0], j]
+}
+
+function parseSequence(lines: Line[], i: number, indent: number): [Node, number] {
+  const arr: Node[] = []
+  while (i < lines.length && lines[i].indent === indent && isSeq(lines[i].content)) {
+    const [node, next] = parseSeqItem(lines, i, indent)
+    arr.push(node)
+    i = next
+  }
+  return [arr, i]
+}
+
+// A mapping value is the inline scalar after the colon, or the block that
+// follows on deeper lines. A block sequence may sit at the key's own indent.
+function parseMapValue(lines: Line[], i: number, indent: number, inline: string): [Node, number] {
+  if (inline !== '') return [scalar(inline), i + 1]
+  const child = lines[i + 1]
+  const seqAtSameIndent = child?.indent === indent && isSeq(child.content)
+  if (child && (child.indent > indent || seqAtSameIndent)) return parseBlock(lines, i + 1, child.indent)
+  return [null, i + 1]
+}
+
+function parseMapping(lines: Line[], i: number, indent: number): [Node, number] {
   const obj: Record<string, Node> = {}
   while (i < lines.length && lines[i].indent === indent) {
     const m = lines[i].content.match(/^([^:]+):\s*(.*)$/)
@@ -98,23 +109,9 @@ function parseBlock(lines: Line[], i: number, indent: number): [Node, number] {
       continue
     }
     const key = m[1].trim().replace(/^["']|["']$/g, '')
-    const inline = m[2]
-    if (inline !== '') {
-      obj[key] = scalar(inline)
-      i++
-    } else {
-      const child = lines[i + 1]
-      const childIsSeqAtSameIndent = child && child.indent === indent && (child.content === '-' || child.content.startsWith('- '))
-      if (child && (child.indent > indent || childIsSeqAtSameIndent)) {
-        // A block sequence may sit at the same indent as its key.
-        const [node, next] = parseBlock(lines, i + 1, child.indent)
-        obj[key] = node
-        i = next
-      } else {
-        obj[key] = null
-        i++
-      }
-    }
+    const [value, next] = parseMapValue(lines, i, indent, m[2])
+    obj[key] = value
+    i = next
   }
   return [obj, i]
 }

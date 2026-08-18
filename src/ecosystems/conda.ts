@@ -19,23 +19,29 @@ function splitChannel(spec: string): { channel: string; name: string } {
   return at === -1 ? { channel: 'conda-forge', name: spec } : { channel: spec.slice(0, at), name: spec.slice(at + 2) }
 }
 
+// One `dependencies:` entry ("numpy=1.26", "conda-forge::pandas>=2.0") to a Dep,
+// or null to skip it (a nested pip map, python itself, or no pinned version).
+function condaSpec(item: unknown): Dep | null {
+  if (typeof item !== 'string') return null // nested pip: map — PyPI, out of scope
+  const m = item.match(/^([^=<>!\s]+)\s*(==|=|>=|<=|>|<)?\s*([^=<>\s]+)?/)
+  if (!m) return null
+  const { name } = splitChannel(m[1])
+  const current = m[3] ? baseVersion(m[3]) : null
+  if (!current || name.toLowerCase() === 'python') return null
+  return { name, current, resolved: m[2] === '=' || m[2] === '==' }
+}
+
 function parseEnvironmentYml(text: string): Dep[] {
-  const doc = parseYaml(text)
-  const list = doc?.dependencies
+  const list = parseYaml(text)?.dependencies
   if (!Array.isArray(list)) return []
   const deps: Dep[] = []
   const seen = new Set<string>()
   for (const item of list) {
-    // Nested `pip:` map lists PyPI packages, not conda — out of scope here.
-    if (typeof item !== 'string') continue
-    const m = item.match(/^([^=<>!\s]+)\s*(==|=|>=|<=|>|<)?\s*([^=<>\s]+)?/)
-    if (!m) continue
-    const { name } = splitChannel(m[1])
-    if (name.toLowerCase() === 'python' || seen.has(name)) continue
-    const current = m[3] ? baseVersion(m[3]) : null
-    if (!current) continue
-    seen.add(name)
-    deps.push({ name, current, resolved: m[2] === '=' || m[2] === '==' })
+    const dep = condaSpec(item)
+    if (dep && !seen.has(dep.name)) {
+      seen.add(dep.name)
+      deps.push(dep)
+    }
   }
   return deps
 }

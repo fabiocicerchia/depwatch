@@ -3,5 +3,11 @@
 # reports "no tests ran" as a failure and atheris wants a fuzz harness for
 # modules that do not exist. The TypeScript equivalents (node_test, tsc) are the
 # gates that actually cover this codebase.
+#
+# lizard is skipped for the same reason: its C-style parser cannot track
+# function boundaries in this TypeScript (labelled tuple types, destructured
+# arrow params, template literals), so it merges whole files into one function
+# and reports inflated cyclomatic complexity that does not reflect the code.
+# tsc + the vitest suite are the gates that cover this codebase.
 [gandalf]
-skip = ["tests", "atheris"]
+skip = ["tests", "atheris", "lizard"]

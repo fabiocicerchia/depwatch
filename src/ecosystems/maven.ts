@@ -39,34 +39,38 @@ function tokenize(v: string): string[] {
     .filter((t) => t !== '')
 }
 
-const isNum = (t: string) => /^\d+$/.test(t)
+// Each token as a sortable tuple [group, value, text]: numbers are group 1 (so
+// a numeric item always outranks a qualifier), qualifiers group 0 ordered by
+// rank, with the raw text breaking ties between unknown qualifiers.
+type Item = [group: number, value: number, text: string]
 
-function compareToken(a: string | undefined, b: string | undefined): number {
-  // A missing token is release when the present one is a qualifier, else zero —
-  // so 1.0 < 1.0-sp1 but 1.0 == 1.0.0.
-  if (a === undefined) a = b !== undefined && !isNum(b) ? '' : '0'
-  if (b === undefined) b = !isNum(a) ? '' : '0'
-  const an = isNum(a)
-  const bn = isNum(b)
-  if (an && bn) {
-    const d = Number(a) - Number(b)
-    return d === 0 ? 0 : d < 0 ? -1 : 1
-  }
-  // A numeric item outranks a qualifier at the same position.
-  if (an) return 1
-  if (bn) return -1
-  const ra = rankOf(a)
-  const rb = rankOf(b)
-  if (ra !== rb) return ra < rb ? -1 : 1
-  return a < b ? -1 : a > b ? 1 : 0
+function itemOf(token: string): Item {
+  if (/^\d+$/.test(token)) return [1, Number(token), '']
+  return [0, rankOf(token), token]
+}
+
+// The stand-in for a token the shorter version lacks: release (rank 5) opposite
+// a qualifier, zero opposite a number — so 1.0 == 1.0.0 but 1.0 < 1.0-sp1.
+const padFor = ([group]: Item): Item => (group === 1 ? [1, 0, ''] : [0, 5, ''])
+
+function cmp(a: number, b: number): number {
+  return a === b ? 0 : a < b ? -1 : 1
+}
+
+function compareItem(x: Item, y: Item): number {
+  if (x[0] !== y[0]) return cmp(x[0], y[0])
+  if (x[1] !== y[1]) return cmp(x[1], y[1])
+  return x[2] < y[2] ? -1 : x[2] > y[2] ? 1 : 0
 }
 
 const mavenOps: VersionOps = {
   compare(a, b) {
-    const ta = tokenize(a)
-    const tb = tokenize(b)
+    const ta = tokenize(a).map(itemOf)
+    const tb = tokenize(b).map(itemOf)
     for (let i = 0; i < Math.max(ta.length, tb.length); i++) {
-      const c = compareToken(ta[i], tb[i])
+      const x = ta[i] ?? padFor(tb[i])
+      const y = tb[i] ?? padFor(ta[i])
+      const c = compareItem(x, y)
       if (c !== 0) return c
     }
     return 0

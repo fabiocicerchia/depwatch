@@ -1,0 +1,6 @@
+# MD013 (line length) is off. The docs carry wide reference tables — the
+# ecosystem coverage table and the input-accuracy table — that cannot wrap to
+# 80 columns without losing their shape, and the repo already used long table
+# rows before this. Prose is still kept reasonably short by hand. gandalf runs
+# this same mdl, so what passes here passes in CI.
+rules "~MD013"

@@ -13,9 +13,11 @@ import type { Dep } from './parse-util.js'
 
 const CENTRAL = 'https://repo1.maven.org/maven2'
 const groupPath = (group: string) => group.replace(/\./g, '/')
+// A Maven coordinate is group:artifact in manifests but group/artifact in a PURL
+// (namespace/name). Accept both so SBOM components resolve too.
 const coord = (name: string): { group: string; artifact: string } => {
-  const [group, artifact] = name.split(':')
-  return { group, artifact }
+  const sep = name.includes(':') ? name.lastIndexOf(':') : name.lastIndexOf('/')
+  return { group: name.slice(0, sep), artifact: name.slice(sep + 1) }
 }
 
 // --- version ordering (Maven ComparableVersion, pragmatic subset) ---

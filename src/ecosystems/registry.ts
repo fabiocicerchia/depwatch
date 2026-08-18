@@ -85,11 +85,18 @@ export function ecoIdList(): string {
 // help and can be pasted into docs.
 export function coverageLines(): string[] {
   return ALL.map((def) => {
-    const names = [...def.manifests, ...(def.manifestPattern ? [manifestPatternLabel(def.id)] : []), ...def.locks]
-    return `${def.label}: ${names.join(', ') || '(SBOM / --eco only)'}`
+    const pattern = def.manifestPattern || def.pathPattern ? [PATTERN_LABEL[def.id]] : []
+    const names = [...def.manifests, ...pattern, ...def.locks]
+    return `${def.label}: ${names.filter(Boolean).join(', ') || '(SBOM / --eco only)'}`
   })
 }
 
-function manifestPatternLabel(id: EcoId): string {
-  return id === 'pep440' ? 'requirements*.txt' : 'pattern'
+// Human labels for the shape-matched inputs, since a RegExp does not read well
+// in help. Only ecosystems with a manifestPattern or pathPattern need an entry.
+const PATTERN_LABEL: Partial<Record<EcoId, string>> = {
+  pep440: 'requirements*.txt',
+  nuget: '*.csproj',
+  terraform: '*.tf',
+  docker: 'Dockerfile.*',
+  githubactions: '.github/workflows/*.yml',
 }

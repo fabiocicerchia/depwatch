@@ -117,3 +117,22 @@ describe('github actions', () => {
     ])
   })
 })
+
+describe('maven coordinates', () => {
+  it('parses both group:artifact and PURL group/artifact via the SBOM path', async () => {
+    const { parseSbom } = await import('../sbom.js')
+    const parsed = parseSbom(
+      JSON.stringify({
+        bomFormat: 'CycloneDX',
+        specVersion: '1.5',
+        metadata: { component: { 'bom-ref': 'root', name: 'app' } },
+        components: [
+          { 'bom-ref': 'c1', name: 'guava', version: '30.0-jre', purl: 'pkg:maven/com.google.guava/guava@30.0-jre' },
+        ],
+      }),
+    )
+    expect(parsed?.components).toEqual([
+      { name: 'com.google.guava/guava', current: '30.0-jre', resolved: true, ecosystem: 'maven', ref: 'c1' },
+    ])
+  })
+})

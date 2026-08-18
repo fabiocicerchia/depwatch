@@ -41,6 +41,21 @@ node dist/cli.js check package.json --json    # machine-readable, for CI
 node dist/cli.js chart package.json --out q.svg
 ```
 
+It reads the manifest and lock files of 15+ ecosystems — npm, Python, Rust, PHP,
+Ruby, Go, Java/Maven, .NET, Dart, Elixir, Terraform, Helm, GitHub Actions and
+Docker — picking the right parser from the filename:
+
+```sh
+node dist/cli.js check go.mod                 # Go modules
+node dist/cli.js check pyproject.toml         # Poetry / uv / PEP 621
+node dist/cli.js check pom.xml                # Maven Central
+node dist/cli.js check .terraform.lock.hcl    # Terraform providers
+node dist/cli.js check Dockerfile             # base-image age (pulse only)
+```
+
+`depwatch --help` prints the authoritative list — it is generated from the
+ecosystem registry, so it cannot drift from the code.
+
 ## Documentation
 
 Full docs live in [`docs/`](docs/). Runnable examples live in [`examples/`](examples/).

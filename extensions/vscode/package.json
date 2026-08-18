@@ -2,7 +2,7 @@
   "name": "depwatch-vscode",
   "displayName": "depwatch",
   "description": "Dependency drift (libyears) × viability, in the editor.",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "private": true,
   "license": "Apache-2.0",
   "author": "Fabio Cicerchia",

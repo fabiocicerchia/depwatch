@@ -1,15 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import type { PackageInfo, RegistryError } from '@lib/registry-client'
-import { analyse, type AnalyseCache, quadrant } from './report.js'
+import { analyse, type AnalyseCache, type CachedPackage, quadrant } from './report.js'
 import type { Manifest } from './manifest.js'
 
 const manifest = (deps: Manifest['deps']): Manifest => ({ ecosystem: 'npm', file: 'package.json', deps })
 
 // Every version list these tests use is canned, and the cache below never calls
 // its loader — so nothing here touches the network.
-function cannedCache(
-  responses: Record<string, PackageInfo | RegistryError>,
-): { cache: AnalyseCache; loads: string[] } {
+function cannedCache(responses: Record<string, CachedPackage>): { cache: AnalyseCache; loads: string[] } {
   const loads: string[] = []
   return {
     loads,
@@ -24,9 +21,7 @@ function cannedCache(
   }
 }
 
-const pkg = (name: string, versions: [string, string][]): PackageInfo => ({
-  name,
-  ecosystem: 'npm',
+const pkg = (_name: string, versions: [string, string][]): CachedPackage => ({
   versions: versions.map(([version, released]) => ({ version, released })),
 })
 

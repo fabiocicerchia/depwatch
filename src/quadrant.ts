@@ -41,7 +41,7 @@ export interface ChartOptions {
 
 export function quadrantSVG(deps: DepReport[], opts: ChartOptions = {}): string {
   const t = opts.thresholds ?? DEFAULT_THRESHOLDS
-  const plot = deps.filter((d) => !d.degraded)
+  const plot = deps.filter((d) => !d.degraded && !d.driftUnscored)
   const innerW = W - PAD.l - PAD.r
   const innerH = H - PAD.t - PAD.b
 

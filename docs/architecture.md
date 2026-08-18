@@ -24,6 +24,34 @@ The weights are calibrated in `src/viability.test.ts` against synthetic
 known-dead and known-alive profiles, so the calibration runs offline and fails
 loudly when a weight moves.
 
+## Ecosystems
+
+Every ecosystem is one `EcosystemDef` in `src/ecosystems/`, listed once in
+`REGISTRY` (`src/ecosystems/registry.ts`). A def gathers the filenames it
+recognises, its manifest/lock parsers, its version fetcher, its `--deep`
+metadata extractor and its PURL types. Detection, parsing, SBOM mapping, the
+deep tier and the CLI help are all lookups into `REGISTRY` rather than switch
+statements scattered across the codebase.
+
+Because `REGISTRY` is typed `Record<EcoId, EcosystemDef>`, a half-added
+ecosystem — an `EcoId` member without a def, or a def whose id is missing from
+`EcoId` — is a `tsc` error. `make typecheck` runs in CI for exactly this reason.
+Adding an ecosystem is one file plus one test.
+
+Ecosystems fall into three tiers by how they date versions:
+
+| Tier | How dates arrive | Examples |
+| --- | --- | --- |
+| dated list | one request returns every version with its date | npm, PyPI, crates.io, pub.dev, Hex, NuGet |
+| undated list + `hydrateDates` | versions are listed cheaply, then only the *scored* versions (current, latest, the cadence window — a handful) are dated with one request each | Go, Maven, Terraform, GitHub Actions |
+| pulse only (`driftScorable: false`) | honest dates but no orderable version series, so drift is `—` and only pulse and viability are scored | Docker |
+
+`hydrateDates` requests go through the same in-process cache and concurrency
+pool as the version fetches, so the "no uncached fetch" rule holds and trend
+mode still costs no extra traffic per commit. One ecosystem is `scoped` (Helm):
+a chart's identity is its repository URL plus its name, and one `index.yaml`
+fetch is cached per repository to serve every chart from it.
+
 ## Trend mode
 
 Release dates are historical facts, so every past point is computable from

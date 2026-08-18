@@ -1,5 +1,5 @@
 # depwatch
-.PHONY: help setup build test lint clean ext-build ext-package ext-install ext-publish
+.PHONY: help setup build test typecheck lint clean ext-build ext-package ext-install ext-publish
 
 EXT := extensions/vscode
 # Read rather than hard-coded: vsce names the VSIX after the version in the
@@ -19,6 +19,9 @@ lint: ## Run all pre-commit checks on the whole tree
 
 build: ## Build the project
 	npm run build
+
+typecheck: ## Type-check without emitting (catches a half-added ecosystem)
+	npm run typecheck
 
 test: ## Run the tests
 	npm test

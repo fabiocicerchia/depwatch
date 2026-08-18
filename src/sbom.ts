@@ -19,19 +19,11 @@
 //     lock files get applies here too.
 
 import type { Dep } from '@lib/libyear/engine'
-import type { SupportedEcosystem } from './manifest.js'
-
-// PURL type -> the ecosystem name registry-client understands.
-const PURL_ECOSYSTEM: Record<string, SupportedEcosystem> = {
-  npm: 'npm',
-  pypi: 'pep440',
-  cargo: 'cargo',
-  composer: 'composer',
-  gem: 'rubygems',
-}
+import type { EcoId } from './ecosystems/types.js'
+import { byPurlType } from './ecosystems/registry.js'
 
 export interface SbomComponent extends Dep {
-  ecosystem: SupportedEcosystem
+  ecosystem: EcoId
   ref?: string // bom-ref / SPDXID, for resolving the dependency graph
 }
 
@@ -105,11 +97,12 @@ function collect(
   for (const { purl, ref } of entries) {
     const parsed = parsePurl(purl)
     if (!parsed) continue
-    const ecosystem = PURL_ECOSYSTEM[parsed.type]
-    if (!ecosystem) {
+    const def = byPurlType(parsed.type)
+    if (!def) {
       skipped[parsed.type] = (skipped[parsed.type] ?? 0) + 1
       continue
     }
+    const ecosystem = def.id
     const key = `${ecosystem}:${parsed.name}`
     if (seen.has(key)) continue
     seen.add(key)

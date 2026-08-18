@@ -14,6 +14,8 @@ const CDX = {
     { 'bom-ref': 'ref-serde', type: 'library', name: 'serde', version: '1.0.219', purl: 'pkg:cargo/serde@1.0.219' },
     { 'bom-ref': 'ref-go', type: 'library', name: 'golang.org/x/net', version: 'v0.1.0', purl: 'pkg:golang/golang.org/x/net@v0.1.0' },
     { 'bom-ref': 'ref-gha', type: 'library', name: 'actions/checkout', version: 'v7', purl: 'pkg:github/actions/checkout@v7' },
+    // An OS package: no registry depwatch can query, so it stays skipped.
+    { 'bom-ref': 'ref-deb', type: 'library', name: 'libssl3', version: '3.0.11', purl: 'pkg:deb/debian/libssl3@3.0.11' },
     // syft catalogues the scanned project itself when given a directory.
     { 'bom-ref': 'ref-self', type: 'library', name: 'my-app', version: '0.1.0', purl: 'pkg:npm/my-app@0.1.0' },
   ],
@@ -40,6 +42,12 @@ const SPDX = {
       name: 'golang.org/x/net',
       versionInfo: 'v0.1.0',
       externalRefs: [{ referenceType: 'purl', referenceLocator: 'pkg:golang/golang.org/x/net@v0.1.0' }],
+    },
+    {
+      SPDXID: 'SPDXRef-deb',
+      name: 'libssl3',
+      versionInfo: '3.0.11',
+      externalRefs: [{ referenceType: 'purl', referenceLocator: 'pkg:deb/debian/libssl3@3.0.11' }],
     },
   ],
   relationships: [{ spdxElementId: 'SPDXRef-root', relatedSpdxElement: 'SPDXRef-react', relationshipType: 'DEPENDS_ON' }],
@@ -88,7 +96,14 @@ describe('CycloneDX', () => {
   const parsed = parseSbom(JSON.stringify(CDX))!
 
   it('keeps components whose ecosystem has a reachable registry', () => {
-    expect(parsed.components.map((c) => c.name).sort()).toEqual(['@remix-run/router', 'django', 'react', 'serde'])
+    expect(parsed.components.map((c) => c.name).sort()).toEqual([
+      '@remix-run/router',
+      'actions/checkout',
+      'django',
+      'golang.org/x/net',
+      'react',
+      'serde',
+    ])
   })
 
   it('maps each component to its own ecosystem', () => {
@@ -102,7 +117,7 @@ describe('CycloneDX', () => {
 
   // Silently dropping two thirds of an SBOM would look like a clean result.
   it('counts what it skipped, by ecosystem', () => {
-    expect(parsed.skipped).toEqual({ golang: 1, github: 1 })
+    expect(parsed.skipped).toEqual({ deb: 1 })
   })
 
   it('excludes the scanned project from its own dependencies', () => {
@@ -115,10 +130,10 @@ describe('CycloneDX', () => {
 
   it('falls back to everything when the graph is absent or matches nothing', () => {
     const noGraph = parseSbom(JSON.stringify({ ...CDX, dependencies: [] }))!
-    expect(directOnly(noGraph)).toHaveLength(4)
+    expect(directOnly(noGraph)).toHaveLength(6)
 
     const brokenGraph = parseSbom(JSON.stringify({ ...CDX, dependencies: [{ ref: 'root-ref', dependsOn: ['nope'] }] }))!
-    expect(directOnly(brokenGraph)).toHaveLength(4)
+    expect(directOnly(brokenGraph)).toHaveLength(6)
   })
 })
 
@@ -126,13 +141,13 @@ describe('SPDX', () => {
   const parsed = parseSbom(JSON.stringify(SPDX))!
 
   it('reads purls out of externalRefs, ignoring the cpe entries', () => {
-    expect(parsed.components.map((c) => c.name)).toEqual(['react'])
+    expect(parsed.components.map((c) => c.name)).toEqual(['react', 'golang.org/x/net'])
     expect(parsed.components[0]).toMatchObject({ current: '18.3.9', ecosystem: 'npm', resolved: true })
   })
 
   it('skips the document root and counts unsupported ecosystems', () => {
     expect(parsed.components.map((c) => c.name)).not.toContain('my-app')
-    expect(parsed.skipped).toEqual({ golang: 1 })
+    expect(parsed.skipped).toEqual({ deb: 1 })
   })
 
   it('reads DEPENDS_ON relationships as the direct set', () => {
@@ -158,12 +173,12 @@ describe('parse() accepts an SBOM by content, not filename', () => {
     expect(m.sbom?.format).toBe('cyclonedx')
     expect(m.deps.map((d) => d.name).sort()).toEqual(['django', 'react'])
     expect(m.sbom?.scoped).toBe(true)
-    expect(m.sbom?.total).toBe(4)
+    expect(m.sbom?.total).toBe(6)
   })
 
   it('takes the whole tree when asked', () => {
     const m = parse('bom.json', JSON.stringify(CDX), undefined, true)
-    expect(m.deps).toHaveLength(4)
+    expect(m.deps).toHaveLength(6)
     expect(m.sbom?.scoped).toBe(false)
   })
 

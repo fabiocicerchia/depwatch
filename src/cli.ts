@@ -8,6 +8,7 @@
 import { writeFileSync } from 'node:fs'
 import { analyse, compareDeps, DEFAULT_THRESHOLDS, REPORT_COLUMNS, type Report, type Thresholds } from './report.js'
 import { assertEcosystem, type SupportedEcosystem } from './manifest.js'
+import { coverageLines, ecoIdList } from './ecosystems/registry.js'
 import { gateFailures, tally } from './gates.js'
 import { loadManifest, resolveInput } from './input.js'
 import { quadrantSVG } from './quadrant.js'
@@ -23,7 +24,7 @@ Options
   --json                  machine-readable output
   --deep                  fetch maintainer/archived/last-commit signals
                           (extra requests; set GITHUB_TOKEN to avoid throttling)
-  --eco <name>            force ecosystem: npm|pep440|cargo|composer|rubygems
+  --eco <name>            force ecosystem: ${ecoIdList()}
   --ci                    exit non-zero when a threshold is breached
   --max-libyears <n>      CI: fail above this total drift
   --max-replace <n>       CI: fail above this many deps in the "replace" quadrant
@@ -42,7 +43,10 @@ Inputs, in order of accuracy:
   lock file    package-lock.json, yarn.lock, pnpm-lock.yaml, Cargo.lock,
                composer.lock, Gemfile.lock — resolved versions
   manifest     package.json, requirements.txt, Cargo.toml, composer.json —
-               ranges only, so the result is an upper bound`
+               ranges only, so the result is an upper bound
+
+Ecosystems (files recognised)
+  ${coverageLines().join('\n  ')}`
 
 interface Flags {
   json: boolean
@@ -132,6 +136,10 @@ function table(r: Report, t: Thresholds): string {
 
   const degraded = r.deps.filter((d) => d.degraded)
   if (degraded.length > 0) out.push(`${degraded.length} dep(s) had no registry data and were not scored`)
+
+  const pulseOnly = r.deps.filter((d) => d.driftUnscored)
+  if (pulseOnly.length > 0)
+    out.push(`${pulseOnly.length} dep(s) scored on pulse and viability only — no comparable version series (drift shown as —)`)
 
   const estimated = r.deps.filter((d) => !d.resolved && !d.degraded).length
   if (estimated > 0) {

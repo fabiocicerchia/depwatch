@@ -10,7 +10,8 @@
 // a token (set GITHUB_TOKEN).
 
 import type { RegistryVersion } from '@lib/registry-client'
-import type { Ecosystem } from '@lib/semver'
+import type { EcoId, RepoMeta } from './ecosystems/types.js'
+import { byId } from './ecosystems/registry.js'
 import { NO_SIGNALS, type ViabilitySignals } from './viability.js'
 
 const MS_PER_DAY = 86_400_000
@@ -52,77 +53,26 @@ export function timelineSignals(versions: RegistryVersion[], now = Date.now()): 
 
 // --- deep tier ---
 
-export interface RepoMeta {
-  repoUrl: string | null
-  maintainerCount: number | null
-  hasFunding: boolean
-}
-
 async function getJson(url: string, headers: Record<string, string> = {}): Promise<any> {
   const res = await fetch(url, { headers: { Accept: 'application/json', 'User-Agent': 'depwatch', ...headers } })
   if (!res.ok) throw new Error(`HTTP ${res.status}`)
   return res.json()
 }
 
-// Deliberately duplicated URLs rather than a second responsibility bolted onto
-// the shared registry-client: that module is a browser dependency of
-// infra-toolbox and stays a version-list fetcher.
-export async function fetchRepoMeta(eco: Ecosystem, name: string): Promise<RepoMeta> {
+// Registry-side --deep metadata: repo URL, maintainer count (bus factor),
+// funding, and any terminal end-of-life flag the registry states directly. Each
+// ecosystem owns its own extraction via EcosystemDef.fetchRepoMeta; an ecosystem
+// without one simply has no deep registry signals — there is no switch arm left
+// to forget.
+async function fetchRepoMeta(eco: EcoId, name: string): Promise<RepoMeta> {
   const empty: RepoMeta = { repoUrl: null, maintainerCount: null, hasFunding: false }
+  const def = byId(eco)
+  if (!def?.fetchRepoMeta) return empty
   try {
-    switch (eco) {
-      case 'npm': {
-        const d = await getJson(`https://registry.npmjs.org/${encodeURIComponent(name)}`)
-        const latest = d['dist-tags']?.latest
-        const manifest = latest ? d.versions?.[latest] : undefined
-        return {
-          repoUrl: repoUrlOf(d.repository ?? manifest?.repository),
-          maintainerCount: Array.isArray(d.maintainers) ? d.maintainers.length : null,
-          hasFunding: Boolean(manifest?.funding ?? d.funding),
-        }
-      }
-      case 'pep440': {
-        const d = await getJson(`https://pypi.org/pypi/${encodeURIComponent(name)}/json`)
-        const urls: Record<string, string> = d.info?.project_urls ?? {}
-        const repo = Object.entries(urls).find(([k]) => /source|repo|code|github/i.test(k))?.[1] ?? d.info?.home_page
-        return {
-          repoUrl: repoUrlOf(repo),
-          maintainerCount: null, // PyPI exposes a free-text author, not a maintainer list
-          hasFunding: Object.keys(urls).some((k) => /fund|sponsor|donat/i.test(k)),
-        }
-      }
-      case 'cargo': {
-        const d = await getJson(`https://crates.io/api/v1/crates/${encodeURIComponent(name)}`)
-        return { ...empty, repoUrl: repoUrlOf(d.crate?.repository) }
-      }
-      case 'composer': {
-        const d = await getJson(`https://repo.packagist.org/packages/${name}.json`)
-        const p = d.package
-        return {
-          repoUrl: repoUrlOf(p?.repository),
-          maintainerCount: Array.isArray(p?.maintainers) ? p.maintainers.length : null,
-          hasFunding: Array.isArray(p?.funding) && p.funding.length > 0,
-        }
-      }
-      case 'rubygems': {
-        const d = await getJson(`https://rubygems.org/api/v1/gems/${encodeURIComponent(name)}.json`)
-        return {
-          repoUrl: repoUrlOf(d.source_code_uri ?? d.homepage_uri),
-          maintainerCount: null, // needs a second /owners call; not worth the request
-          hasFunding: false,
-        }
-      }
-      default:
-        return empty
-    }
+    return await def.fetchRepoMeta(name)
   } catch {
     return empty // enrichment is best-effort; the cheap tier still scored the package
   }
-}
-
-function repoUrlOf(repo: unknown): string | null {
-  const raw = typeof repo === 'string' ? repo : (repo as { url?: string } | null)?.url
-  return raw ? String(raw) : null
 }
 
 export function githubSlug(repoUrl: string | null): string | null {
@@ -159,12 +109,14 @@ export interface DeepMeta {
   lastCommitAt: string | null
 }
 
-export async function fetchDeepMeta(eco: Ecosystem, name: string): Promise<DeepMeta> {
+export async function fetchDeepMeta(eco: EcoId, name: string): Promise<DeepMeta> {
   const meta = await fetchRepoMeta(eco, name)
   const out: DeepMeta = {
     maintainerCount: meta.maintainerCount,
     hasFunding: meta.hasFunding,
-    archived: false,
+    // A registry that states end-of-life directly (Helm `deprecated`) is as
+    // terminal as GitHub `archived`.
+    archived: Boolean(meta.archived),
     lastCommitAt: null,
   }
   const slug = githubSlug(meta.repoUrl)
@@ -185,6 +137,6 @@ export function applyDeepMeta(base: ViabilitySignals, meta: DeepMeta, now = Date
   }
 }
 
-export async function deepSignals(eco: Ecosystem, name: string, base: ViabilitySignals, now = Date.now()): Promise<ViabilitySignals> {
+export async function deepSignals(eco: EcoId, name: string, base: ViabilitySignals, now = Date.now()): Promise<ViabilitySignals> {
   return applyDeepMeta(base, await fetchDeepMeta(eco, name), now)
 }

@@ -25,10 +25,9 @@
 import * as vscode from 'vscode'
 import { dirname, join } from 'node:path'
 import type { DeepMeta } from '../../../src/signals.js'
-import type { PackageInfo, RegistryError } from '@lib/registry-client'
 import { type InputFs, loadManifest } from '../../../src/input.js'
 import { basename, detectEcosystem, LOCK_FOR, type Manifest } from '../../../src/manifest.js'
-import { analyse, type AnalyseCache, type DepReport, type Report } from '../../../src/report.js'
+import { analyse, type AnalyseCache, type CachedPackage, type DepReport, type Report } from '../../../src/report.js'
 import { TtlCache } from './cache.js'
 import { combine, isExcludedPath } from './exclude.js'
 import { Coalescer } from './schedule.js'
@@ -65,7 +64,7 @@ interface Remembered {
 }
 
 export class Scanner {
-  private readonly packages: TtlCache<PackageInfo | RegistryError>
+  private readonly packages: TtlCache<CachedPackage>
   private readonly deepMeta: TtlCache<DeepMeta>
   private readonly coalescer = new Coalescer<Scan>()
   private readonly previous = new Map<string, Remembered>()

@@ -11,11 +11,12 @@ describe('detectEcosystem', () => {
     expect(detectEcosystem('Cargo.toml')).toBe('cargo')
     expect(detectEcosystem('composer.json')).toBe('composer')
     expect(detectEcosystem('Gemfile.lock')).toBe('rubygems')
-    expect(detectEcosystem('pom.xml')).toBeNull()
+    expect(detectEcosystem('pom.xml')).toBe('maven')
+    expect(detectEcosystem('deps.edn')).toBeNull()
   })
 
   it('refuses to guess at an unknown manifest', () => {
-    expect(() => parse('pom.xml', '<project/>')).toThrow(/unrecognised input/)
+    expect(() => parse('deps.edn', '{}')).toThrow(/unrecognised input/)
   })
 })
 
@@ -147,6 +148,7 @@ describe('assertEcosystem', () => {
   it('rejects a typo instead of silently reporting no dependencies', () => {
     expect(() => assertEcosystem('npmm')).toThrow(/unsupported ecosystem "npmm"/)
     expect(() => assertEcosystem('')).toThrow(/unsupported ecosystem/)
-    expect(() => assertEcosystem('maven')).toThrow(/want one of/)
+    expect(assertEcosystem('maven')).toBe('maven')
+    expect(() => assertEcosystem('mavenn')).toThrow(/want one of/)
   })
 })

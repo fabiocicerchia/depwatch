@@ -21,6 +21,7 @@ import { go } from './go.js'
 import { maven } from './maven.js'
 import { terraform } from './terraform.js'
 import { githubActions } from './gh-actions.js'
+import { docker } from './docker.js'
 
 export const REGISTRY: Record<EcoId, EcosystemDef> = {
   npm,
@@ -38,6 +39,7 @@ export const REGISTRY: Record<EcoId, EcosystemDef> = {
   maven,
   terraform,
   githubactions: githubActions,
+  docker,
 }
 
 export const ALL: EcosystemDef[] = Object.values(REGISTRY)

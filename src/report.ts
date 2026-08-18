@@ -154,6 +154,11 @@ async function analyseDep(
   }
 
   let versions = versionsAsOf(info.versions, opts.asOf)
+  // A pulse-only ecosystem dates the exact current tag, which may fall outside
+  // the recent-tags window fetchVersions returns — add it so hydration reaches it.
+  if (def.driftScorable === false && !versions.some((v) => v.version === dep.current)) {
+    versions = [...versions, { version: dep.current, released: null }]
+  }
   // Some registries list versions without dates; date only the ones we score.
   if (def.hydrateDates) versions = await hydrateScored(def, dep, versions)
 
@@ -164,11 +169,17 @@ async function analyseDep(
 
   // Docker and the like have honest dates but no orderable series: score pulse
   // and viability, and report drift as unknown rather than a misleading 0.
+  // Pulse is the age of the CURRENT tag, not of a "latest" the series cannot
+  // order.
   if (def.driftScorable === false) {
+    const pulseYears = freshness.currentReleased
+      ? round2(Math.max(0, (opts.now - Date.parse(freshness.currentReleased)) / MS_PER_YEAR))
+      : null
     return {
       ...freshness,
       libyearsBehind: 0,
       latest: null,
+      pulseYears,
       viability,
       quadrant: 'healthy',
       driftUnscored: true,

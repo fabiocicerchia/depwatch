@@ -1,5 +1,6 @@
 import { fetchPackage } from '@lib/registry-client'
 import { parseManifest as parseShared } from '@lib/libyear/engine'
+import { parsePyproject, parsePythonLock } from './python.js'
 import type { EcosystemDef } from './types.js'
 import { getJson } from './http.js'
 import { repoUrlOf } from './meta.js'
@@ -14,10 +15,15 @@ export const pypi: EcosystemDef = {
   id: 'pep440',
   label: 'PyPI',
   purlTypes: ['pypi'],
-  manifests: [],
+  manifests: ['pyproject.toml'],
   manifestPattern: /^requirements/,
-  locks: [],
-  parse: (text) => parseShared(text, 'pep440'),
+  // Poetry and uv both pin exact versions; preferred over pyproject ranges.
+  locks: ['poetry.lock', 'uv.lock'],
+  parse(text, base) {
+    if (base === 'poetry.lock' || base === 'uv.lock') return parsePythonLock(text)
+    if (base === 'pyproject.toml') return parsePyproject(text)
+    return parseShared(text, 'pep440') // requirements*.txt
+  },
   fetchVersions: shared,
   async fetchRepoMeta(name) {
     const d = await getJson(`https://pypi.org/pypi/${encodeURIComponent(name)}/json`)

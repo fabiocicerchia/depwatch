@@ -3,6 +3,7 @@ import { detectKind, parseManifest as parseShared } from '@lib/libyear/engine'
 import type { EcosystemDef } from './types.js'
 import { getJson } from './http.js'
 import { repoUrlOf } from './meta.js'
+import { bunBinaryError, parseBunLock } from './bun.js'
 
 async function shared(name: string) {
   const info = await fetchPackage('npm', name)
@@ -15,8 +16,10 @@ export const npm: EcosystemDef = {
   label: 'npm',
   purlTypes: ['npm'],
   manifests: ['package.json'],
-  locks: ['package-lock.json', 'yarn.lock', 'pnpm-lock.yaml'],
+  locks: ['package-lock.json', 'yarn.lock', 'pnpm-lock.yaml', 'bun.lock', 'bun.lockb'],
   parse(text, base) {
+    if (base === 'bun.lockb') bunBinaryError()
+    if (base === 'bun.lock') return parseBunLock(text)
     // Detect rather than trust the filename: a lock read as a manifest (or the
     // reverse) produces a wrong number with no error.
     const kind = detectKind(text)

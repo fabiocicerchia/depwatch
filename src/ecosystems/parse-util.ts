@@ -6,3 +6,53 @@ export type { Dep }
 // The leading dotted-numeric run of a range: "^1.38" -> "1.38". Used wherever a
 // manifest states a range and we take its floor as the current version.
 export const baseVersion = (range: string): string | null => range.match(/(\d+\.\d+(?:\.\d+)?)/)?.[1] ?? null
+
+// A TOML array-of-tables lock: repeated `[[package]]` blocks each with
+// `name = "x"` and `version = "y"`, both exact. Cargo.lock, poetry.lock and
+// uv.lock all share this shape.
+export function parsePackageArrayLock(text: string): Dep[] {
+  const deps: Dep[] = []
+  const seen = new Set<string>()
+  let name: string | null = null
+  let inPackage = false
+  for (const raw of text.split('\n')) {
+    const line = raw.trim()
+    if (line === '[[package]]') {
+      name = null
+      inPackage = true
+      continue
+    }
+    // Any other table header ends the package block (e.g. [[package.metadata]]).
+    if (line.startsWith('[') && line !== '[[package]]') {
+      inPackage = false
+      continue
+    }
+    if (!inPackage) continue
+    const n = line.match(/^name\s*=\s*["']([^"']+)["']/)
+    if (n) {
+      name = n[1]
+      continue
+    }
+    const v = line.match(/^version\s*=\s*["']([^"']+)["']/)
+    if (v && name && !seen.has(name)) {
+      seen.add(name)
+      deps.push({ name, current: v[1], resolved: true })
+      name = null
+    }
+  }
+  return deps
+}
+
+// A PEP 508 requirement string ("requests[security]>=2.0,<3; python_version<'3.9'")
+// reduced to name + version floor. Shared by requirements.txt and PEP 621
+// [project] dependency arrays.
+export function parsePep508(spec: string): Dep | null {
+  const line = spec.split(';')[0].trim() // drop environment markers
+  if (!line || line.startsWith('#') || line.startsWith('-')) return null
+  const m = line.match(/^([A-Za-z0-9._-]+)\s*(?:\[[^\]]*\])?\s*(==|~=|>=|<=|>|<|!=)?\s*([^,\s]+)?/)
+  if (!m) return null
+  const [, name, op, version] = m
+  const current = version?.match(/\d+(?:\.\d+)*/)?.[0]
+  if (!current) return null
+  return { name, current, resolved: op === '==' }
+}

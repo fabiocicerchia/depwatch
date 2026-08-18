@@ -139,13 +139,13 @@
         "command": "depwatch.setScopeFile",
         "title": "Show findings for the current file",
         "category": "depwatch",
-        "icon": "$(list-selection)"
+        "icon": "$(file)"
       },
       {
         "command": "depwatch.setScopeProject",
         "title": "Show findings for the whole project",
         "category": "depwatch",
-        "icon": "$(list-tree)"
+        "icon": "$(files)"
       },
       {
         "command": "depwatch.clearCache",
@@ -204,7 +204,7 @@
         {
           "command": "depwatch.expandAll",
           "when": "view == depwatch.findings",
-          "group": "navigation@3"
+          "group": "navigation@9"
         },
         {
           "command": "depwatch.showReport",
@@ -521,7 +521,11 @@
     "build": "node esbuild.mjs",
     "watch": "node esbuild.mjs --watch",
     "typecheck": "tsc -p tsconfig.json",
-    "package": "vsce package --no-dependencies"
+    "test": "npm --prefix ../.. test",
+    "copy-legal": "node -e \"const f=require('node:fs');for(const n of ['CHANGELOG.md'])f.copyFileSync('../../'+n,n)\"",
+    "vscode:prepublish": "npm run typecheck && npm test && npm run build && npm run copy-legal",
+    "package": "npx --yes @vscode/vsce@3.9.2 package --no-dependencies",
+    "publish": "npx --yes @vscode/vsce@3.9.2 publish --no-dependencies"
   },
   "devDependencies": {
     "@types/node": "^26.2.0",

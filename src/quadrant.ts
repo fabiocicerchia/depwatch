@@ -66,10 +66,10 @@ export function quadrantSVG(deps: DepReport[], opts: ChartOptions = {}): string 
   parts.push(band(PAD.l, yDiv, xDiv - PAD.l, H - PAD.b - yDiv, COLOR.watch))
   parts.push(band(xDiv, yDiv, W - PAD.r - xDiv, H - PAD.b - yDiv, COLOR.replace))
 
-  parts.push(quadLabel(PAD.l + 8, PAD.t + 16, 'healthy', COLOR.healthy))
-  parts.push(quadLabel(xDiv + 8, PAD.t + 16, 'upgrade — behind but alive', COLOR.upgrade))
-  parts.push(quadLabel(PAD.l + 8, yDiv + 16, 'watch — current but fading', COLOR.watch))
-  parts.push(quadLabel(xDiv + 8, yDiv + 16, 'REPLACE — behind and unmaintained', COLOR.replace))
+  parts.push(quadLabel(PAD.l + 8, PAD.t + 16, 'Healthy', COLOR.healthy))
+  parts.push(quadLabel(xDiv + 8, PAD.t + 16, 'Upgrade — behind but alive', COLOR.upgrade))
+  parts.push(quadLabel(PAD.l + 8, yDiv + 16, 'Watch — current but fading', COLOR.watch))
+  parts.push(quadLabel(xDiv + 8, yDiv + 16, 'Replace — behind and unmaintained', COLOR.replace))
 
   // Axes and the threshold lines that define the quadrants.
   parts.push(line(PAD.l, PAD.t, PAD.l, H - PAD.b, GRID))

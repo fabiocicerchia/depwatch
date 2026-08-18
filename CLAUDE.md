@@ -19,6 +19,11 @@ make lint         # Run all pre-commit checks on the whole tree
 make build        # Build the project
 make test         # Run the tests
 make clean        # Remove build artifacts
+
+make ext-build    # Compile the VS Code extension (extensions/vscode)
+make ext-package  # ...and package it into a .vsix
+make ext-install  # ...and install it into VS Code
+make ext-publish  # ...and publish it to both marketplaces (normally CI's job)
 ```
 
 ## Tooling

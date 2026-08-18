@@ -55,7 +55,7 @@ describe('summarise', () => {
   it('names the quadrant, both numbers and the upgrade', () => {
     const line = summarise(dep(), thresholds)
     expect(line).toContain('left-pad')
-    expect(line).toContain('REPLACE')
+    expect(line).toContain('Replace')
     expect(line).toContain('2.50 libyears behind')
     expect(line).toContain('viability 0.30')
     expect(line).toContain('1.0.0 → 2.0.0')
@@ -65,7 +65,7 @@ describe('summarise', () => {
   it('says a degraded dep was not scored rather than scoring it', () => {
     const line = summarise(dep({ degraded: 'not found in registry' }), thresholds)
     expect(line).toContain('no registry data')
-    expect(line).not.toContain('REPLACE')
+    expect(line).not.toContain('Replace')
   })
 })
 

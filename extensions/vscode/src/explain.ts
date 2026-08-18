@@ -18,21 +18,21 @@ export interface QuadrantInfo {
 
 export const QUADRANT: Record<Quadrant, QuadrantInfo> = {
   replace: {
-    label: 'REPLACE',
+    label: 'Replace',
     action: 'Plan a replacement',
     blurb: 'behind and unmaintained — the upgrade you need may never be written',
   },
   upgrade: {
-    label: 'upgrade',
+    label: 'Upgrade',
     action: 'Upgrade',
     blurb: 'behind but alive — the newer version exists, it is just work',
   },
   watch: {
-    label: 'watch',
+    label: 'Watch',
     action: 'Keep an eye on it',
     blurb: 'current but fading — nothing to upgrade to yet, and nobody obviously shipping one',
   },
-  healthy: { label: 'healthy', action: 'Nothing to do', blurb: 'current, and maintained' },
+  healthy: { label: 'Healthy', action: 'Nothing to do', blurb: 'current, and maintained' },
 }
 
 /** Worst first, as core defines it. */

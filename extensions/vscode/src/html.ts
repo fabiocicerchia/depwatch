@@ -180,7 +180,8 @@ function footer(view: ReportView): string {
     : 'default scan: release timeline only — run a deep scan for maintainers and archived status'
   return `<footer>
     Thresholds: behind &gt; ${view.thresholds.staleLibyears} libyears, fading &lt; ${view.thresholds.riskyViability} viability · ${esc(tier)}<br>
-    Generated ${esc(view.generatedAt)} · libyear is Cox, Bouwers, van Eekelen &amp; Visser, ICSE 2015 · Apache 2.0
+    Generated ${esc(view.generatedAt)} · libyear is Cox, Bouwers, van Eekelen &amp; Visser, ICSE 2015 · Apache 2.0<br>
+    <a href="https://github.com/fabiocicerchia/depwatch">github.com/fabiocicerchia/depwatch</a> · © 2026 Fabio Cicerchia
   </footer>`
 }
 

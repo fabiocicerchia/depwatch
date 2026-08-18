@@ -23,28 +23,30 @@ build: ## Build the project
 test: ## Run the tests
 	npm test
 
-ext-build: ## Build the VS Code extension
+# The same four extension verbs, with the same meanings, in gandalf, greenlint
+# and depwatch: build compiles, package writes the .vsix, install side-loads it,
+# publish pushes it to both marketplaces.
+ext-build: ## Compile the VS Code extension
 	npm --prefix $(EXT) install
 	npm --prefix $(EXT) run typecheck
 	npm --prefix $(EXT) run build
 
-# The Marketplace shows a Changelog tab when the package has one, and there is
-# only one changelog: release-please's. Copied in at package time rather than
-# kept as a second file to forget to update (it is gitignored).
-ext-package: ext-build ## Package the VS Code extension as a VSIX
-	cp CHANGELOG.md $(EXT)/CHANGELOG.md
-	cd $(EXT) && npx @vscode/vsce package --no-dependencies
+# `npm run package` runs vscode:prepublish first — typecheck, tests, bundle, and
+# the copy of the root CHANGELOG the Marketplace renders as a tab (gitignored
+# here: there is one changelog, release-please's).
+ext-package: ext-build ## Build the VS Code extension into a .vsix
+	npm --prefix $(EXT) run package
 
-ext-install: ext-package ## Build, package and install the extension into VS Code
+ext-install: ext-package ## Build the VS Code extension and install it
 	code --install-extension $(VSIX) --force
 	@echo "installed — reload the VS Code window to activate it"
 
-# Normally CI's business: publishing happens in publish-extension.yml when a
-# release is published. This is the manual escape hatch, and it needs
-# VSCE_PAT/OVSX_PAT in the environment.
-ext-publish: ext-package ## Publish the packaged VSIX to both marketplaces
-	cd $(EXT) && npx @vscode/vsce publish --no-dependencies --packagePath depwatch-vscode-$(EXT_VERSION).vsix
-	cd $(EXT) && npx ovsx publish depwatch-vscode-$(EXT_VERSION).vsix
+# Normally CI's business: publishing happens in publish-extension.yml, called by
+# release.yml when release-please cuts a release. This is the manual escape
+# hatch, and it needs VSCE_PAT and OVSX_PAT in the environment.
+ext-publish: ext-package ## Publish the .vsix to both marketplaces
+	cd $(EXT) && npm run publish -- --packagePath "$(notdir $(VSIX))"
+	cd $(EXT) && npx --yes ovsx@1.1.1 publish "$(notdir $(VSIX))" -p "$$OVSX_PAT"
 
 clean: ## Remove build artifacts
 	rm -rf dist $(EXT)/dist $(EXT)/*.vsix $(EXT)/CHANGELOG.md

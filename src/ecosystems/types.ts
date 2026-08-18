@@ -23,6 +23,12 @@ export type EcoId =
   | 'cargo'
   | 'composer'
   | 'rubygems'
+  | 'pub'
+  | 'hex'
+  | 'nuget'
+  | 'cocoapods'
+  | 'conda'
+  | 'helm'
 // Grows one line per ecosystem added. Because REGISTRY is Record<EcoId,
 // EcosystemDef>, adding a member here without a def — or a def without a member —
 // is a compile error, which is the whole point of the seam.

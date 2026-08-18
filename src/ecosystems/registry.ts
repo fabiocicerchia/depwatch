@@ -11,6 +11,12 @@ import { pypi } from './pypi.js'
 import { cargo } from './cargo.js'
 import { composer } from './composer.js'
 import { rubygems } from './rubygems.js'
+import { pub } from './pub.js'
+import { hex } from './hex.js'
+import { nuget } from './nuget.js'
+import { cocoapods } from './cocoapods.js'
+import { conda } from './conda.js'
+import { helm } from './helm.js'
 
 export const REGISTRY: Record<EcoId, EcosystemDef> = {
   npm,
@@ -18,6 +24,12 @@ export const REGISTRY: Record<EcoId, EcosystemDef> = {
   cargo,
   composer,
   rubygems,
+  pub,
+  hex,
+  nuget,
+  cocoapods,
+  conda,
+  helm,
 }
 
 export const ALL: EcosystemDef[] = Object.values(REGISTRY)

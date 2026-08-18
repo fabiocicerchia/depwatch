@@ -244,9 +244,28 @@
           "markdownDescription": "Globs for the files to scan. A lock file sitting beside a manifest is picked up automatically — list the manifests, not the locks."
         },
         "depwatch.exclude": {
-          "type": "string",
-          "default": "**/{node_modules,bower_components,dist,out,build,target,vendor,.git,.venv,venv,__pycache__}/**",
-          "description": "Glob excluded from manifest discovery."
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            "**/node_modules/**",
+            "**/bower_components/**",
+            "**/vendor/**",
+            "**/dist/**",
+            "**/out/**",
+            "**/build/**",
+            "**/target/**",
+            "**/.venv/**",
+            "**/venv/**",
+            "**/__pycache__/**"
+          ],
+          "markdownDescription": "Globs excluded from manifest discovery, on top of the editor's own excludes (see `#depwatch.useEditorExcludes#`)."
+        },
+        "depwatch.useEditorExcludes": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Also skip anything hidden by `#files.exclude#` and `#search.exclude#`. VS Code applies those only when an extension passes no exclude of its own, so without this depwatch would scan folders you have already told the editor to ignore."
         },
         "depwatch.maxManifests": {
           "type": "number",

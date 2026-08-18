@@ -3,6 +3,7 @@
 import * as vscode from 'vscode'
 import type { Gates } from '../../../src/gates.js'
 import type { Quadrant, Thresholds } from '../../../src/report.js'
+import { directoryNames } from './exclude.js'
 import type { BadgeMode } from './totals.js'
 
 export interface Severities {
@@ -16,7 +17,10 @@ export interface Severities {
 export interface Config {
   enable: boolean
   manifests: string[]
-  exclude: string
+  /** depwatch's own excludes, plus the editor's when useEditorExcludes is on. */
+  excludeGlobs: string[]
+  /** The directory names within those, for checking file events cheaply. */
+  excludedDirs: Set<string>
   maxManifests: number
   deep: boolean
   transitive: boolean
@@ -50,7 +54,7 @@ export function readConfig(scope?: vscode.Uri): Config {
   return {
     enable: c.get('enable', true),
     manifests: c.get('manifests', []),
-    exclude: c.get('exclude', ''),
+    ...excludes(c, scope),
     maxManifests: c.get('maxManifests', 25),
     deep: c.get('deep', false),
     transitive: c.get('transitive', false),
@@ -84,6 +88,27 @@ export function readConfig(scope?: vscode.Uri): Config {
   }
 }
 
+// files.exclude and search.exclude are the editor's own answer to "what is not
+// part of this project". Merging them is the difference between honouring that
+// and quietly overriding it.
+function excludes(c: vscode.WorkspaceConfiguration, scope?: vscode.Uri): Pick<Config, 'excludeGlobs' | 'excludedDirs'> {
+  // Defensive about the shape: this setting was a single glob string before it
+  // was a list, and someone's settings.json may still say so.
+  const own = c.get<string[] | string>('exclude', [])
+  const globs = [...(typeof own === 'string' ? [own] : own)]
+
+  if (c.get('useEditorExcludes', true)) {
+    const editor = vscode.workspace.getConfiguration(undefined, scope)
+    for (const section of ['files.exclude', 'search.exclude']) {
+      const entries = editor.get<Record<string, unknown>>(section) ?? {}
+      // A value may be `true` or a `{ when: ... }` condition; both mean hidden.
+      for (const [glob, on] of Object.entries(entries)) if (on) globs.push(glob)
+    }
+  }
+
+  return { excludeGlobs: globs, excludedDirs: directoryNames(globs) }
+}
+
 export function severityFor(cfg: Config, quadrant: Quadrant, degraded: boolean): vscode.DiagnosticSeverity | null {
   return degraded ? cfg.severities.degraded : cfg.severities[quadrant]
 }
@@ -112,6 +137,10 @@ export function affectsResults(e: vscode.ConfigurationChangeEvent): boolean {
     'depwatch.thresholds',
     'depwatch.manifests',
     'depwatch.exclude',
+    'depwatch.useEditorExcludes',
     'depwatch.maxManifests',
+    // Not ours, but they decide what gets scanned all the same.
+    'files.exclude',
+    'search.exclude',
   ].some((key) => e.affectsConfiguration(key))
 }

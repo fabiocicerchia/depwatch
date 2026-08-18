@@ -97,6 +97,29 @@ reported separately and deliberately left out of that count: unknown is not a
 to-do, and counting it would turn a flaky registry into a growing backlog. The
 total ignores the filter — it is the bottom line, not a view of the list.
 
+## What gets scanned
+
+Two settings, plus the editor's own:
+
+- **`depwatch.manifests`** — the include list. Globs, so narrowing to part of a
+  monorepo is `["apps/*/package.json"]` rather than an exclusion arms race. Lock
+  files are found beside a manifest, so list the manifests, not the locks.
+- **`depwatch.exclude`** — extra globs to skip, on top of the editor's.
+- **`files.exclude` and `search.exclude`** — whatever you have already hidden
+  from the explorer and from search is skipped too, unless you turn
+  `depwatch.useEditorExcludes` off.
+
+That last one is not automatic, which is worth knowing: `workspace.findFiles`
+applies `files.exclude` **only when an extension passes no exclude of its own**,
+and never applies `search.exclude`. So an extension with a hardcoded exclude
+list silently overrides yours. depwatch merges instead.
+
+`depwatch.maxManifests` (25) is the backstop: a monorepo with 300 package.json
+files is a scan nobody asked for.
+
+If something you expected is missing, the **depwatch** output channel logs how
+many manifests were found and how many globs were excluded.
+
 ## When it scans, and what it costs
 
 Scanning means asking five public registries about every dependency you have,
@@ -157,7 +180,7 @@ token` once, then use the deep scan command when you want the full picture.
 ## Settings
 
 All under `depwatch.` — see the Settings UI for the full list, which covers
-discovery globs (`manifests`, `exclude`, `maxManifests`), the analysis
+discovery (`manifests`, `exclude`, `useEditorExcludes`, `maxManifests`), the analysis
 (`deep`, `transitive`, `useLockFile`, `concurrency`), the thresholds that draw
 the quadrants (`thresholds.staleLibyears`, `thresholds.riskyViability`), the
 gates (`gates.maxLibyears`, `gates.maxReplace`), scheduling (`scan.*`), caching

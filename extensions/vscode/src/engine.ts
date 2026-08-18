@@ -30,6 +30,7 @@ import { type InputFs, loadManifest } from '../../../src/input.js'
 import { basename, detectEcosystem, LOCK_FOR, type Manifest } from '../../../src/manifest.js'
 import { analyse, type AnalyseCache, type Report } from '../../../src/report.js'
 import { TtlCache } from './cache.js'
+import { combine, isExcludedPath } from './exclude.js'
 import { Coalescer } from './schedule.js'
 import { FileCacheStore } from './store.js'
 import type { Config } from './config.js'
@@ -244,7 +245,7 @@ export async function readText(path: string): Promise<string | undefined> {
 export async function findManifests(cfg: Config): Promise<string[]> {
   const found = new Set<string>()
   for (const glob of cfg.manifests) {
-    const uris = await vscode.workspace.findFiles(glob, cfg.exclude || undefined, cfg.maxManifests * 2)
+    const uris = await vscode.workspace.findFiles(glob, combine(cfg.excludeGlobs), cfg.maxManifests * 2)
     for (const uri of uris) if (uri.scheme === 'file') found.add(uri.fsPath)
     if (found.size >= cfg.maxManifests) break
   }
@@ -255,20 +256,12 @@ export async function findManifests(cfg: Config): Promise<string[]> {
 const depth = (path: string) => path.split(/[/\\]/).length
 
 /**
- * Whether a path sits somewhere the exclude glob covers. Used on file events,
- * where `findFiles` has not had a say — a package.json under node_modules is
- * still a package.json, and there are forty thousand of them.
+ * Whether a path sits somewhere excluded. Used on file events, where
+ * `findFiles` has not had a say — a package.json under node_modules is still a
+ * package.json, and there are forty thousand of them.
  */
 export function isExcluded(path: string, cfg: Config): boolean {
-  const segments = new Set(path.split(/[/\\]/))
-  return excludedNames(cfg.exclude).some((name) => segments.has(name))
-}
-
-// "**/{node_modules,dist}/**" -> ["node_modules", "dist"]; "**/vendor/**" -> ["vendor"].
-function excludedNames(glob: string): string[] {
-  const braced = glob.match(/\{([^}]*)\}/)
-  if (braced) return braced[1].split(',').map((s) => s.trim()).filter(Boolean)
-  return glob.split('/').filter((s) => s && !s.includes('*'))
+  return isExcludedPath(path, cfg.excludedDirs)
 }
 
 /** Is this a file we would scan, or one that feeds a scan (a lock file)? */

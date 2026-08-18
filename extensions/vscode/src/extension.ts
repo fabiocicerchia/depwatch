@@ -82,6 +82,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   async function scanAll(opts: { deep?: boolean; force?: boolean; quiet?: boolean } = {}): Promise<void> {
     if (!cfg.enable) return
     const manifests = await findManifests(cfg)
+    log.debug(`${manifests.length} manifest(s); excluding ${cfg.excludeGlobs.length} glob(s)`)
     if (manifests.length === 0) {
       if (!opts.quiet) vscode.window.showInformationMessage('depwatch: no dependency manifests found in this workspace.')
       return
@@ -149,7 +150,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
   context.subscriptions.push(
     vscode.workspace.onDidChangeConfiguration((e) => {
-      if (!e.affectsConfiguration('depwatch')) return
+      // The editor's own excludes are not ours, but they decide what is scanned.
+      const editorExcludes = e.affectsConfiguration('files.exclude') || e.affectsConfiguration('search.exclude')
+      if (!e.affectsConfiguration('depwatch') && !editorExcludes) return
       const previous = cfg
       cfg = readConfig()
       tree.setConfig(cfg)

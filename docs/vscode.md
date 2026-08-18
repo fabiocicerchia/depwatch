@@ -77,6 +77,20 @@ was fetched (`archived`, `lastCommitAt`) rather than what was derived from it
 ("days since"). Ages are computed at merge time against `now`, which is also
 what lets trend mode score the same package at a dozen different instants.
 
+## What gets scanned
+
+`workspace.findFiles(include, exclude)` applies `files.exclude` only when
+`exclude` is `undefined`, and never applies `search.exclude`. An extension that
+passes its own exclude therefore replaces the user's rather than adding to it —
+so `config.ts` reads both settings and merges them with `depwatch.exclude` into
+one brace group.
+
+File events do not go through `findFiles` at all, so `exclude.ts` also pulls the
+directory names out of those globs for a segment check. Only directories: a
+`**/package-lock.json` in someone's `search.exclude` means "keep it out of search
+results", not "stop measuring this project", and reading it as an exclusion
+would quietly stop the rescans that matter most.
+
 ## Where a finding is drawn
 
 The engine reports names; `locate.ts` finds where each name is written, one

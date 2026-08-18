@@ -4,3 +4,7 @@ coverage
 .DS_Store
 reports/
 site/
+extensions/vscode/*.vsix
+# Copied in from the repo root at package time so the Marketplace has a
+# Changelog tab; there is one changelog, and this is not it.
+extensions/vscode/CHANGELOG.md

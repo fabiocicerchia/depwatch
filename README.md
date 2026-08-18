@@ -56,9 +56,21 @@ node dist/cli.js check Dockerfile             # base-image age (pulse only)
 `depwatch --help` prints the authoritative list — it is generated from the
 ecosystem registry, so it cannot drift from the code.
 
+## In your editor
+
+The [VS Code extension](extensions/vscode/) puts both axes on the manifest you
+are editing: quadrant squiggles with a hover that explains the score, a findings
+pane filtered to the current file or the whole project, the CI gates evaluated
+live, and the same quadrant report in a tab.
+
+```sh
+make ext-install   # build, package a VSIX and install it into VS Code
+```
+
 ## Documentation
 
-Full docs live in [`docs/`](docs/). Runnable examples live in [`examples/`](examples/).
+Full docs live in [`docs/`](docs/) — including [the extension's design](docs/vscode.md).
+Runnable examples live in [`examples/`](examples/).
 
 ## Contributing
 

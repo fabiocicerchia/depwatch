@@ -39,6 +39,11 @@ export interface Manifest {
   sbom?: { format: string; skipped: Record<string, number>; total: number; scoped: boolean }
 }
 
+// Both separators: the CLI is handed POSIX paths, the editor extension is
+// handed whatever the host uses, and a Windows path read as one long filename
+// detects no ecosystem at all.
+export const basename = (file: string): string => file.split(/[/\\]/).pop() ?? file
+
 // Filenames are the reliable signal; content sniffing is not needed because
 // every ecosystem here has a conventional manifest name.
 export function detectEcosystem(file: string): SupportedEcosystem | null {
@@ -68,6 +73,5 @@ export function parse(file: string, text: string, ecosystem?: SupportedEcosystem
   const def = ecosystem ? byId(ecosystem) : byFile(file)
   if (!def)
     throw new Error(`unrecognised input: ${file} (expected a manifest, a lock file, or a CycloneDX/SPDX SBOM)`)
-  const base = file.split('/').pop() ?? file
-  return { ecosystem: def.id, file, deps: def.parse(text, base) }
+  return { ecosystem: def.id, file, deps: def.parse(text, basename(file)) }
 }

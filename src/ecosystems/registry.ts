@@ -57,7 +57,9 @@ export function isEcoId(value: string): value is EcoId {
 // Filename → ecosystem. Locks first (a lock name is the reliable signal), then
 // exact manifest names, then pattern manifests (requirements*.txt).
 export function byFile(file: string): EcosystemDef | null {
-  const base = file.split('/').pop() ?? file
+  // Both separators: the editor extension hands in whatever path the host uses,
+  // and a Windows path read as one long filename matches no ecosystem at all.
+  const base = file.split(/[/\\]/).pop() ?? file
   for (const def of ALL) if (def.locks.includes(base)) return def
   for (const def of ALL) if (def.manifests.includes(base)) return def
   // Whole-path patterns before basename patterns: a generic name (ci.yml) is

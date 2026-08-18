@@ -5,14 +5,17 @@ import { buildReport, libyearsForDep, type Dep, type DepFreshness } from '@lib/l
 import type { Manifest } from './manifest.js'
 import { byId } from './ecosystems/registry.js'
 import type { EcosystemDef, VersionOps } from './ecosystems/types.js'
-import { deepSignals, timelineSignals } from './signals.js'
-import { viabilityScore } from './viability.js'
+import { applyDeepMeta, type DeepMeta, fetchDeepMeta, timelineSignals } from './signals.js'
+import { NO_SIGNALS, viabilityScore, type ViabilitySignals } from './viability.js'
 
 export type Quadrant = 'healthy' | 'upgrade' | 'watch' | 'replace'
 
 export interface DepReport extends DepFreshness {
   viability: number
   quadrant: Quadrant
+  // What the viability score was computed from. A number on its own is not an
+  // explanation, and every surface that shows the score is asked "why".
+  signals: ViabilitySignals
   degraded?: string // why this dep has no registry data
   // Set when the ecosystem has dates but no orderable version series (Docker):
   // pulse and viability are real, drift is not computed.
@@ -27,6 +30,37 @@ export interface Report {
   deps: DepReport[]
   worst: DepReport[]
 }
+
+// Worst first. Every surface that lists dependencies sorts this way, so the
+// order lives here rather than being spelled out again in each of them.
+export const QUADRANT_ORDER: Quadrant[] = ['replace', 'upgrade', 'watch', 'healthy']
+
+const RANK: Record<Quadrant, number> = { replace: 0, upgrade: 1, watch: 2, healthy: 3 }
+
+export function compareDeps(a: DepReport, b: DepReport): number {
+  return RANK[a.quadrant] - RANK[b.quadrant] || b.libyearsBehind - a.libyearsBehind || a.name.localeCompare(b.name)
+}
+
+export interface ReportColumn {
+  header: string
+  /** A number, so every rendering right-aligns it. */
+  numeric?: boolean
+  of(dep: DepReport): string
+}
+
+// The columns of the report, in order. The CLI pads them into a text table and
+// the editor's report puts them in a <table>; adding one here adds it to both,
+// which is the point — the HTML report had already drifted a column behind.
+export const REPORT_COLUMNS: ReportColumn[] = [
+  { header: 'dep', of: (d) => d.name },
+  { header: 'current', of: (d) => d.current },
+  { header: 'eco', of: (d) => (d.ecosystem ? String(d.ecosystem) : '') },
+  { header: 'latest', of: (d) => d.latest ?? '—' },
+  { header: 'drift', numeric: true, of: (d) => (d.degraded || d.driftUnscored ? '—' : d.libyearsBehind.toFixed(2)) },
+  { header: 'pulse', numeric: true, of: (d) => (d.pulseYears === null ? '—' : d.pulseYears.toFixed(2)) },
+  { header: 'viability', numeric: true, of: (d) => (d.degraded ? '—' : d.viability.toFixed(2)) },
+  { header: 'quadrant', of: (d) => (d.degraded ? 'no data' : d.driftUnscored ? 'pulse-only' : d.quadrant) },
+]
 
 export interface Thresholds {
   staleLibyears: number // above this, "behind"
@@ -53,7 +87,42 @@ export interface AnalyseOptions {
   // Only consider versions released at or before this instant. Used by trend
   // mode to reconstruct what the report would have said at an older commit.
   asOf?: number
+  // Where fetched data is remembered. Defaults to a process-lifetime map, which
+  // is all a CLI run needs; a long-lived host (the editor extension) hands in
+  // one that survives restarts so a second scan costs no requests at all.
+  cache?: AnalyseCache
+  /**
+   * Called as each dependency is scored, in completion order. A manifest of two
+   * hundred packages takes as long as the slowest registry answer, and a caller
+   * with a progress bar — or a list it can fill in — should not have to wait for
+   * the last one to show the first.
+   */
+  onDep?: (dep: DepReport, done: number, total: number) => void
+  /**
+   * Stops the scan issuing further requests. In-flight ones are left to finish —
+   * the registry client takes no signal — so this bounds what a cancelled scan
+   * costs rather than stopping it dead.
+   */
+  signal?: AbortSignal
 }
+
+/** Thrown by `analyse` when its signal is aborted. */
+export class ScanAborted extends Error {
+  constructor() {
+    super('scan cancelled')
+    this.name = 'ScanAborted'
+  }
+}
+
+// A cache wraps the loader rather than replacing it: which registry gets called
+// stays here, and the caller only decides where the answer is kept and for how
+// long. Both values are safe to keep — neither depends on the current time.
+export interface AnalyseCache {
+  packages: CacheLayer<CachedPackage>
+  deep?: CacheLayer<DeepMeta>
+}
+
+export type CacheLayer<T> = (key: string, load: () => Promise<T>) => Promise<T>
 
 // Registries rate-limit, and a big manifest is hundreds of packages. Six at a
 // time has never tripped a 429 in practice; lower it if one does.
@@ -67,19 +136,20 @@ const DATE_WINDOW = 12
 // The shared registry-client caches in sessionStorage, which does not exist
 // under Node — so cache here instead. Trend mode analyses the same manifest at
 // many commits and would otherwise refetch every package once per commit.
-interface Fetched {
+export interface FetchedVersions {
   versions: RegistryVersion[]
 }
-interface FetchError {
+export interface FetchError {
   error: string
 }
 
-const packageCache = new Map<string, Promise<Fetched | FetchError>>()
+/** What a cache layer keeps per package: the version list, or why there is none. */
+export type CachedPackage = FetchedVersions | FetchError
 
 // One responsibility per ecosystem def: fetch the version list. Failures become
 // values here so one unreachable package degrades to "unknown" in the report
 // rather than aborting the whole manifest.
-async function fetchVersions(def: EcosystemDef, name: string): Promise<Fetched | FetchError> {
+async function fetchVersions(def: EcosystemDef, name: string): Promise<CachedPackage> {
   try {
     const versions = await def.fetchVersions(name)
     if (versions.length === 0) return { error: 'registry returned no versions' }
@@ -89,23 +159,28 @@ async function fetchVersions(def: EcosystemDef, name: string): Promise<Fetched |
   }
 }
 
-function cachedFetch(def: EcosystemDef, name: string): Promise<Fetched | FetchError> {
-  // Scoped ecosystems (Helm) key on the repository, not the bare name — one
-  // index.yaml covers every chart in it. The name already carries that prefix.
-  const key = `${def.id}:${name.toLowerCase()}`
-  let hit = packageCache.get(key)
-  if (!hit) {
-    hit = fetchVersions(def, name)
-    packageCache.set(key, hit)
+function memoise<T>(): CacheLayer<T> {
+  const store = new Map<string, Promise<T>>()
+  return (key, load) => {
+    let hit = store.get(key)
+    if (!hit) {
+      hit = load()
+      store.set(key, hit)
+    }
+    return hit
   }
-  return hit
 }
 
-async function mapPool<T, R>(items: T[], limit: number, fn: (item: T) => Promise<R>): Promise<R[]> {
+const DEFAULT_CACHE: AnalyseCache = { packages: memoise(), deep: memoise() }
+
+async function mapPool<T, R>(items: T[], limit: number, fn: (item: T) => Promise<R>, signal?: AbortSignal): Promise<R[]> {
   const out = new Array<R>(items.length)
   let next = 0
   const workers = Array.from({ length: Math.min(limit, items.length) }, async () => {
     for (;;) {
+      // Checked before taking work, not before finishing it: a request already
+      // sent is paid for either way, and its answer is worth caching.
+      if (signal?.aborted) throw new ScanAborted()
       const i = next++
       if (i >= items.length) return
       out[i] = await fn(items[i])
@@ -120,8 +195,16 @@ export async function analyse(manifest: Manifest, opts: AnalyseOptions = {}): Pr
   const thresholds = opts.thresholds ?? DEFAULT_THRESHOLDS
   const asOf = opts.asOf ?? now
 
-  const deps = await mapPool(manifest.deps, opts.concurrency ?? DEFAULT_CONCURRENCY, (dep) =>
-    analyseDep(manifest, dep, { ...opts, now, thresholds, asOf }),
+  let done = 0
+  const deps = await mapPool(
+    manifest.deps,
+    opts.concurrency ?? DEFAULT_CONCURRENCY,
+    async (dep) => {
+      const scored = await analyseDep(manifest, dep, { ...opts, now, thresholds, asOf })
+      opts.onDep?.(scored, ++done, manifest.deps.length)
+      return scored
+    },
+    opts.signal,
   )
 
   const summary = buildReport(deps)
@@ -146,7 +229,11 @@ async function analyseDep(
   const eco = (dep.ecosystem as Manifest['ecosystem']) ?? manifest.ecosystem
   const def = byId(eco)
   if (!def) return degraded(dep, `unsupported ecosystem "${eco}"`)
-  const info = await cachedFetch(def, dep.name)
+  const cache = opts.cache ?? DEFAULT_CACHE
+  // Scoped ecosystems (Helm) key on the repository, not the bare name — one
+  // index.yaml covers every chart in it. The name already carries that prefix.
+  const key = `${def.id}:${dep.name.toLowerCase()}`
+  const info = await cache.packages(key, () => fetchVersions(def, dep.name))
   if ('error' in info) {
     // A dep we could not reach is unknown, not healthy — say so instead of
     // scoring it 0 and sending someone to replace a fine package.
@@ -164,7 +251,13 @@ async function analyseDep(
 
   const freshness = freshnessFor(def, dep, versions, opts.asOf)
   let signals = timelineSignals(versions, opts.asOf)
-  if (opts.deep) signals = await deepSignals(eco, dep.name, signals, opts.asOf)
+  if (opts.deep) {
+    // Fetch and derive are separate so the fetched half — none of which depends
+    // on the current time — is what gets cached, and trend mode can reuse one
+    // answer across every instant it scores.
+    const meta = await (cache.deep ?? DEFAULT_CACHE.deep!)(key, () => fetchDeepMeta(eco, dep.name))
+    signals = applyDeepMeta(signals, meta, opts.asOf)
+  }
   const viability = round2(viabilityScore(signals))
 
   // Docker and the like have honest dates but no orderable series: score pulse
@@ -182,11 +275,12 @@ async function analyseDep(
       pulseYears,
       viability,
       quadrant: 'healthy',
+      signals,
       driftUnscored: true,
     }
   }
 
-  return { ...freshness, viability, quadrant: quadrant(freshness.libyearsBehind, viability, opts.thresholds) }
+  return { ...freshness, viability, quadrant: quadrant(freshness.libyearsBehind, viability, opts.thresholds), signals }
 }
 
 function degraded(dep: Dep, reason: string): DepReport {
@@ -202,6 +296,7 @@ function degraded(dep: Dep, reason: string): DepReport {
     pulseYears: null,
     viability: 0.5,
     quadrant: 'healthy',
+    signals: { ...NO_SIGNALS },
     degraded: reason,
   }
 }

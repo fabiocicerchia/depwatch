@@ -4,3 +4,9 @@
 # those hex strings as words ("ba" -> "by"/"be"). Ignore SHA-shaped link labels
 # rather than skipping CHANGELOG.md, so its prose is still checked.
 extend-ignore-re = ["\\[[0-9a-f]{7,40}\\]"]
+
+# Names, not misspellings. A dependency tool necessarily writes out the file
+# names and package names of ecosystems it does not otherwise touch.
+[default.extend-words]
+edn = "edn"          # Clojure's deps.edn — an extension, not "end"
+certifi = "certifi"  # the PyPI package, spelled that way on purpose

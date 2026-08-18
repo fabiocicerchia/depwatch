@@ -58,3 +58,18 @@ Release dates are historical facts, so every past point is computable from
 today's registry data: `depwatch trend` walks the manifest's `git log`, samples
 evenly, and scores each revision as of that commit's date. Registry responses are
 cached in-process, so the extra commits cost no extra requests.
+
+## Surfaces
+
+The CLI is not the only caller. `extensions/vscode/` runs the same engine
+in-process — esbuild bundles `src/` into the extension, so there is no
+subprocess and no parsed stdout — which is why the decisions both surfaces have
+to agree on live in modules rather than in `cli.ts`:
+
+- `src/input.ts` — which file gets read (the lock beside the manifest), which
+  dependencies count, and the notes explaining both.
+- `src/gates.ts` — `--max-libyears` and `--max-replace`, evaluated once.
+- `AnalyseOptions.cache` — where fetched data is remembered. The CLI defaults to
+  a process-lifetime map; the extension hands in a TTL cache on disk.
+
+See [VS Code extension](vscode.md).

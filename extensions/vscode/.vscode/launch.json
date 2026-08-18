@@ -1,0 +1,15 @@
+{
+  // Press F5 with this folder open: builds the bundle, then opens a second
+  // window with depwatch loaded. Breakpoints in src/ work there.
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Run the extension",
+      "type": "extensionHost",
+      "request": "launch",
+      "args": ["--extensionDevelopmentPath=${workspaceFolder}"],
+      "outFiles": ["${workspaceFolder}/dist/**/*.js"],
+      "preLaunchTask": "npm: build"
+    }
+  ]
+}

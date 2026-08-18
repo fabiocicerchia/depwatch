@@ -1,0 +1,22 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    // No outDir: esbuild emits, tsc only checks. Setting one would infer a
+    // rootDir of extensions/vscode and reject the ../../src imports that are
+    // the entire point of building on the engine rather than beside it.
+    "noEmit": true,
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "lib": ["ES2022", "DOM"],
+    "types": ["node", "vscode"],
+    // The same @lib/* mapping the root tsconfig uses, one directory deeper: the
+    // extension imports depwatch's own modules from ../../src, and those import
+    // the shared engine through this alias. esbuild reads these same paths, in
+    // this same order, at bundle time.
+    "paths": { "@lib/*": ["../../../infra-toolbox/src/lib/*", "../../src/lib/*"] }
+  },
+  "include": ["src"]
+}

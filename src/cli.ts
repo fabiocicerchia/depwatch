@@ -5,11 +5,12 @@
 // tsconfig.json — resolved by esbuild at bundle time, never copied. What lives
 // here is the second axis (viability), the quadrant, and the CLI itself.
 
-import { existsSync, readFileSync, writeFileSync } from 'node:fs'
-import { dirname, join } from 'node:path'
-import { analyse, DEFAULT_THRESHOLDS, type DepReport, type Report, type Thresholds } from './report.js'
-import { assertEcosystem, detectEcosystem, LOCK_FOR, parse, type SupportedEcosystem } from './manifest.js'
+import { writeFileSync } from 'node:fs'
+import { analyse, compareDeps, DEFAULT_THRESHOLDS, REPORT_COLUMNS, type Report, type Thresholds } from './report.js'
+import { assertEcosystem, type SupportedEcosystem } from './manifest.js'
 import { coverageLines, ecoIdList } from './ecosystems/registry.js'
+import { gateFailures, tally } from './gates.js'
+import { loadManifest, resolveInput } from './input.js'
 import { quadrantSVG } from './quadrant.js'
 import { trend } from './trend.js'
 
@@ -97,61 +98,15 @@ function parseFlags(argv: string[]): Flags {
   return f
 }
 
-// A manifest range gives its floor, not the installed version, so drift read
-// from one is an upper bound. If the lock file is sitting right next to it, use
-// that instead — silently reporting a worse number than reality is not a
-// conservative default, it is a wrong one.
-export function resolveInput(file: string, f: Flags): string {
-  if (f.noLock) return file
-  const eco = f.eco ?? detectEcosystem(file)
-  if (!eco) return file
-  const base = file.split('/').pop() ?? file
-  if (LOCK_FOR[eco].includes(base)) return file // already a lock file
-  for (const lock of LOCK_FOR[eco]) {
-    const candidate = join(dirname(file), lock)
-    if (existsSync(candidate)) return candidate
-  }
-  return file
-}
+// Where the input file gets resolved and read: src/input.ts, shared with every
+// other surface so they cannot disagree about which file was measured.
+export { resolveInput }
 
 async function loadReport(file: string, f: Flags): Promise<Report> {
-  const input = resolveInput(file, f)
-  const text = readFileSync(input, 'utf8')
-  const manifest = parse(input, text, f.eco ?? detectEcosystem(input) ?? undefined, f.transitive)
-
-  if (manifest.sbom && !f.json) {
-    const skipped = Object.entries(manifest.sbom.skipped).sort((a, b) => b[1] - a[1])
-    const parts = [`${manifest.sbom.format} SBOM: ${manifest.deps.length} scorable components`]
-    if (manifest.sbom.scoped) parts.push(`direct only, of ${manifest.sbom.total} (--transitive for all)`)
-    if (skipped.length > 0) {
-      parts.push(`skipped ${skipped.map(([t, n]) => `${n} ${t}`).join(', ')} — no public registry this tool can query`)
-    }
-    console.error(`depwatch: ${parts.join('; ')}`)
-  }
-
-  // A lock file lists the whole transitive tree. libyear is a statement about
-  // the dependencies you chose, so when the lock was found next to a manifest,
-  // the manifest decides WHICH deps count and the lock decides WHICH VERSIONS
-  // they are. Without this the number silently changes meaning — 14 direct deps
-  // become 215 including transitives — and stops being comparable to anything.
-  if (input !== file && !f.transitive && !manifest.sbom) {
-    const direct = new Set(parse(file, readFileSync(file, 'utf8'), f.eco ?? undefined).deps.map((d) => d.name))
-    manifest.deps = manifest.deps.filter((d) => direct.has(d.name))
-    manifest.file = `${file} + ${input.split('/').pop()}`
-  }
-  if (input !== file && !f.json) {
-    console.error(
-      `depwatch: exact versions from ${input.split('/').pop()}${f.transitive ? ' (whole tree)' : ' (direct dependencies only; --transitive for the full tree)'}`,
-    )
-  }
-
-  if (manifest.deps.length === 0) {
-    throw new Error(
-      manifest.sbom
-        ? `${input}: the SBOM parsed, but none of its components come from a registry this tool can query`
-        : `no dependencies found in ${input}`,
-    )
-  }
+  const { manifest, notes } = loadManifest(file, { eco: f.eco, noLock: f.noLock, transitive: f.transitive })
+  // stderr, so --json stays a clean pipe; suppressed entirely under --json
+  // because a machine reading the JSON has the same facts in the payload.
+  if (!f.json) for (const note of notes) console.error(`depwatch: ${note}`)
   return analyse(manifest, { deep: f.deep, thresholds: f.thresholds })
 }
 
@@ -162,29 +117,15 @@ function emit(text: string, out?: string) {
 
 // --- rendering ---
 
-const QUAD_ORDER: Record<DepReport['quadrant'], number> = { replace: 0, upgrade: 1, watch: 2, healthy: 3 }
-
 function table(r: Report, t: Thresholds): string {
-  const rows = [...r.deps].sort(
-    (a, b) => QUAD_ORDER[a.quadrant] - QUAD_ORDER[b.quadrant] || b.libyearsBehind - a.libyearsBehind || a.name.localeCompare(b.name),
-  )
-  const cols: [string, (d: DepReport) => string][] = [
-    ['dep', (d) => d.name],
-    ['current', (d) => d.current],
-    ['eco', (d) => (d.ecosystem ? String(d.ecosystem) : '')],
-    ['latest', (d) => d.latest ?? '—'],
-    ['drift', (d) => (d.degraded || d.driftUnscored ? '—' : d.libyearsBehind.toFixed(2))],
-    ['pulse', (d) => (d.pulseYears === null ? '—' : d.pulseYears.toFixed(2))],
-    ['viability', (d) => (d.degraded ? '—' : d.viability.toFixed(2))],
-    ['quadrant', (d) => (d.degraded ? 'no data' : d.driftUnscored ? 'pulse-only' : d.quadrant)],
-  ]
-  const widths = cols.map(([h, get]) => Math.max(h.length, ...rows.map((d) => get(d).length)))
+  const rows = [...r.deps].sort(compareDeps)
+  const widths = REPORT_COLUMNS.map((c) => Math.max(c.header.length, ...rows.map((d) => c.of(d).length)))
   const line = (cells: string[]) => cells.map((c, i) => c.padEnd(widths[i])).join('  ').trimEnd()
 
   const out = [
-    line(cols.map(([h]) => h)),
+    line(REPORT_COLUMNS.map((c) => c.header)),
     line(widths.map((w) => '─'.repeat(w))),
-    ...rows.map((d) => line(cols.map(([, get]) => get(d)))),
+    ...rows.map((d) => line(REPORT_COLUMNS.map((c) => c.of(d)))),
     '',
     `total drift: ${r.totalLibyears.toFixed(2)} libyears across ${r.deps.length} deps  (${r.ecosystem}, ${r.file})`,
   ]
@@ -209,25 +150,6 @@ function table(r: Report, t: Thresholds): string {
   return out.join('\n')
 }
 
-function tally(r: Report): Record<DepReport['quadrant'], number> {
-  const counts: Record<DepReport['quadrant'], number> = { healthy: 0, upgrade: 0, watch: 0, replace: 0 }
-  for (const d of r.deps) if (!d.degraded) counts[d.quadrant]++
-  return counts
-}
-
-// Non-zero exit is the whole point of CI mode, so be explicit about why.
-function ciFailures(r: Report, f: Flags): string[] {
-  const fails: string[] = []
-  if (f.maxLibyears !== undefined && r.totalLibyears > f.maxLibyears) {
-    fails.push(`total drift ${r.totalLibyears.toFixed(2)} libyears exceeds --max-libyears ${f.maxLibyears}`)
-  }
-  const replace = tally(r).replace
-  if (f.maxReplace !== undefined && replace > f.maxReplace) {
-    fails.push(`${replace} deps in the replace quadrant exceeds --max-replace ${f.maxReplace}`)
-  }
-  return fails
-}
-
 async function main(argv: string[]): Promise<number> {
   const [cmd, file, ...rest] = argv
   if (!cmd || cmd === '--help' || cmd === '-h') {
@@ -245,8 +167,8 @@ async function main(argv: string[]): Promise<number> {
       const r = await loadReport(file, f)
       emit(f.json ? JSON.stringify(r, null, 2) : table(r, f.thresholds), f.out)
       if (f.ci) {
-        const fails = ciFailures(r, f)
-        for (const msg of fails) console.error(`depwatch: ${msg}`)
+        const fails = gateFailures(r, { maxLibyears: f.maxLibyears, maxReplace: f.maxReplace })
+        for (const { message } of fails) console.error(`depwatch: ${message}`)
         return fails.length > 0 ? 1 : 0
       }
       return 0

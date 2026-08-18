@@ -9,11 +9,13 @@ import * as vscode from 'vscode'
 import { dirname, relative } from 'node:path'
 import { basename, LOCK_FOR } from '../../../src/manifest.js'
 import { quadrantSVG } from '../../../src/quadrant.js'
+import { ScanAborted } from '../../../src/report.js'
 import { gateFailures } from '../../../src/gates.js'
 import { trend } from '../../../src/trend.js'
 import { Annotator } from './annotate.js'
+import { acceptedIn, type Baseline, parse as parseBaseline, serialise, withoutAccepted } from './baseline.js'
 import { affectsResults, type Config, readConfig } from './config.js'
-import { findManifests, isExcluded, isScannable, Scanner } from './engine.js'
+import { findManifests, isExcluded, isScannable, type Scan, Scanner } from './engine.js'
 import { locateDeps } from './locate.js'
 import { ReportPanel, showTrend } from './panel.js'
 import { Debouncer, Heartbeat } from './schedule.js'
@@ -48,6 +50,38 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     dispose: () => debouncer.dispose(),
   })
 
+  // A baseline is a file in the workspace, so it can be committed and shared:
+  // "we accept this much drift today" is a team decision, not a per-machine one.
+  let baseline: Baseline | null = null
+
+  async function baselineUri(): Promise<vscode.Uri | undefined> {
+    const folder = vscode.workspace.workspaceFolders?.[0]
+    return folder && vscode.Uri.joinPath(folder.uri, cfg.baselinePath)
+  }
+
+  async function loadBaseline(): Promise<void> {
+    const uri = await baselineUri()
+    if (!uri) return
+    try {
+      baseline = parseBaseline(new TextDecoder().decode(await vscode.workspace.fs.readFile(uri)))
+      log.debug(baseline ? `baseline: ${Object.keys(baseline.manifests).length} manifest(s)` : 'baseline: unreadable')
+    } catch {
+      baseline = null // no file is the normal case, not an error
+    }
+  }
+
+  // Applied here rather than in the scanner, so writing a baseline re-filters
+  // what is already in hand instead of costing a rescan.
+  function accept(scan: Scan): Scan {
+    const accepted = acceptedIn(baseline, scan.label, scan.report)
+    if (accepted.size === 0) return scan
+    return { ...scan, report: withoutAccepted(scan.report, accepted), accepted: accepted.size }
+  }
+
+  // One controller per scan run; the cancel command and the progress
+  // notification's own button both abort it.
+  let running: AbortController | null = null
+
   // A token typed once, kept in the OS keychain rather than in settings.json
   // where a repo's secret scanner would eventually find it.
   const stored = await context.secrets.get('depwatch.githubToken')
@@ -57,14 +91,32 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
   let scanning = 0
 
-  async function scanOne(path: string, opts: { deep?: boolean; force?: boolean } = {}): Promise<void> {
+  async function scanOne(
+    path: string,
+    opts: { deep?: boolean; force?: boolean; report?: (message: string) => void } = {},
+  ): Promise<void> {
     scanning++
     status.scanning(true)
     try {
-      const scan = await scanner.scan(path, { deep: opts.deep ?? false, force: opts.force })
-      results.set(scan)
+      const scan = await scanner.scan(path, {
+        deep: opts.deep ?? false,
+        force: opts.force,
+        signal: running?.signal,
+        // Findings appear as the registries answer, rather than the pane sitting
+        // empty until the slowest one does.
+        onPartial: (partial, done, total) => {
+          results.set(accept(partial))
+          opts.report?.(`${partial.label} — ${done}/${total}`)
+        },
+      })
+      results.set(accept(scan))
       log.debug(`${scan.label}: ${scan.report.totalLibyears.toFixed(2)} libyears, ${scan.report.deps.length} deps`)
     } catch (e: unknown) {
+      // Cancelling is a choice, not a failure: leave what was found in place.
+      if (e instanceof ScanAborted) {
+        log.debug(`${vscode.workspace.asRelativePath(path)}: cancelled`)
+        return
+      }
       const message = e instanceof Error ? e.message : String(e)
       const label = vscode.workspace.asRelativePath(path)
       log.debug(`${label}: ${message}`)
@@ -90,9 +142,29 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     // One manifest at a time: each already runs its own registry requests in
     // parallel, and multiplying the two is how an editor extension ends up
     // saturating someone's connection.
-    await vscode.window.withProgress({ location: { viewId: 'depwatch.findings' } }, async () => {
-      for (const path of manifests) await scanOne(path, opts)
-    })
+    running?.abort()
+    const controller = new AbortController()
+    running = controller
+    // Background scans report into the pane's own progress bar; a scan you asked
+    // for gets a notification, because it is the one you are waiting on.
+    const options: vscode.ProgressOptions = opts.quiet
+      ? { location: { viewId: 'depwatch.findings' } }
+      : { location: vscode.ProgressLocation.Notification, title: 'depwatch', cancellable: true }
+    try {
+      await vscode.window.withProgress(
+        options,
+        async (progress, token) => {
+          token.onCancellationRequested(() => controller.abort())
+          for (const [i, path] of manifests.entries()) {
+            if (controller.signal.aborted) break
+            progress.report({ message: `${vscode.workspace.asRelativePath(path)} (${i + 1}/${manifests.length})` })
+            await scanOne(path, { ...opts, report: (message) => progress.report({ message }) })
+          }
+        },
+      )
+    } finally {
+      if (running === controller) running = null
+    }
   }
 
   const heartbeat = new Heartbeat({
@@ -199,6 +271,56 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   register('depwatch.setScopeFile', () => tree.setScope('file'))
   register('depwatch.setScopeProject', () => tree.setScope('project'))
   register('depwatch.expandAll', () => tree.expandAll())
+  register('depwatch.showLog', () => log.show())
+
+  register('depwatch.cancel', () => {
+    if (!running) {
+      vscode.window.showInformationMessage('depwatch: no scan is running.')
+      return
+    }
+    running.abort()
+    log.debug('cancelled by request')
+  })
+
+  // Writing a baseline does not rescan: the reports are already in hand, and
+  // accepting them is a filter over what they say.
+  register('depwatch.writeBaseline', async () => {
+    if (results.size === 0) await scanAll({ quiet: true })
+    const uri = await baselineUri()
+    if (!uri) {
+      vscode.window.showWarningMessage('depwatch: a baseline needs an open workspace folder.')
+      return
+    }
+    // The scans in `results` may already be filtered by an older baseline, so
+    // the new one is written from a full rescan of what is cached — otherwise
+    // accepting twice would quietly forget the first set.
+    const full = await Promise.all(results.all().map((s) => scanner.scan(s.path, { deep: s.deep })))
+    const text = serialise(full, new Date().toISOString())
+    await vscode.workspace.fs.writeFile(uri, new TextEncoder().encode(text))
+    await loadBaseline()
+    for (const scan of full) results.set(accept(scan))
+
+    const accepted = full.reduce((n, s) => n + s.report.deps.filter((d) => d.quadrant !== 'healthy' && !d.degraded).length, 0)
+    const pick = await vscode.window.showInformationMessage(
+      `depwatch: accepted ${accepted} finding(s) into ${basename(uri.fsPath)}. Only what gets worse will show from now on.`,
+      'Open baseline',
+    )
+    if (pick) await vscode.window.showTextDocument(uri)
+  })
+
+  register('depwatch.clearBaseline', async () => {
+    const uri = await baselineUri()
+    if (!uri) return
+    try {
+      await vscode.workspace.fs.delete(uri)
+    } catch {
+      vscode.window.showInformationMessage('depwatch: there was no baseline to clear.')
+      return
+    }
+    baseline = null
+    await scanAll({ quiet: true })
+    vscode.window.showInformationMessage('depwatch: baseline cleared. Every finding is shown again.')
+  })
   register('depwatch.clearFilter', () => tree.setFilter(null))
 
   // A multi-select quick pick rather than a row of toggle buttons: five
@@ -347,6 +469,20 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   })
 
   // --- first run ---
+
+  await loadBaseline()
+  const baselineWatcher = vscode.workspace.createFileSystemWatcher(`**/${cfg.baselinePath}`)
+  const rereadBaseline = async () => {
+    await loadBaseline()
+    // Re-filter what is already scanned; no registry is involved.
+    for (const scan of results.all()) results.set(accept(await scanner.scan(scan.path, { deep: scan.deep })))
+  }
+  context.subscriptions.push(
+    baselineWatcher,
+    baselineWatcher.onDidChange(() => void rereadBaseline()),
+    baselineWatcher.onDidCreate(() => void rereadBaseline()),
+    baselineWatcher.onDidDelete(() => void rereadBaseline()),
+  )
 
   // Pruning is the only maintenance the cache needs, and once per session is
   // plenty. Deliberately not awaited: it must never delay the first scan.

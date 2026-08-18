@@ -111,3 +111,57 @@ describe('analyse', () => {
     expect(r.deps[0].libyearsBehind).toBe(0)
   })
 })
+
+describe('progress', () => {
+  it('reports each dependency as it is scored, with a running count', async () => {
+    const { cache } = cannedCache({
+      'npm:a': pkg('a', [['1.0.0', '2025-01-01T00:00:00Z']]),
+      'npm:b': pkg('b', [['1.0.0', '2025-01-01T00:00:00Z']]),
+      'npm:c': pkg('c', [['1.0.0', '2025-01-01T00:00:00Z']]),
+    })
+    const seen: string[] = []
+    await analyse(
+      manifest([
+        { name: 'a', current: '1.0.0', resolved: true },
+        { name: 'b', current: '1.0.0', resolved: true },
+        { name: 'c', current: '1.0.0', resolved: true },
+      ]),
+      {
+        now: Date.parse('2026-01-01T00:00:00Z'),
+        cache,
+        onDep: (dep, done, total) => seen.push(`${dep.name} ${done}/${total}`),
+      },
+    )
+    expect(seen).toHaveLength(3)
+    expect(seen.map((s) => s.split(' ')[1])).toEqual(['1/3', '2/3', '3/3'])
+  })
+})
+
+describe('cancellation', () => {
+  it('stops taking new work once the signal aborts', async () => {
+    const controller = new AbortController()
+    let scored = 0
+    const cache: AnalyseCache = {
+      packages: async () => {
+        if (++scored === 2) controller.abort()
+        return pkg('x', [['1.0.0', '2025-01-01T00:00:00Z']])
+      },
+    }
+    const deps = Array.from({ length: 20 }, (_, i) => ({ name: `p${i}`, current: '1.0.0', resolved: true }))
+
+    await expect(analyse(manifest(deps), { cache, concurrency: 1, signal: controller.signal })).rejects.toThrow(
+      'scan cancelled',
+    )
+    // Whatever was already in flight finishes; the rest is never requested.
+    expect(scored).toBeLessThan(deps.length)
+  })
+
+  it('runs to the end when the signal never aborts', async () => {
+    const { cache } = cannedCache({ 'npm:a': pkg('a', [['1.0.0', '2025-01-01T00:00:00Z']]) })
+    const r = await analyse(manifest([{ name: 'a', current: '1.0.0', resolved: true }]), {
+      cache,
+      signal: new AbortController().signal,
+    })
+    expect(r.deps).toHaveLength(1)
+  })
+})

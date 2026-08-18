@@ -40,6 +40,7 @@ export interface Config {
   diagnostics: boolean
   severities: Severities
   statusBar: boolean
+  baselinePath: string
   badge: BadgeMode
   trendMaxPoints: number
 }
@@ -83,6 +84,7 @@ export function readConfig(scope?: vscode.Uri): Config {
       degraded: severity(c.get('diagnostics.degraded', 'off')),
     },
     statusBar: c.get('statusBar', true),
+    baselinePath: c.get('baseline.path', '.depwatch-baseline.json'),
     badge: c.get<BadgeMode>('badge', 'toAddress'),
     trendMaxPoints: c.get('trend.maxPoints', 12),
   }

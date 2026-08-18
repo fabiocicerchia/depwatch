@@ -28,7 +28,7 @@ import type { DeepMeta } from '../../../src/signals.js'
 import type { PackageInfo, RegistryError } from '@lib/registry-client'
 import { type InputFs, loadManifest } from '../../../src/input.js'
 import { basename, detectEcosystem, LOCK_FOR, type Manifest } from '../../../src/manifest.js'
-import { analyse, type AnalyseCache, type Report } from '../../../src/report.js'
+import { analyse, type AnalyseCache, type DepReport, type Report } from '../../../src/report.js'
 import { TtlCache } from './cache.js'
 import { combine, isExcludedPath } from './exclude.js'
 import { Coalescer } from './schedule.js'
@@ -44,6 +44,10 @@ export interface Scan {
   scannedAt: number
   /** The deps and versions this report was computed from. */
   signature: string
+  /** Findings a baseline already accounts for, and so hidden from this report. */
+  accepted?: number
+  /** True while the scan is still running and this is what it has so far. */
+  partial?: boolean
 }
 
 export interface ScanFailure {
@@ -85,7 +89,16 @@ export class Scanner {
    * refresh uses it to look for releases published since the last scan, and
    * leaves the TTL cache to decide whether that costs a request.
    */
-  scan(path: string, opts: { deep: boolean; force?: boolean } = { deep: false }): Promise<Scan> {
+  scan(
+    path: string,
+    opts: {
+      deep: boolean
+      force?: boolean
+      signal?: AbortSignal
+      /** Called with what the scan has so far, so a long one is not silent. */
+      onPartial?: (scan: Scan, done: number, total: number) => void
+    } = { deep: false },
+  ): Promise<Scan> {
     return this.coalescer.run(path, async () => {
       const label = vscode.workspace.asRelativePath(path)
       const inputs = candidates(path, this.cfg)
@@ -112,13 +125,27 @@ export class Scanner {
 
       const deep = opts.deep || this.cfg.deep
       const signature = signatureOf(manifest.deps, deep, this.cfg)
+      const blank = { path, label, notes, deep, scannedAt: Date.now(), signature }
       if (!opts.force && last && last.scan.signature === signature && this.isFresh(last.scan)) return last.scan
 
+      // Every tenth dependency, and the last: often enough that a slow manifest
+      // fills in as it goes, rarely enough that the pane is not rebuilt per
+      // registry answer. The 150ms coalescing in Results absorbs the rest.
+      const seen: DepReport[] = []
       const report = await analyse(manifest, {
         deep,
         thresholds: this.cfg.thresholds,
         concurrency: this.cfg.concurrency,
         cache: this.cache(),
+        signal: opts.signal,
+        onDep: opts.onPartial
+          ? (dep, done, total) => {
+              seen.push(dep)
+              if (done % 10 !== 0 && done !== total) return
+              const partial = { ...blank, report: partialReport(manifest, seen), partial: true }
+              opts.onPartial?.(partial, done, total)
+            }
+          : undefined,
       })
 
       const scan: Scan = { path, label, report, notes, deep, scannedAt: Date.now(), signature }
@@ -157,6 +184,19 @@ export class Scanner {
 
   forget(path: string): void {
     this.previous.delete(path)
+  }
+}
+
+// What the scan has so far, shaped like a finished report so every consumer
+// renders it without knowing the difference.
+function partialReport(manifest: Manifest, deps: DepReport[]): Report {
+  return {
+    file: manifest.file,
+    ecosystem: manifest.ecosystem,
+    generatedAt: new Date().toISOString(),
+    totalLibyears: Math.round(deps.reduce((sum, d) => sum + d.libyearsBehind, 0) * 100) / 100,
+    deps: [...deps],
+    worst: [],
   }
 }
 

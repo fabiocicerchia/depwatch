@@ -36,7 +36,7 @@ export type Node =
   | { kind: 'file'; scan: Scan }
   | { kind: 'group'; scan: Scan; lens: Lens; deps: DepReport[] }
   | { kind: 'dep'; scan: Scan; dep: DepReport }
-  | { kind: 'summary'; totals: Totals; filtered: boolean }
+  | { kind: 'summary'; totals: Totals; filtered: boolean; accepted: number }
   | { kind: 'message'; text: string; detail?: string }
 
 const ICON: Record<Lens, { icon: string; colour: string }> = {
@@ -142,7 +142,11 @@ export class FindingsTree implements vscode.TreeDataProvider<Node>, vscode.Dispo
       }
       case 'summary': {
         const item = new vscode.TreeItem(summaryLabel(node.totals))
-        item.description = summaryDetail(node.totals)
+        // Accepted findings are hidden, not gone; saying how many keeps a
+        // baselined pane from reading as a clean bill of health.
+        item.description = [summaryDetail(node.totals), node.accepted > 0 ? `${node.accepted} accepted` : '']
+          .filter(Boolean)
+          .join(' · ')
         item.iconPath = new vscode.ThemeIcon('dashboard')
         item.id = 'depwatch.summary'
         item.contextValue = 'depwatch.summary'
@@ -155,6 +159,9 @@ export class FindingsTree implements vscode.TreeDataProvider<Node>, vscode.Dispo
               ? `${node.totals.degraded} could not be scored and are left out of that count: unknown is not a to-do.`
               : '',
             node.filtered ? '_The list above is filtered. This total is not._' : '',
+            node.accepted > 0
+              ? `${node.accepted} finding(s) accepted by the baseline are hidden. Clear the baseline to see them.`
+              : '',
             `_Behind means over ${this.cfg.thresholds.staleLibyears} libyears; fading means viability under ${this.cfg.thresholds.riskyViability}._`,
           ]
             .filter(Boolean)
@@ -285,6 +292,7 @@ export class FindingsTree implements vscode.TreeDataProvider<Node>, vscode.Dispo
       kind: 'summary',
       totals: totalsOf(scans.map((s) => s.report)),
       filtered: this.filter !== null,
+      accepted: scans.reduce((n, s) => n + (s.accepted ?? 0), 0),
     })
 
     return { roots, children, parents }

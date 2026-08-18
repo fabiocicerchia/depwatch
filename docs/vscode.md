@@ -91,6 +91,19 @@ directory names out of those globs for a segment check. Only directories: a
 results", not "stop measuring this project", and reading it as an exclusion
 would quietly stop the rescans that matter most.
 
+## Baselines
+
+`baseline.ts` is pure: serialise the findings, read them back, and answer which
+of today's dependencies the file already accounts for. A dependency is worse —
+and so comes back — when it has drifted further than was accepted, or when it
+has fallen to a worse quadrant at the same drift. The second case is the one
+that justifies a depwatch-specific baseline rather than a version ignore-list:
+it is how "the maintainer walked away since you signed off" surfaces.
+
+The filter is applied in `extension.ts`, not in the scanner, so the cache keeps
+full reports and writing a baseline re-filters what is already in hand instead
+of costing a rescan.
+
 ## Where a finding is drawn
 
 The engine reports names; `locate.ts` finds where each name is written, one

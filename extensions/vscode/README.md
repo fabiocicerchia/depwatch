@@ -67,6 +67,10 @@ bar, and a scan starting on its own. `depwatch: Scan the workspace` forces one.
 | `depwatch: Export the quadrant chart as SVG` | The chart on its own |
 | `depwatch: Filter findings by quadrant` | Show only replace / upgrade / watch / healthy / no data |
 | `depwatch: Expand all findings` | The other half of the collapse-all button |
+| `depwatch: Accept current findings` | Writes a baseline; only what gets worse shows afterwards |
+| `depwatch: Clear the baseline` | Shows every finding again |
+| `depwatch: Cancel the running scan` | Stops a scan issuing further requests |
+| `depwatch: Show the log` | Opens the depwatch output channel |
 | `depwatch: Clear the registry cache` | Forces the next scan to refetch |
 | `depwatch: Set the GitHub token` | Stored in the OS keychain, for deep scans |
 
@@ -119,6 +123,41 @@ files is a scan nobody asked for.
 
 If something you expected is missing, the **depwatch** output channel logs how
 many manifests were found and how many globs were excluded.
+
+## Accepting what is already there
+
+A repository that has been running for years opens the pane at 88 libyears and
+fifty-odd dependencies to address. All of it is true and none of it is news, and
+a list that never empties is a list people stop reading.
+
+**depwatch: Accept current findings** writes `.depwatch-baseline.json` — commit
+it, and the team shares one answer to "how much drift do we already live with".
+From then on the pane shows what got worse, and the last row still says how many
+findings are hidden (`… · 47 accepted`) so a baselined pane never reads as a
+clean bill of health.
+
+Two things count as worse, and both bring a dependency back:
+
+- **more drift** than was accepted — a new release landed and you are further
+  behind than when you signed off;
+- **a worse quadrant at the same drift** — the maintainer walked away since you
+  accepted it. That is the change this tool exists to notice, and it is the one
+  a plain "ignore these versions" list would miss.
+
+Writing or clearing a baseline never costs a rescan: the reports are already in
+hand, and accepting them is a filter over what they say.
+
+## Long scans
+
+A scan you ask for shows a cancellable progress notification naming the manifest
+and its position (`apps/api/v2/package.json — 24/65`), and findings appear in
+the pane as the registries answer rather than all at the end. Cancelling — from
+the notification or **depwatch: Cancel the running scan** — stops further
+requests being issued; ones already in flight are left to finish, since their
+answers are worth caching either way. Whatever was found stays.
+
+Background scans (startup, save, the six-hour timer) report into the pane's own
+progress bar instead, and are not cancellable — there is nothing to wait for.
 
 ## When it scans, and what it costs
 
@@ -183,7 +222,8 @@ All under `depwatch.` — see the Settings UI for the full list, which covers
 discovery (`manifests`, `exclude`, `useEditorExcludes`, `maxManifests`), the analysis
 (`deep`, `transitive`, `useLockFile`, `concurrency`), the thresholds that draw
 the quadrants (`thresholds.staleLibyears`, `thresholds.riskyViability`), the
-gates (`gates.maxLibyears`, `gates.maxReplace`), scheduling (`scan.*`), caching
+gates (`gates.maxLibyears`, `gates.maxReplace`), the baseline (`baseline.path`),
+scheduling (`scan.*`), caching
 (`cache.*`), per-quadrant diagnostic severity (`diagnostics.*`) and what the tab
 counts (`badge`).
 

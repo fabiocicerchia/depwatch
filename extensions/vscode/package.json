@@ -1,7 +1,7 @@
 {
   "name": "depwatch-vscode",
   "displayName": "depwatch",
-  "description": "Dependency drift (libyears) × viability, in the editor.",
+  "description": "Dependency drift (libyears) \u00d7 viability, in the editor.",
   "version": "0.1.0",
   "private": true,
   "license": "Apache-2.0",
@@ -59,7 +59,7 @@
     "viewsWelcome": [
       {
         "view": "depwatch.findings",
-        "contents": "No dependency scan yet.\n[Scan workspace](command:depwatch.scanWorkspace)\nScans run on save and on a slow timer — never while you type.\n[Open the report](command:depwatch.showReport)"
+        "contents": "No dependency scan yet.\n[Scan workspace](command:depwatch.scanWorkspace)\nScans run on save and on a slow timer \u2014 never while you type.\n[Open the report](command:depwatch.showReport)"
       }
     ],
     "commands": [
@@ -148,6 +148,27 @@
         "command": "depwatch.setGitHubToken",
         "title": "Set the GitHub token used by deep scans",
         "category": "depwatch"
+      },
+      {
+        "command": "depwatch.cancel",
+        "title": "Cancel the running scan",
+        "category": "depwatch",
+        "icon": "$(stop-circle)"
+      },
+      {
+        "command": "depwatch.showLog",
+        "title": "Show the log",
+        "category": "depwatch"
+      },
+      {
+        "command": "depwatch.writeBaseline",
+        "title": "Accept current findings (write baseline)",
+        "category": "depwatch"
+      },
+      {
+        "command": "depwatch.clearBaseline",
+        "title": "Clear the baseline",
+        "category": "depwatch"
       }
     ],
     "menus": {
@@ -216,6 +237,26 @@
           "command": "depwatch.clearCache",
           "when": "view == depwatch.findings",
           "group": "3_cache@1"
+        },
+        {
+          "command": "depwatch.cancel",
+          "when": "view == depwatch.findings",
+          "group": "1_scan@4"
+        },
+        {
+          "command": "depwatch.writeBaseline",
+          "when": "view == depwatch.findings",
+          "group": "4_baseline@1"
+        },
+        {
+          "command": "depwatch.clearBaseline",
+          "when": "view == depwatch.findings",
+          "group": "4_baseline@2"
+        },
+        {
+          "command": "depwatch.showLog",
+          "when": "view == depwatch.findings",
+          "group": "5_log@1"
         }
       ]
     },
@@ -241,7 +282,7 @@
             "**/bom.json",
             "**/*.cdx.json"
           ],
-          "markdownDescription": "Globs for the files to scan. A lock file sitting beside a manifest is picked up automatically — list the manifests, not the locks."
+          "markdownDescription": "Globs for the files to scan. A lock file sitting beside a manifest is picked up automatically \u2014 list the manifests, not the locks."
         },
         "depwatch.exclude": {
           "type": "array",
@@ -276,7 +317,7 @@
         "depwatch.deep": {
           "type": "boolean",
           "default": false,
-          "markdownDescription": "Fetch maintainer count, funding, archived status and last commit for every dependency. Two extra requests per package and GitHub rate-limits hard without a token — leave this off for scans on save and use the **Deep scan** command when you want the full picture."
+          "markdownDescription": "Fetch maintainer count, funding, archived status and last commit for every dependency. Two extra requests per package and GitHub rate-limits hard without a token \u2014 leave this off for scans on save and use the **Deep scan** command when you want the full picture."
         },
         "depwatch.transitive": {
           "type": "boolean",
@@ -313,7 +354,7 @@
             "null"
           ],
           "default": null,
-          "markdownDescription": "Fail the gate above this much total drift — the editor's copy of `--max-libyears`. `null` disables it."
+          "markdownDescription": "Fail the gate above this much total drift \u2014 the editor's copy of `--max-libyears`. `null` disables it."
         },
         "depwatch.gates.maxReplace": {
           "type": [
@@ -321,7 +362,7 @@
             "null"
           ],
           "default": null,
-          "markdownDescription": "Fail the gate above this many dependencies in the replace quadrant — the editor's copy of `--max-replace`. `null` disables it."
+          "markdownDescription": "Fail the gate above this many dependencies in the replace quadrant \u2014 the editor's copy of `--max-replace`. `null` disables it."
         },
         "depwatch.scan.onStartup": {
           "type": "boolean",
@@ -439,6 +480,11 @@
           "default": true,
           "description": "Show total drift in the status bar."
         },
+        "depwatch.baseline.path": {
+          "type": "string",
+          "default": ".depwatch-baseline.json",
+          "markdownDescription": "Where the baseline lives, relative to the first workspace folder. Written by **depwatch: Accept current findings**; commit it and the team shares one answer to \"how much drift do we already live with\". Delete it, or run **Clear the baseline**, to show everything again."
+        },
         "depwatch.badge": {
           "type": "string",
           "enum": [
@@ -447,7 +493,7 @@
             "off"
           ],
           "enumDescriptions": [
-            "Dependencies outside the healthy quadrant — the ones that are work.",
+            "Dependencies outside the healthy quadrant \u2014 the ones that are work.",
             "Every dependency being watched.",
             "No count on the tab."
           ],

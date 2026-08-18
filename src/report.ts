@@ -86,6 +86,27 @@ export interface AnalyseOptions {
   // is all a CLI run needs; a long-lived host (the editor extension) hands in
   // one that survives restarts so a second scan costs no requests at all.
   cache?: AnalyseCache
+  /**
+   * Called as each dependency is scored, in completion order. A manifest of two
+   * hundred packages takes as long as the slowest registry answer, and a caller
+   * with a progress bar — or a list it can fill in — should not have to wait for
+   * the last one to show the first.
+   */
+  onDep?: (dep: DepReport, done: number, total: number) => void
+  /**
+   * Stops the scan issuing further requests. In-flight ones are left to finish —
+   * the registry client takes no signal — so this bounds what a cancelled scan
+   * costs rather than stopping it dead.
+   */
+  signal?: AbortSignal
+}
+
+/** Thrown by `analyse` when its signal is aborted. */
+export class ScanAborted extends Error {
+  constructor() {
+    super('scan cancelled')
+    this.name = 'ScanAborted'
+  }
 }
 
 // A cache wraps the loader rather than replacing it: which URL gets called
@@ -119,11 +140,14 @@ function memoise<T>(): CacheLayer<T> {
 
 const DEFAULT_CACHE: AnalyseCache = { packages: memoise(), deep: memoise() }
 
-async function mapPool<T, R>(items: T[], limit: number, fn: (item: T) => Promise<R>): Promise<R[]> {
+async function mapPool<T, R>(items: T[], limit: number, fn: (item: T) => Promise<R>, signal?: AbortSignal): Promise<R[]> {
   const out = new Array<R>(items.length)
   let next = 0
   const workers = Array.from({ length: Math.min(limit, items.length) }, async () => {
     for (;;) {
+      // Checked before taking work, not before finishing it: a request already
+      // sent is paid for either way, and its answer is worth caching.
+      if (signal?.aborted) throw new ScanAborted()
       const i = next++
       if (i >= items.length) return
       out[i] = await fn(items[i])
@@ -138,8 +162,16 @@ export async function analyse(manifest: Manifest, opts: AnalyseOptions = {}): Pr
   const thresholds = opts.thresholds ?? DEFAULT_THRESHOLDS
   const asOf = opts.asOf ?? now
 
-  const deps = await mapPool(manifest.deps, opts.concurrency ?? DEFAULT_CONCURRENCY, (dep) =>
-    analyseDep(manifest, dep, { ...opts, now, thresholds, asOf }),
+  let done = 0
+  const deps = await mapPool(
+    manifest.deps,
+    opts.concurrency ?? DEFAULT_CONCURRENCY,
+    async (dep) => {
+      const scored = await analyseDep(manifest, dep, { ...opts, now, thresholds, asOf })
+      opts.onDep?.(scored, ++done, manifest.deps.length)
+      return scored
+    },
+    opts.signal,
   )
 
   const summary = buildReport(deps)

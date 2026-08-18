@@ -1,5 +1,5 @@
 # depwatch
-.PHONY: help setup build test lint clean
+.PHONY: help setup build test typecheck lint clean
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
@@ -13,6 +13,9 @@ lint: ## Run all pre-commit checks on the whole tree
 
 build: ## Build the project
 	npm run build
+
+typecheck: ## Type-check without emitting (catches a half-added ecosystem)
+	npm run typecheck
 
 test: ## Run the tests
 	npm test

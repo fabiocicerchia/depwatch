@@ -9,6 +9,7 @@ import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { analyse, DEFAULT_THRESHOLDS, type DepReport, type Report, type Thresholds } from './report.js'
 import { assertEcosystem, detectEcosystem, LOCK_FOR, parse, type SupportedEcosystem } from './manifest.js'
+import { coverageLines, ecoIdList } from './ecosystems/registry.js'
 import { quadrantSVG } from './quadrant.js'
 import { trend } from './trend.js'
 
@@ -22,7 +23,7 @@ Options
   --json                  machine-readable output
   --deep                  fetch maintainer/archived/last-commit signals
                           (extra requests; set GITHUB_TOKEN to avoid throttling)
-  --eco <name>            force ecosystem: npm|pep440|cargo|composer|rubygems
+  --eco <name>            force ecosystem: ${ecoIdList()}
   --ci                    exit non-zero when a threshold is breached
   --max-libyears <n>      CI: fail above this total drift
   --max-replace <n>       CI: fail above this many deps in the "replace" quadrant
@@ -41,7 +42,10 @@ Inputs, in order of accuracy:
   lock file    package-lock.json, yarn.lock, pnpm-lock.yaml, Cargo.lock,
                composer.lock, Gemfile.lock — resolved versions
   manifest     package.json, requirements.txt, Cargo.toml, composer.json —
-               ranges only, so the result is an upper bound`
+               ranges only, so the result is an upper bound
+
+Ecosystems (files recognised)
+  ${coverageLines().join('\n  ')}`
 
 interface Flags {
   json: boolean

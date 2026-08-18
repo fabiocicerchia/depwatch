@@ -33,5 +33,10 @@ jobs:
       - name: Install
         run: npm ci
 
+      # Typecheck is the seam's guarantee: a half-added ecosystem (a def without
+      # an EcoId member, or the reverse) is a compile error, not a silent gap.
+      - name: Typecheck
+        run: make typecheck
+
       - name: Test
         run: make test

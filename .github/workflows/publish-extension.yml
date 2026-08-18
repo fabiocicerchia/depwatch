@@ -122,13 +122,21 @@ jobs:
         run: npx --yes @vscode/vsce@3.9.2 publish --no-dependencies --packagePath "$EXT/$VSIX"
 
       # Where VSCodium and Cursor look. A separate registry with its own
-      # namespace and token, not a mirror of the Marketplace.
+      # namespace and token, not a mirror of the Marketplace — the publisher id
+      # that exists on the Marketplace does not exist here until it is created,
+      # and publishing into a namespace that is not there fails with "Unknown
+      # publisher". Creating it is idempotent in effect but not in exit code:
+      # the second call fails with "already exists", which is the normal case.
       - name: Publish to Open VSX
         if: steps.tokens.outputs.openvsx == 'true'
         env:
           OVSX_PAT: ${{ secrets.OVSX_PAT }}
           VSIX: ${{ steps.version.outputs.vsix }}
-        run: npx --yes ovsx@1.1.1 publish "$EXT/$VSIX" -p "$OVSX_PAT"
+        run: |
+          set -euo pipefail
+          PUBLISHER=$(node -p 'require("./" + process.env.EXT + "/package.json").publisher')
+          npx --yes ovsx@1.1.1 create-namespace "$PUBLISHER" -p "$OVSX_PAT" || true
+          npx --yes ovsx@1.1.1 publish "$EXT/$VSIX" -p "$OVSX_PAT"
 
       - name: Attach the VSIX to the release
         if: inputs.tag != ''

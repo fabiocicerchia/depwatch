@@ -3,13 +3,28 @@
 import type { Dep } from '@lib/libyear/engine'
 export type { Dep }
 
-// The leading dotted-numeric run of a range: "^1.38" -> "1.38". Used wherever a
-// manifest states a range and we take its floor as the current version.
+/**
+ * The leading dotted-numeric run of a range: `"^1.38"` -> `"1.38"`.
+ *
+ * Used wherever a manifest states a range and its floor is taken as the current
+ * version — an upper bound on drift, which is why a lock file is preferred
+ * whenever one exists.
+ *
+ * @param range A version range.
+ * @returns The floor version, or null when the range has no numeric part.
+ */
 export const baseVersion = (range: string): string | null => range.match(/(\d+\.\d+(?:\.\d+)?)/)?.[1] ?? null
 
-// A TOML array-of-tables lock: repeated `[[package]]` blocks each with
-// `name = "x"` and `version = "y"`, both exact. Cargo.lock, poetry.lock and
-// uv.lock all share this shape.
+/**
+ * Reads a TOML array-of-tables lock file.
+ *
+ * Repeated `[[package]]` blocks, each with `name = "x"` and `version = "y"`,
+ * both exact. `Cargo.lock`, `poetry.lock` and `uv.lock` all share this shape,
+ * so they share this parser.
+ *
+ * @param text The lock file.
+ * @returns One resolved dependency per package block.
+ */
 export function parsePackageArrayLock(text: string): Dep[] {
   const deps: Dep[] = []
   const seen = new Set<string>()
@@ -43,9 +58,16 @@ export function parsePackageArrayLock(text: string): Dep[] {
   return deps
 }
 
-// A PEP 508 requirement string ("requests[security]>=2.0,<3; python_version<'3.9'")
-// reduced to name + version floor. Shared by requirements.txt and PEP 621
-// [project] dependency arrays.
+/**
+ * Reduces a PEP 508 requirement to a name and a version floor.
+ *
+ * `"requests[security]>=2.0,<3; python_version<'3.9'"` -> `requests` at `2.0`.
+ * Shared by `requirements.txt` and PEP 621 `[project]` dependency arrays.
+ *
+ * @param spec The requirement string.
+ * @returns The dependency, or null when the line names no package (a comment,
+ *          a `-r` include, a bare option).
+ */
 export function parsePep508(spec: string): Dep | null {
   const line = spec.split(';')[0].trim() // drop environment markers
   if (!line || line.startsWith('#') || line.startsWith('-')) return null

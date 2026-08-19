@@ -19,18 +19,41 @@ export interface GateFailure {
 
 export type QuadrantCounts = Record<DepReport['quadrant'], number>
 
-// Degraded deps are left out: one we could not reach is unknown, not unhealthy,
-// and counting unknowns towards a threshold turns a flaky registry into what
-// looks like a regression in the manifest.
+/**
+ * A zeroed quadrant tally.
+ *
+ * @returns One counter per quadrant, all at zero.
+ */
 export const emptyCounts = (): QuadrantCounts => ({ healthy: 0, upgrade: 0, watch: 0, replace: 0 })
 
+/**
+ * Counts a report's dependencies by quadrant.
+ *
+ * Degraded deps are left out: one we could not reach is unknown, not unhealthy,
+ * and counting unknowns towards a threshold turns a flaky registry into what
+ * looks like a regression in the manifest.
+ *
+ * @param r The report.
+ * @returns The per-quadrant counts.
+ */
 export function tally(r: Report): QuadrantCounts {
   const counts = emptyCounts()
   for (const d of r.deps) if (!d.degraded) counts[d.quadrant]++
   return counts
 }
 
-// Non-zero exit is the whole point of CI mode, so be explicit about why.
+/**
+ * Applies the configured gates and returns every failure, with its reason.
+ *
+ * Non-zero exit is the whole point of CI mode, so each failure carries a
+ * message naming the threshold and the value that crossed it. One
+ * implementation serves both the CLI and the editor extension: a gate that says
+ * "fail" in CI and "fine" in the IDE is worse than no gate at all.
+ *
+ * @param r The report.
+ * @param g The thresholds to apply; an unset one is not checked.
+ * @returns Every failure, or an empty array when the report passes.
+ */
 export function gateFailures(r: Report, g: Gates): GateFailure[] {
   const fails: GateFailure[] = []
   if (g.maxLibyears !== undefined && r.totalLibyears > g.maxLibyears) {

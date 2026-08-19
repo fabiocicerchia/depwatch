@@ -33,6 +33,18 @@ async function getJson(url: string): Promise<any> {
   return res.json()
 }
 
+/**
+ * Fetches one package's version timeline from its registry.
+ *
+ * Rate-limited and cached upstream of this call, so a report that mentions the
+ * same package twice costs one request. A failure is returned as a value rather
+ * than thrown: an unreachable registry degrades a single dependency, and must
+ * not fail the whole report.
+ *
+ * @param eco  Which registry to ask.
+ * @param name Package name, as the registry spells it.
+ * @returns The package's versions, or a RegistryError describing the failure.
+ */
 export async function fetchPackage(eco: Ecosystem, name: string): Promise<PackageInfo | RegistryError> {
   try {
     const versions = await versionsOf(eco, name)

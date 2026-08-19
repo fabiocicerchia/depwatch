@@ -45,9 +45,10 @@ export function isPrerelease(v: string): boolean {
 /**
  * Orders two versions by numeric core, then stable before prerelease.
  *
- * TODO: prereleases of the same core compare equal (`1.0.0-rc.1` vs `-rc.2`).
- * Latest-version selection filters prereleases out first, so this never decides
- * anything; give it a real precedence ordering if that stops being true.
+ * ponytail: prereleases of the same core compare equal (`1.0.0-rc.1` vs
+ * `-rc.2`). Latest-version selection filters prereleases out first, so this
+ * never decides anything; give it a real precedence ordering if that stops
+ * being true.
  *
  * @param a First version.
  * @param b Second version.

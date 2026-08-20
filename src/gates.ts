@@ -10,10 +10,21 @@ import type { DepReport, Report } from './report.js'
 export interface Gates {
   maxLibyears?: number
   maxReplace?: number
+  /**
+   * Ceiling on how much drift may *grow* against {@link baselineLibyears} —
+   * the ratchet. An absolute budget is the wrong shape for a repository that
+   * is already behind: set it above today's number and it never fires, set it
+   * below and every pull request is red for a debt it did not create. A
+   * ratchet gates from the first day: whatever the total is, do not make it
+   * worse. 0 means "must not grow at all".
+   */
+  maxLibyearsIncrease?: number
+  /** Total drift of the baseline, e.g. the pull request's base branch. */
+  baselineLibyears?: number
 }
 
 export interface GateFailure {
-  gate: 'max-libyears' | 'max-replace'
+  gate: 'max-libyears' | 'max-replace' | 'max-libyears-increase'
   message: string
 }
 
@@ -39,6 +50,23 @@ export function gateFailures(r: Report, g: Gates): GateFailure[] {
       message: `total drift ${r.totalLibyears.toFixed(2)} libyears exceeds --max-libyears ${g.maxLibyears}`,
     })
   }
+  // Compared at the two decimals every surface reports, not at full float
+  // precision: 3.10 -> 3.52 is a growth of 0.42000000000000004, and a ratchet
+  // set to 0 must not fail a manifest that did not change because of it.
+  const round2 = (n: number) => Math.round(n * 100) / 100
+  if (g.maxLibyearsIncrease !== undefined && g.baselineLibyears !== undefined) {
+    const grew = round2(round2(r.totalLibyears) - round2(g.baselineLibyears))
+    if (grew > g.maxLibyearsIncrease) {
+      fails.push({
+        gate: 'max-libyears-increase',
+        message:
+          `drift grew by ${grew.toFixed(2)} libyears ` +
+          `(${g.baselineLibyears.toFixed(2)} → ${r.totalLibyears.toFixed(2)}), ` +
+          `more than --max-libyears-increase ${g.maxLibyearsIncrease}`,
+      })
+    }
+  }
+
   const replace = tally(r).replace
   if (g.maxReplace !== undefined && replace > g.maxReplace) {
     fails.push({

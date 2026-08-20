@@ -67,6 +67,28 @@ live, and the same quadrant report in a tab.
 make ext-install   # build, package a VSIX and install it into VS Code
 ```
 
+## In CI
+
+The [GitHub Action](docs/github-action.md) in this repository's root measures a
+manifest and fails the build on a threshold you set:
+
+```yaml
+- uses: fabiocicerchia/depwatch@v0   # pin to a SHA in real workflows
+  with:
+    manifest: package.json
+    max-libyears: 25                 # absolute budget
+    max-libyears-increase: 0         # ...or the ratchet: do not make it worse
+```
+
+An absolute budget is awkward to adopt on a repository that is already behind —
+set it high and it never fires, set it low and every pull request is red for
+debt it did not create. The **ratchet** gates from the first day: it measures the
+pull request's base branch too and fails only when the pull request adds drift.
+
+It writes a quadrant summary to the job summary, optionally to a sticky pull
+request comment, and exposes `libyears`, `delta` and `passed` as step outputs.
+depwatch runs it on itself in [`depwatch.yml`](.github/workflows/depwatch.yml).
+
 ## Documentation
 
 Full docs live in [`docs/`](docs/) — including [the extension's design](docs/vscode.md).

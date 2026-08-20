@@ -16,6 +16,7 @@ nav:
   - Home: README.md
   - Architecture: architecture.md
   - Getting Started: getting-started.md
+  - GitHub Action: github-action.md
   - VS Code extension: vscode.md
 
 markdown_extensions:

@@ -1,0 +1,42 @@
+# Google Cloud Build — cloudbuild.yaml
+#
+# Cloud Build exposes no target-branch variable, so the ratchet is pointed at the
+# trunk through a substitution. On a pull request that is the right comparison;
+# on a build of the trunk itself base and head are the same commit, the delta is
+# zero, and the gate is a no-op.
+#
+# Cloud Build checks out a single commit with no history, so the base commit has
+# to be fetched — depwatch-ci.sh does that, but it needs the checkout to be a git
+# repository, which means unshallowing first.
+
+substitutions:
+  _BASE_BRANCH: main
+  _MAX_LIBYEARS: "25"
+  _MAX_LIBYEARS_INCREASE: "0"
+
+steps:
+  - name: gcr.io/cloud-builders/git
+    id: history
+    entrypoint: bash
+    args:
+      - -c
+      - git fetch --unshallow origin "$_BASE_BRANCH" || git fetch origin "$_BASE_BRANCH" || true
+
+  - name: node:22
+    id: depwatch
+    entrypoint: ./examples/ci/depwatch-ci.sh
+    env:
+      - MANIFEST=package.json
+      - DEPWATCH_REF=main           # pin to a tag
+      - MAX_LIBYEARS=$_MAX_LIBYEARS
+      - MAX_LIBYEARS_INCREASE=$_MAX_LIBYEARS_INCREASE
+      - BASE_REF=$_BASE_BRANCH
+      - REPORT=/workspace/depwatch.json
+
+artifacts:
+  objects:
+    location: gs://$PROJECT_ID-depwatch/$BUILD_ID/
+    paths: [/workspace/depwatch.json]
+
+options:
+  logging: CLOUD_LOGGING_ONLY

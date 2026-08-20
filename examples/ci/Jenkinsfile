@@ -1,0 +1,35 @@
+// Jenkins — Jenkinsfile
+//
+// On a multibranch pipeline CHANGE_TARGET is the target branch of a pull
+// request and is unset on a branch build, which is the distinction the ratchet
+// needs. The groovy elvis operator supplies the empty string on a branch build,
+// where depwatch-ci.sh notes the ratchet as skipped rather than failing.
+
+pipeline {
+  agent { docker { image 'node:22' } }
+
+  environment {
+    MANIFEST              = 'package.json'
+    DEPWATCH_REF          = 'main'   // pin to a tag
+    MAX_LIBYEARS          = '25'
+    MAX_LIBYEARS_INCREASE = '0'
+    BASE_REF              = "${env.CHANGE_TARGET ?: ''}"
+    REPORT                = 'depwatch.json'
+    CHART                 = 'depwatch.svg'
+  }
+
+  stages {
+    stage('Dependency drift') {
+      steps {
+        sh './examples/ci/depwatch-ci.sh'
+      }
+    }
+  }
+
+  post {
+    // The report is most worth having on the run that failed.
+    always {
+      archiveArtifacts artifacts: 'depwatch.json,depwatch.svg', allowEmptyArchive: true
+    }
+  }
+}

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import type { DepReport, Quadrant, Report } from '../../../src/report.js'
-import { NO_SIGNALS } from '../../../src/viability.js'
+import type { DepReport, Quadrant, Report } from './report.js'
+import { NO_SIGNALS } from './viability.js'
 import { acceptedIn, type Baseline, parse, serialise, withoutAccepted } from './baseline.js'
 
 const dep = (name: string, quadrant: Quadrant, libyearsBehind = 0, degraded?: string): DepReport => ({

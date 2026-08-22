@@ -5,7 +5,9 @@
 // tsconfig.json — resolved by esbuild at bundle time, never copied. What lives
 // here is the second axis (viability), the quadrant, and the CLI itself.
 
-import { writeFileSync } from 'node:fs'
+import { existsSync, readFileSync, writeFileSync } from 'node:fs'
+import { dirname, relative, resolve } from 'node:path'
+import { acceptedIn, DEFAULT_BASELINE, parse as parseBaseline, serialise, withoutAccepted } from './baseline.js'
 import { analyse, compareDeps, DEFAULT_THRESHOLDS, REPORT_COLUMNS, type Report, type Thresholds } from './report.js'
 import { assertEcosystem, type SupportedEcosystem } from './manifest.js'
 import { coverageLines, ecoIdList } from './ecosystems/registry.js'
@@ -37,6 +39,10 @@ Options
   --transitive            score the whole dependency tree from the lock file,
                           not just the dependencies you chose
   --max-points <n>        trend: how many commits to sample (default 12)
+  --baseline <file>       accept the findings recorded in <file>; only what got
+                          worse since is reported (default: ./${DEFAULT_BASELINE}
+                          when it is there)
+  --write-baseline [file] record every current finding as accepted, and exit
 
 Inputs, in order of accuracy:
   SBOM         CycloneDX or SPDX JSON — resolved versions, every ecosystem at once
@@ -50,6 +56,8 @@ Ecosystems (files recognised)
 
 interface Flags {
   json: boolean
+  baseline?: string
+  writeBaseline?: string
   deep: boolean
   ci: boolean
   labelAll: boolean
@@ -89,6 +97,13 @@ function parseFlags(argv: string[]): Flags {
       case '--max-libyears': f.maxLibyears = num(); break
       case '--max-replace': f.maxReplace = num(); break
       case '--max-points': f.maxPoints = num(); break
+      case '--baseline': f.baseline = value(); break
+      // The value is optional, so only take the next argument when there is one
+      // that is not itself a flag — `--write-baseline --json` must not consume
+      // `--json` as a filename.
+      case '--write-baseline':
+        f.writeBaseline = argv[i + 1] && !argv[i + 1].startsWith('-') ? value() : DEFAULT_BASELINE
+        break
       case '--stale': f.thresholds.staleLibyears = num(); break
       case '--risky': f.thresholds.riskyViability = num(); break
       default:
@@ -150,6 +165,38 @@ function table(r: Report, t: Thresholds): string {
   return out.join('\n')
 }
 
+/**
+ * The manifest as the baseline names it: relative to the baseline file, with
+ * forward slashes.
+ *
+ * The two callers disagree about paths otherwise — `depwatch check src/x/package.json`
+ * in CI and the editor's workspace-relative label have to produce the same key,
+ * or a baseline only works for whichever of them wrote it.
+ */
+function labelFor(manifest: string, baselinePath: string): string {
+  const rel = relative(dirname(resolve(baselinePath)), resolve(manifest))
+  return rel.split(/[\\/]/).join('/')
+}
+
+/**
+ * The report as a baselined project should read it. An explicit --baseline must
+ * exist; the default one is used when it happens to be there — a typo in a flag
+ * should be an error, not a silent no-op.
+ */
+function applyBaseline(report: Report, file: string, f: Flags): { report: Report; accepted: number; from: string } {
+  const path = f.baseline ?? DEFAULT_BASELINE
+  if (f.baseline && !existsSync(path)) throw new Error(`no such baseline: ${path}`)
+  if (!existsSync(path)) return { report, accepted: 0, from: path }
+
+  const baseline = parseBaseline(readFileSync(path, 'utf8'))
+  if (!baseline) {
+    console.error(`depwatch: ${path} is not a baseline this version understands — ignoring it`)
+    return { report, accepted: 0, from: path }
+  }
+  const accepted = acceptedIn(baseline, labelFor(file, path), report)
+  return { report: withoutAccepted(report, accepted), accepted: accepted.size, from: path }
+}
+
 async function main(argv: string[]): Promise<number> {
   const [cmd, file, ...rest] = argv
   if (!cmd || cmd === '--help' || cmd === '-h') {
@@ -164,8 +211,20 @@ async function main(argv: string[]): Promise<number> {
 
   switch (cmd) {
     case 'check': {
-      const r = await loadReport(file, f)
+      const full = await loadReport(file, f)
+
+      if (f.writeBaseline !== undefined) {
+        const path = f.writeBaseline
+        const accepted = full.deps.filter((d) => !d.degraded && d.quadrant !== 'healthy').length
+        writeFileSync(path, serialise([{ label: labelFor(file, path), report: full }], new Date().toISOString()))
+        console.error(`depwatch: ${accepted} finding(s) accepted in ${path}`)
+        return 0
+      }
+
+      const { report: r, accepted, from } = applyBaseline(full, file, f)
       emit(f.json ? JSON.stringify(r, null, 2) : table(r, f.thresholds), f.out)
+      // stderr, so --json stays a clean pipe.
+      if (accepted > 0) console.error(`depwatch: ${accepted} finding(s) accepted by ${from}`)
       if (f.ci) {
         const fails = gateFailures(r, { maxLibyears: f.maxLibyears, maxReplace: f.maxReplace })
         for (const { message } of fails) console.error(`depwatch: ${message}`)
@@ -223,4 +282,4 @@ if (process.argv[1] && /(^|[/\\])(depwatch|cli\.js)$/.test(process.argv[1])) {
     })
 }
 
-export { main, parseFlags }
+export { applyBaseline, labelFor, main, parseFlags }

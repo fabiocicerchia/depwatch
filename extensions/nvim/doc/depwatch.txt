@@ -1,0 +1,301 @@
+*depwatch.txt*  Dependency drift (libyears) x viability, in Neovim
+
+==============================================================================
+CONTENTS                                                    *depwatch-contents*
+
+  1. Introduction ............................ |depwatch-introduction|
+  2. Requirements ............................ |depwatch-requirements|
+  3. Setup ................................... |depwatch-setup|
+  4. Configuration ........................... |depwatch-configuration|
+  5. Commands ................................ |depwatch-commands|
+  6. API ..................................... |depwatch-api|
+  7. Statusline .............................. |depwatch-statusline|
+  8. Baselines ............................... |depwatch-baselines|
+  9. Health .................................. |depwatch-health|
+ 10. Differences from the VS Code extension .. |depwatch-differences|
+
+==============================================================================
+1. INTRODUCTION                                         *depwatch-introduction*
+
+depwatch measures every dependency manifest in your project on two axes and
+plots one against the other:
+
+  drift      how far behind you are, in libyears -- the age gap between the
+             release you run and the current one. Objective and computable.
+  viability  whether the project could even be caught up with -- release
+             pulse, cadence, maintainer count, archived status, funding.
+
+The cross-product is four quadrants:
+
+  Replace    behind AND unmaintained -- the upgrade you need may never be
+             written. This is the finding the tool exists to surface.
+  Upgrade    behind but alive -- the newer version exists, it is just work.
+  Watch      current but fading -- nothing to upgrade to yet, and nobody
+             obviously shipping one.
+  Healthy    current, and maintained.
+
+This plugin does not reimplement any of that. It runs the `depwatch` CLI and
+renders what it reports, so the number in your editor and the number in CI
+come from the same code.
+
+==============================================================================
+2. REQUIREMENTS                                         *depwatch-requirements*
+
+  - Neovim 0.11 or newer
+  - the `depwatch` CLI on your PATH, or pointed at by |depwatch-cmd|
+  - plenary.nvim, for running the test suite only
+
+Run |:checkhealth| depwatch to confirm all of it at once.
+
+==============================================================================
+3. SETUP                                                       *depwatch-setup*
+
+setup() is optional -- every command works on the defaults without it. Call it
+to change anything: >lua
+
+    require('depwatch').setup({
+      thresholds = { stale_libyears = 2 },
+      gates = { max_libyears = 20 },
+    })
+<
+With lazy.nvim: >lua
+
+    {
+      'fabiocicerchia/depwatch',
+      -- the plugin lives in extensions/nvim/ of the depwatch repository
+      rtp = 'extensions/nvim',
+      event = { 'BufReadPost package.json', 'BufReadPost Cargo.toml' },
+      cmd = { 'DepwatchScan', 'DepwatchReport' },
+      opts = {},
+    }
+<
+==============================================================================
+4. CONFIGURATION                                       *depwatch-configuration*
+
+Defaults, deep-merged with whatever you pass: >lua
+
+    {
+      enabled = true,
+      cmd = { 'depwatch' },                        -- *depwatch-cmd*
+      manifests = {
+        'package.json', 'requirements.txt', 'Cargo.toml', 'composer.json',
+        'Gemfile.lock', 'go.mod', 'pyproject.toml', 'pom.xml', 'bom.json',
+      },
+      exclude = {
+        'node_modules', 'bower_components', 'vendor', 'dist', 'out', 'build',
+        'target', '.venv', 'venv', '__pycache__', '.git',
+      },
+      max_manifests = 25,
+      deep = false,
+      transitive = false,
+      use_lock_file = true,
+      thresholds = {
+        stale_libyears = 1,
+        risky_viability = 0.5,
+      },
+      gates = {
+        max_libyears = nil,
+        max_replace = nil,
+      },
+      scan = {
+        on_startup = true,
+        on_save = true,
+        debounce_ms = 1500,
+        refresh_minutes = 360,
+        timeout_ms = 120000,
+      },
+      diagnostics = {
+        enabled = true,
+        severity = {
+          replace = vim.diagnostic.severity.WARN,
+          upgrade = vim.diagnostic.severity.INFO,
+          watch = vim.diagnostic.severity.INFO,
+          healthy = false,
+          degraded = false,
+        },
+      },
+      virtual_text = {
+        enabled = true,
+        lenses = { 'replace', 'upgrade', 'watch' },
+        prefix = '  ',
+      },
+      baseline = {
+        path = '.depwatch-baseline.json',
+      },
+      trend = {
+        max_points = 12,
+      },
+    }
+<
+`cmd` is a list, so an interpreter can go in front of it: >lua
+
+    cmd = { 'node', '/path/to/depwatch/dist/cli.js' }
+<
+Every value is validated when setup() runs, so a wrong one is a message at
+startup rather than a nil index inside a callback later.
+
+==============================================================================
+5. COMMANDS                                                 *depwatch-commands*
+
+                                                                *:DepwatchScan*
+:DepwatchScan           Scan the manifest in the current buffer, or the whole
+                        project when the buffer is not one.
+
+                                                             *:DepwatchScanAll*
+:DepwatchScanAll        Scan every manifest in the project.
+
+                                                            *:DepwatchDeepScan*
+:DepwatchDeepScan       Scan with the deep signals: maintainer count, funding,
+                        archived status, last commit. Two extra requests per
+                        package, and GitHub rate-limits hard without
+                        $GITHUB_TOKEN, so this is a command rather than a
+                        default.
+
+                                                              *:DepwatchReport*
+:DepwatchReport         The report, in a float: every dependency, worst first,
+                        with the bottom line underneath.
+
+                                                               *:DepwatchTrend*
+:DepwatchTrend          Drift over the manifest's git history, sampled across
+                        `trend.max_points` commits.
+
+                                                               *:DepwatchGates*
+:DepwatchGates          Check `gates` -- the editor's copy of
+                        `depwatch check --ci`.
+
+                                                              *:DepwatchFilter*
+:DepwatchFilter         Pick a quadrant; its findings go to the quickfix list.
+
+                                                               *:DepwatchHover*
+:DepwatchHover          Explain the dependency under the cursor: its two
+                        numbers, and the facts behind them.
+
+                                                      *:DepwatchBaselineWrite*
+:DepwatchBaselineWrite  Accept every current finding. See |depwatch-baselines|.
+
+                                                      *:DepwatchBaselineClear*
+:DepwatchBaselineClear  Delete the baseline; every finding is shown again.
+
+                                                              *:DepwatchCancel*
+:DepwatchCancel         Stop the scans in flight.
+
+                                                                 *:DepwatchLog*
+:DepwatchLog            What this plugin has run, and what came back.
+
+==============================================================================
+6. API                                                           *depwatch-api*
+
+require('depwatch') exposes: >lua
+
+    setup(opts)                 -- resolve config, attach autocmds
+    scan(path, opts)            -- scan one manifest
+    scan_all(opts)              -- scan every manifest
+    cancel()                    -- stop what is running
+    results()                   -- every scan, ordered by label
+    result_for(path)            -- the scan a given file belongs to
+    totals()                    -- libyears, deps, counts, to_address
+    statusline()                -- see |depwatch-statusline|
+    manifests()                 -- the manifests that would be scanned
+    root()                      -- the detected project root
+<
+Everything else is an implementation detail and may change.
+
+==============================================================================
+7. STATUSLINE                                             *depwatch-statusline*
+
+`statusline()` returns a string, empty until something has been scanned: >lua
+
+    require('lualine').setup({
+      sections = {
+        lualine_x = { { require('depwatch').statusline } },
+      },
+    })
+<
+It reads "12.40 ly · 7" -- total drift, and how many dependencies are work.
+With nothing to address, the count is left off.
+
+==============================================================================
+8. BASELINES                                               *depwatch-baselines*
+
+A repository that has been running for years opens at 88 libyears and fifty-odd
+dependencies to address. All of it is true and none of it is news, and a list
+that never empties is a list people stop reading.
+
+|:DepwatchBaselineWrite| records what today looks like. Afterwards only what
+got worse is reported, and two things count as worse:
+
+  - more drift than was accepted;
+  - a worse quadrant at the same drift -- a dependency whose maintainer walked
+    away since you signed off has changed in exactly the way this tool exists
+    to notice.
+
+The file is the same `.depwatch-baseline.json` that `depwatch check --accepted`
+reads, so committing it gives CI and every editor one answer to "how much drift
+do we already live with".
+
+==============================================================================
+9. HEALTH                                                     *depwatch-health*
+
+>vim
+    :checkhealth depwatch
+<
+Reports whether the CLI is there and runs, whether this build supports
+`--accepted`, which manifests were found under the detected root, whether a
+baseline is in play, and whether deep scans have a $GITHUB_TOKEN to use.
+
+==============================================================================
+10. DIFFERENCES FROM THE VS CODE EXTENSION               *depwatch-differences*
+
+The VS Code extension imports depwatch's TypeScript engine directly. Neovim
+cannot, so this plugin runs the CLI. Everything below follows from that, or
+from the two editors being different shapes.
+
+Dropped, with reasons:
+
+  `useEditorExcludes`   VS Code merges `files.exclude` and `search.exclude`.
+                        Neovim has no equivalent setting to read, so `exclude`
+                        is the whole list.
+
+  `cache.*`             The extension keeps a two-layer TTL cache because it
+                        holds the engine in-process. The CLI is a fresh process
+                        per scan and has no persistent cache, so there is
+                        nothing to configure. A scan costs about a second for a
+                        small manifest and about four for 125 transitive
+                        dependencies -- which is why scans are on save and on a
+                        slow timer, never on a keystroke.
+
+  `concurrency`         Belongs to the engine, and the CLI does not expose it.
+
+  `badge`               There is no panel tab to put a count on.
+                        |depwatch-statusline| carries the same numbers.
+
+  `setGitHubToken`      VS Code stores it in the OS keychain. Neovim has no
+                        keychain; set $GITHUB_TOKEN in your environment, which
+                        is what the CLI reads anyway.
+
+  `clearCache`          Nothing to clear -- see `cache.*`.
+
+  `exportReport`        The HTML report and the SVG quadrant chart are CLI
+  `exportChart`         commands (`depwatch chart <manifest> --out q.svg`), and
+                        wrapping them in a Neovim command would only add a
+                        prompt.
+
+  scope + expand/       The extension has a tree view with a file/project
+  collapse commands     toggle. This has a float and the quickfix list, neither
+                        of which has anything to expand.
+
+Different:
+
+  Findings pane         A float (|:DepwatchReport|) and the quickfix list
+                        (|:DepwatchFilter|) instead of a tree view.
+
+  Hover                 |:DepwatchHover| rather than an automatic hover
+                        provider, so it never competes with your LSP.
+
+  Inline drift          Virtual text at end of line, which the VS Code
+                        extension does not do.
+
+  Baseline              Works in CI as well, because `depwatch check` learned
+                        `--accepted`. In VS Code it was editor-only.
+
+vim:tw=78:ts=8:noet:ft=help:norl:

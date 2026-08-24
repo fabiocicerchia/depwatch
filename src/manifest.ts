@@ -21,10 +21,18 @@ export const LOCK_FOR: Record<SupportedEcosystem, string[]> = Object.fromEntries
 
 export const SUPPORTED_ECOSYSTEMS: SupportedEcosystem[] = ECO_IDS
 
-// The CLI takes --eco from the command line, where a typo is a string like any
-// other. Without this the value would be cast straight to the union type and
-// reach a lookup that matches nothing, producing an empty dependency list —
-// "your manifest is clean" is the worst possible answer to a misspelt flag.
+/**
+ * Narrows a user-supplied string to a known ecosystem, or throws.
+ *
+ * The CLI takes `--eco` from the command line, where a typo is a string like
+ * any other. Without this the value would be cast straight to the union type
+ * and reach a lookup that matches nothing, producing an empty dependency list —
+ * "your manifest is clean" is the worst possible answer to a misspelt flag.
+ *
+ * @param value The raw flag value.
+ * @returns The same string, typed.
+ * @throws When the ecosystem is not one depwatch supports.
+ */
 export function assertEcosystem(value: string): SupportedEcosystem {
   if (isEcoId(value)) return value
   throw new Error(`unsupported ecosystem "${value}" (want one of: ${SUPPORTED_ECOSYSTEMS.join(', ')})`)
@@ -39,17 +47,43 @@ export interface Manifest {
   sbom?: { format: string; skipped: Record<string, number>; total: number; scoped: boolean }
 }
 
-// Both separators: the CLI is handed POSIX paths, the editor extension is
-// handed whatever the host uses, and a Windows path read as one long filename
-// detects no ecosystem at all.
+/**
+ * The final segment of a path, splitting on either separator.
+ *
+ * Both separators: the CLI is handed POSIX paths, the editor extension is
+ * handed whatever the host uses, and a Windows path read as one long filename
+ * detects no ecosystem at all.
+ *
+ * @param file A path in either flavour.
+ * @returns The filename.
+ */
 export const basename = (file: string): string => file.split(/[/\\]/).pop() ?? file
 
-// Filenames are the reliable signal; content sniffing is not needed because
-// every ecosystem here has a conventional manifest name.
+/**
+ * Guesses the ecosystem from a manifest's filename.
+ *
+ * Filenames are the reliable signal; content sniffing is not needed because
+ * every ecosystem here has a conventional manifest name.
+ *
+ * @param file Path or filename.
+ * @returns The ecosystem, or null when the name is not recognised.
+ */
 export function detectEcosystem(file: string): SupportedEcosystem | null {
   return byFile(file)?.id ?? null
 }
 
+/**
+ * Reads a manifest or lock file into the dependency list depwatch scores.
+ *
+ * @param file       Path, used to detect the ecosystem when none is given.
+ * @param text       The file's contents.
+ * @param ecosystem  Overrides detection, for stdin and misnamed files.
+ * @param transitive Include the whole resolved tree rather than direct
+ *                   dependencies only. Off by default: libyear is a statement
+ *                   about what you chose, and the transitive tree changes what
+ *                   the number means.
+ * @returns The parsed manifest.
+ */
 export function parse(file: string, text: string, ecosystem?: SupportedEcosystem, transitive = false): Manifest {
   // Detected from content: an SBOM has no conventional filename, and bom.json
   // would otherwise be read as a package.json and yield nothing at all.

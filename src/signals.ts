@@ -35,6 +35,16 @@ function median(ns: number[]): number | null {
 // pulse signal catches the stop, and this keeps cadence from arguing with it.
 const CADENCE_WINDOW = 10
 
+/**
+ * The signals derivable from a version timeline alone — the cheap tier.
+ *
+ * Pulse and release cadence come free from the version list the registry client
+ * already fetched: no extra request, and they work for every ecosystem.
+ *
+ * @param versions Every known version, with release dates.
+ * @param now      Instant to measure age against; overridden in trend mode.
+ * @returns Signals with the timeline fields filled and the rest left unknown.
+ */
 export function timelineSignals(versions: RegistryVersion[], now = Date.now()): ViabilitySignals {
   const dates = releaseDates(versions)
   if (dates.length === 0) return { ...NO_SIGNALS }
@@ -75,6 +85,13 @@ async function fetchRepoMeta(eco: EcoId, name: string): Promise<RepoMeta> {
   }
 }
 
+/**
+ * Extracts `owner/repo` from a repository URL.
+ *
+ * @param repoUrl Any of the shapes registries record — git+ssh, https, with or
+ *                without a `.git` suffix.
+ * @returns The slug, or null when the URL is missing or not a GitHub one.
+ */
 export function githubSlug(repoUrl: string | null): string | null {
   if (!repoUrl) return null
   const m = repoUrl.match(/github\.com[/:]([^/]+)\/([^/#?]+?)(?:\.git)?(?:[/#?].*)?$/)
@@ -89,6 +106,15 @@ export interface GitHubMeta {
   pushedAt: string | null
 }
 
+/**
+ * Fetches the two signals only a repo host can answer: archived, and last
+ * commit.
+ *
+ * @param slug `owner/repo`.
+ * @returns The metadata, or null on any failure — GitHub rate-limits hard
+ *          without a `GITHUB_TOKEN`, and a missed signal must degrade the score
+ *          rather than fail the report.
+ */
 export async function fetchGitHub(slug: string): Promise<GitHubMeta | null> {
   const token = process.env.GITHUB_TOKEN
   try {
@@ -109,6 +135,16 @@ export interface DeepMeta {
   lastCommitAt: string | null
 }
 
+/**
+ * Fetches the per-package metadata behind the deep tier: maintainer count, repo
+ * URL and funding.
+ *
+ * One extra registry request per package, which is why `--deep` is opt-in.
+ *
+ * @param eco  Which registry to ask.
+ * @param name Package name.
+ * @returns Whatever could be read; every field is optional.
+ */
 export async function fetchDeepMeta(eco: EcoId, name: string): Promise<DeepMeta> {
   const meta = await fetchRepoMeta(eco, name)
   const out: DeepMeta = {
@@ -126,6 +162,15 @@ export async function fetchDeepMeta(eco: EcoId, name: string): Promise<DeepMeta>
   return { ...out, archived: gh.archived, lastCommitAt: gh.pushedAt }
 }
 
+/**
+ * Folds deep-tier metadata into the timeline signals.
+ *
+ * @param base The cheap-tier signals.
+ * @param meta What the deep tier found.
+ * @param now  Instant to measure commit age against.
+ * @returns A new signal set; fields the deep tier could not answer stay
+ *          unknown, and the score renormalises around what is present.
+ */
 export function applyDeepMeta(base: ViabilitySignals, meta: DeepMeta, now = Date.now()): ViabilitySignals {
   const commitAt = meta.lastCommitAt ? Date.parse(meta.lastCommitAt) : NaN
   return {
@@ -137,6 +182,16 @@ export function applyDeepMeta(base: ViabilitySignals, meta: DeepMeta, now = Date
   }
 }
 
+/**
+ * The deep tier end to end: fetch the metadata, then fold it in.
+ *
+ * @param eco  Which registry to ask.
+ * @param name Package name.
+ * @param base The cheap-tier signals to extend.
+ * @param now  Instant to measure ages against.
+ * @returns The enriched signals, or `base` unchanged when nothing was
+ *          reachable.
+ */
 export async function deepSignals(eco: EcoId, name: string, base: ViabilitySignals, now = Date.now()): Promise<ViabilitySignals> {
   return applyDeepMeta(base, await fetchDeepMeta(eco, name), now)
 }

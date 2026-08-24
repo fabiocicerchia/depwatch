@@ -21,6 +21,20 @@ in from the repo root at package time and gitignored — the Marketplace renders
 one as a tab, and a second changelog beside the generated one would only ever be
 out of date.
 
+`media/screenshots/` holds the two images the README opens with — the findings
+pane on a large monorepo, and the report tab — and they are the first thing
+anyone considering the extension sees. Both are captured by hand; prefer a
+workspace with real drift in it, because a screenshot of five healthy
+dependencies demonstrates nothing. They are referenced by absolute
+`raw.githubusercontent.com` URL rather than by relative path, because the
+Marketplace rewrites relative links against the repository root and the
+extension does not live there, and the whole directory is in `.vscodeignore`,
+since the rendered page fetches them over HTTPS and the VSIX never reads them.
+
+Screenshots of a real workspace show real paths. Check what is legible in one
+before committing it: the Marketplace page is public, and a package tree is a
+description of somebody's codebase.
+
 ## Releasing
 
 The extension has no version of its own. `release-please-config.json` lists

@@ -21,6 +21,26 @@ in from the repo root at package time and gitignored — the Marketplace renders
 one as a tab, and a second changelog beside the generated one would only ever be
 out of date.
 
+`media/screenshots/` holds the two images the README opens with — the findings
+pane on a large monorepo, and the report tab — and they are the first thing
+anyone considering the extension sees. Both are captured by hand; prefer a
+workspace with real drift in it, because a screenshot of five healthy
+dependencies demonstrates nothing. They are referenced by absolute
+`raw.githubusercontent.com` URL rather than by relative path, because the
+Marketplace rewrites relative links against the repository root and the
+extension does not live there, and the whole directory is in `.vscodeignore`,
+since the rendered page fetches them over HTTPS and the VSIX never reads them.
+
+Screenshots of a real workspace show real paths. Check what is legible in one
+before committing it: the Marketplace page is public, and a package tree is a
+description of somebody's codebase.
+
+`sponsor.url` in the manifest is what puts a **Sponsor** button on the
+Marketplace page — a single URL, and the only funding hook the Marketplace
+reads. It points at the same GitHub Sponsors profile as `.github/FUNDING.yml`,
+which is the repository sidebar's separate copy of the same fact; change one
+and change the other. Open VSX ignores the field rather than rejecting it.
+
 ## Releasing
 
 The extension has no version of its own. `release-please-config.json` lists

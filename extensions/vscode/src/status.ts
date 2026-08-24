@@ -6,7 +6,9 @@ import type { Config } from './config.js'
 import type { Results } from './state.js'
 
 export class StatusBar implements vscode.Disposable {
-  private readonly item = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100)
+  // Right-aligned, and last: priority counts down from the left, so 100 parked
+  // depwatch in among the editor's own indicators. A negative one is the corner.
+  private readonly item = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, -100)
   private readonly disposables: vscode.Disposable[] = []
 
   constructor(

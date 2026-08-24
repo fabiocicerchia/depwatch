@@ -6,5 +6,9 @@ node_modules/**
 tsconfig.json
 esbuild.mjs
 **/*.map
-**/*.test.ts
 .vscode/**
+# The README points at the copies on raw.githubusercontent.com — the Marketplace
+# renders from there, so shipping the screenshots in the VSIX buys nothing. A
+# whole directory rather than each file, so a new screenshot cannot forget to
+# opt out. media/icon.png is not in here: that one the VSIX genuinely needs.
+media/screenshots/**

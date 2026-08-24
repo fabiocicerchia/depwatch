@@ -3,6 +3,20 @@
 Dependency drift (libyears) × viability, in the editor. Same engine as the CLI,
 same numbers, same quadrant.
 
+The findings pane: every manifest in the workspace, worst first, grouped by
+quadrant — here 575 libyears across 301 dependencies in 16 manifests, with the
+one dependency that is both behind and unmaintained expanded.
+
+![The depwatch panel listing each package.json with its drift and dependency
+count, one expanded to show a dependency in the replace quadrant, and the status
+bar tooltip giving the workspace total](https://raw.githubusercontent.com/fabiocicerchia/depwatch/main/extensions/vscode/media/screenshots/findings.png)
+
+The report: the totals, the quadrant, and the table behind it.
+
+![The depwatch report tab: libyears of drift, dependency and manifest counts,
+the quadrant chart plotting drift against viability, and the per-dependency
+table](https://raw.githubusercontent.com/fabiocicerchia/depwatch/main/extensions/vscode/media/screenshots/report.png)
+
 - **Squiggles on the manifest.** Each dependency is underlined with its
   quadrant, and the hover says why: how far behind, when the last release was,
   how many maintainers, whether the repository is archived.

@@ -1,0 +1,5 @@
+# Sponsorship links for the repository sidebar. The VS Code extension carries
+# the same GitHub Sponsors URL in its manifest's `sponsor` field, which is what
+# puts a Sponsor button on the Marketplace page.
+github: fabiocicerchia
+patreon: fabiocicerchia

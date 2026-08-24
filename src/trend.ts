@@ -20,9 +20,27 @@ export interface TrendPoint {
   replace: number // deps in the danger quadrant at that commit
 }
 
+// git is the only binary depwatch shells out to. Without it execFile fails with
+// a bare "spawn git ENOENT", which names the problem and not the fix — so say
+// the command instead, and keep the ENOENT code on the way out so a caller with
+// a UI (the extension) can offer to run it. Every git call goes through here.
+export const INSTALL_GIT =
+  process.platform === 'darwin'
+    ? 'brew install git'
+    : process.platform === 'win32'
+      ? 'winget install --id Git.Git'
+      : 'sudo apt install git'
+
+export const isMissingGit = (e: unknown): boolean => (e as NodeJS.ErrnoException | null)?.code === 'ENOENT'
+
 async function git(args: string[], cwd: string): Promise<string> {
-  const { stdout } = await exec('git', args, { cwd, maxBuffer: 32 * 1024 * 1024 })
-  return stdout
+  try {
+    const { stdout } = await exec('git', args, { cwd, maxBuffer: 32 * 1024 * 1024 })
+    return stdout
+  } catch (e: unknown) {
+    if (!isMissingGit(e)) throw e
+    throw Object.assign(new Error(`git is not installed. Install it with: ${INSTALL_GIT}`), { code: 'ENOENT' })
+  }
 }
 
 export interface TrendOptions extends AnalyseOptions {

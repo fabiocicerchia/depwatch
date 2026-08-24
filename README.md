@@ -159,6 +159,26 @@ thresholds: behind > 1 libyears, fading < 0.5 viability
 Exit codes: `0` clean, `1` a `--ci` threshold was breached, `2` the input could
 not be read.
 
+### Starting from where you are
+
+A repository that has been running for years opens at 88 libyears and fifty-odd
+dependencies to address. All of it is true and none of it is news, and a list
+that never empties is a list people stop reading. A baseline records what today
+looks like; afterwards only what got worse is reported.
+
+```sh
+node dist/cli.js check package.json --write-accepted   # accept today
+node dist/cli.js check package.json --ci --max-libyears 5
+```
+
+Two things count as worse, and both matter: more drift than was accepted, and a
+worse quadrant at the same drift — a dependency whose maintainer walked away
+since you signed off has changed in exactly the way this tool exists to notice.
+
+`.depwatch-baseline.json` is meant to be committed: it is the same file the VS
+Code extension writes and reads, so the team shares one answer to "how much
+drift do we already live with".
+
 ## In your editor
 
 The [VS Code extension](extensions/vscode/) puts both axes on the manifest you

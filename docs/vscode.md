@@ -143,8 +143,11 @@ would quietly stop the rescans that matter most.
 
 ## Baselines
 
-`baseline.ts` is pure: serialise the findings, read them back, and answer which
-of today's dependencies the file already accounts for. A dependency is worse —
+`baseline.ts` lives in `src/`, not here: `depwatch check --accepted` reads the
+same file the pane does, so a committed baseline gates CI and quietens the
+editor from one description of "what we already live with". It is pure —
+serialise the findings, read them back, and answer which of today's dependencies
+the file already accounts for. A dependency is worse —
 and so comes back — when it has drifted further than was accepted, or when it
 has fallen to a worse quadrant at the same drift. The second case is the one
 that justifies a depwatch-specific baseline rather than a version ignore-list:

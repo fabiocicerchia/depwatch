@@ -1,0 +1,38 @@
+# Bitbucket Pipelines — bitbucket-pipelines.yml
+#
+# Bitbucket has a dedicated pull request trigger, so the two gates split cleanly
+# across it: a pull request may not add drift (the ratchet), and the trunk holds
+# an absolute budget. BITBUCKET_PR_DESTINATION_BRANCH is set only on the
+# pull-requests trigger, which is exactly where the ratchet belongs.
+#
+# Bitbucket clones at depth 50 by default, which reaches the base commit in
+# almost every pull request.
+
+image: node:22
+
+pipelines:
+  pull-requests:
+    "**":
+      - step:
+          name: Dependency drift — do not make it worse
+          script:
+            - export MANIFEST=package.json
+            - export DEPWATCH_REF=main            # pin to a tag
+            - export MAX_LIBYEARS_INCREASE=0
+            - export BASE_REF="$BITBUCKET_PR_DESTINATION_BRANCH"
+            - export REPORT=depwatch.json
+            - ./examples/ci/depwatch-ci.sh
+          artifacts: [depwatch.json]
+
+  branches:
+    main:
+      - step:
+          name: Dependency drift — the budget
+          script:
+            - export MANIFEST=package.json
+            - export DEPWATCH_REF=main            # pin to a tag
+            - export MAX_LIBYEARS=25
+            - export MAX_REPLACE=0
+            - export REPORT=depwatch.json
+            - ./examples/ci/depwatch-ci.sh
+          artifacts: [depwatch.json]

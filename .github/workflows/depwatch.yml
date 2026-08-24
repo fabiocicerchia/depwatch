@@ -1,0 +1,63 @@
+# depwatch measuring depwatch. The action in this repository's root is the one
+# under test here — `uses: ./` — so a change that breaks it fails the pull
+# request that made it, rather than the first repository to pin the next tag.
+#
+# All three gates are set unconditionally and the event decides which can fire:
+# the ratchet needs a base ref, so it gates pull requests and reports itself
+# skipped everywhere else, while the absolute budget applies everywhere. The
+# alternative — `github.event_name == 'pull_request' && '' || '5'` — reads like a
+# ternary and is not one: the empty branch is falsy, so `||` takes over and both
+# events get 5.
+#
+# Weekly as well as on pushes: drift grows while nobody commits. A dependency
+# does not have to change for you to fall behind it.
+
+name: depwatch
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule: [{ cron: "23 5 * * 1" }]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: depwatch-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  drift:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write  # the sticky comment on pull requests
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+
+      - id: depwatch
+        uses: ./
+        with:
+          manifest: package.json
+          # --- the threshold ---
+          # A budget with headroom over today's figure, not a number pinned to
+          # it: this repository has four dependencies, and one of them cutting a
+          # major release should show up in the report, not as a red build on a
+          # commit that touched nothing.
+          max-libyears: 5
+          max-replace: 0
+          # The ratchet, which needs a base ref: it gates pull requests and is
+          # skipped with a notice on push, schedule and dispatch.
+          max-libyears-increase: 0.5
+          # Maintainer, archived and last-commit signals. GITHUB_TOKEN is passed
+          # by default, which is what keeps the API from throttling them.
+          deep: true
+          chart: quadrant.svg
+          # A no-op off a pull request, so it needs no condition of its own.
+          comment: true
+          artifact: depwatch-report
+
+      - name: Drift
+        run: echo "${{ steps.depwatch.outputs.libyears }} libyears (${{ steps.depwatch.outputs.delta || 'no baseline' }})"

@@ -1,0 +1,38 @@
+# CircleCI — .circleci/config.yml
+#
+# CircleCI exposes no target-branch variable, so the ratchet is pointed at the
+# trunk by name. On a pull request that is the right comparison anyway; on a
+# build of the trunk itself the base and the head are the same commit and the
+# delta is zero, so the gate is a no-op rather than a false failure.
+
+version: 2.1
+
+jobs:
+  depwatch:
+    docker:
+      - image: cimg/node:22.11
+    environment:
+      MANIFEST: package.json
+      DEPWATCH_REF: main          # pin to a tag
+      MAX_LIBYEARS: "25"
+      MAX_LIBYEARS_INCREASE: "0"
+      BASE_REF: main
+      REPORT: depwatch.json
+    steps:
+      - checkout
+      # DEPWATCH_HOME is keyed on the ref, so the cache is dropped exactly when
+      # the pinned version changes.
+      - restore_cache:
+          keys: ["depwatch-{{ .Environment.DEPWATCH_REF }}"]
+      - run:
+          name: Dependency drift
+          command: ./examples/ci/depwatch-ci.sh
+      - save_cache:
+          key: "depwatch-{{ .Environment.DEPWATCH_REF }}"
+          paths: ["/tmp/depwatch"]
+      - store_artifacts:
+          path: depwatch.json
+
+workflows:
+  test:
+    jobs: [depwatch]

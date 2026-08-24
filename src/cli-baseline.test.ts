@@ -32,19 +32,19 @@ const report = (deps: DepReport[]): Report => ({
 
 const scratch = () => mkdtempSync(join(tmpdir(), 'depwatch-cli-'))
 
-describe('--write-baseline / --baseline flags', () => {
+describe('--write-accepted / --accepted flags', () => {
   it('takes an explicit filename', () => {
-    expect(parseFlags(['--write-baseline', 'accepted.json']).writeBaseline).toBe('accepted.json')
-    expect(parseFlags(['--baseline', 'accepted.json']).baseline).toBe('accepted.json')
+    expect(parseFlags(['--write-accepted', 'accepted.json']).writeAccepted).toBe('accepted.json')
+    expect(parseFlags(['--accepted', 'accepted.json']).accepted).toBe('accepted.json')
   })
 
   it('falls back to the shared default filename', () => {
-    expect(parseFlags(['--write-baseline']).writeBaseline).toBe('.depwatch-baseline.json')
+    expect(parseFlags(['--write-accepted']).writeAccepted).toBe('.depwatch-baseline.json')
   })
 
   it('does not swallow the next flag as a filename', () => {
-    const f = parseFlags(['--write-baseline', '--json'])
-    expect(f.writeBaseline).toBe('.depwatch-baseline.json')
+    const f = parseFlags(['--write-accepted', '--json'])
+    expect(f.writeAccepted).toBe('.depwatch-baseline.json')
     expect(f.json).toBe(true)
   })
 })
@@ -72,7 +72,7 @@ describe('applying a baseline', () => {
 
   it('accepts everything it recorded', () => {
     writeFileSync(path, serialise([{ label: 'package.json', report: original }], '2026-01-01T00:00:00.000Z'))
-    const out = applyBaseline(original, manifest, { baseline: path } as never)
+    const out = applyBaseline(original, manifest, { accepted: path } as never)
     expect(out.accepted).toBe(2)
     expect(out.report.deps).toEqual([])
     expect(out.report.totalLibyears).toBe(0)
@@ -80,25 +80,25 @@ describe('applying a baseline', () => {
 
   it('still reports a dependency that got worse', () => {
     const worse = report([dep('request', 'replace', 1.5), dep('lodash', 'upgrade', 11)])
-    const out = applyBaseline(worse, manifest, { baseline: path } as never)
+    const out = applyBaseline(worse, manifest, { accepted: path } as never)
     expect(out.report.deps.map((d) => d.name)).toEqual(['lodash'])
   })
 
   it('still reports a dependency that fell to a worse quadrant', () => {
     const worse = report([dep('request', 'replace', 1.5), dep('lodash', 'replace', 9.2)])
-    const out = applyBaseline(worse, manifest, { baseline: path } as never)
+    const out = applyBaseline(worse, manifest, { accepted: path } as never)
     expect(out.report.deps.map((d) => d.name)).toEqual(['lodash'])
   })
 
   it('still reports a dependency that was not there when it was written', () => {
     const grown = report([...original.deps, dep('left-pad', 'replace', 2)])
-    const out = applyBaseline(grown, manifest, { baseline: path } as never)
+    const out = applyBaseline(grown, manifest, { accepted: path } as never)
     expect(out.report.deps.map((d) => d.name)).toEqual(['left-pad'])
   })
 
   it('errors on a named baseline that is not there', () => {
     // A typo in a flag should be an error, not a silent no-op.
-    expect(() => applyBaseline(original, manifest, { baseline: join(dir, 'nope.json') } as never)).toThrow(
+    expect(() => applyBaseline(original, manifest, { accepted: join(dir, 'nope.json') } as never)).toThrow(
       /no such baseline/,
     )
   })
@@ -112,7 +112,7 @@ describe('applying a baseline', () => {
   it('ignores a baseline it cannot understand rather than accepting nothing silently', () => {
     const broken = join(dir, 'broken.json')
     writeFileSync(broken, '{"version": 99}')
-    const out = applyBaseline(original, manifest, { baseline: broken } as never)
+    const out = applyBaseline(original, manifest, { accepted: broken } as never)
     expect(out.accepted).toBe(0)
     expect(out.report.deps).toHaveLength(2)
   })

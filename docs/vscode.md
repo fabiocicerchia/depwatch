@@ -143,7 +143,7 @@ would quietly stop the rescans that matter most.
 
 ## Baselines
 
-`baseline.ts` lives in `src/`, not here: `depwatch check --baseline` reads the
+`baseline.ts` lives in `src/`, not here: `depwatch check --accepted` reads the
 same file the pane does, so a committed baseline gates CI and quietens the
 editor from one description of "what we already live with". It is pure —
 serialise the findings, read them back, and answer which of today's dependencies

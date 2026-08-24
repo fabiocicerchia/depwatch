@@ -1,0 +1,22 @@
+# Travis CI — .travis.yml
+#
+# On a pull request build TRAVIS_BRANCH is the branch being merged *into*, which
+# is what the ratchet wants. On a push build it is the branch being built, where
+# base and head coincide and the gate is a no-op.
+
+language: node_js
+node_js: ["22"]
+
+git:
+  depth: 50   # the ratchet needs the base commit
+
+env:
+  global:
+    - MANIFEST=package.json
+    - DEPWATCH_REF=main         # pin to a tag
+    - MAX_LIBYEARS=25
+    - MAX_LIBYEARS_INCREASE=0
+    - REPORT=depwatch.json
+
+script:
+  - BASE_REF="$TRAVIS_BRANCH" ./examples/ci/depwatch-ci.sh

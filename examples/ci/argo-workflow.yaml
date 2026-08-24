@@ -1,0 +1,64 @@
+# Argo Workflows — a WorkflowTemplate with the gate as its own step.
+#
+#   kubectl apply -f argo-workflow.yaml
+#   argo submit --from workflowtemplate/depwatch \
+#     -p repo=https://github.com/you/yours -p base-ref=main
+#
+# The drift number is exposed as an output parameter, so a later step can branch
+# on it — report to Slack, open an issue — instead of only passing or failing.
+
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: depwatch
+spec:
+  entrypoint: drift
+  arguments:
+    parameters:
+      - { name: repo }
+      - { name: revision, value: HEAD }
+      - { name: manifest, value: package.json }
+      - { name: max-libyears, value: "25" }
+      # The ratchet. Empty base-ref means no comparison, and it is skipped.
+      - { name: max-libyears-increase, value: "0" }
+      - { name: base-ref, value: "" }
+
+  templates:
+    - name: drift
+      inputs:
+        artifacts:
+          - name: source
+            path: /work
+            git:
+              repo: "{{workflow.parameters.repo}}"
+              revision: "{{workflow.parameters.revision}}"
+              # The ratchet needs the base commit; a single-branch clone at
+              # depth 1 does not have it.
+              depth: 50
+      outputs:
+        parameters:
+          - name: libyears
+            valueFrom:
+              path: /work/libyears.txt
+              # A failed gate still produces the file, but if the manifest could
+              # not be read at all there is nothing to report.
+              default: ""
+      container:
+        image: node:22
+        workingDir: /work
+        env:
+          - { name: MANIFEST, value: "{{workflow.parameters.manifest}}" }
+          - { name: DEPWATCH_REF, value: main }   # pin to a tag
+          - { name: MAX_LIBYEARS, value: "{{workflow.parameters.max-libyears}}" }
+          - { name: MAX_LIBYEARS_INCREASE, value: "{{workflow.parameters.max-libyears-increase}}" }
+          - { name: BASE_REF, value: "{{workflow.parameters.base-ref}}" }
+          - { name: REPORT, value: /work/depwatch.json }
+        command: [sh, -c]
+        args:
+          - |
+            set -eu
+            code=0
+            ./examples/ci/depwatch-ci.sh || code=$?
+            node -e 'process.stdout.write(String(JSON.parse(require("fs").readFileSync("/work/depwatch.json","utf8")).totalLibyears.toFixed(2)))' \
+              > /work/libyears.txt 2>/dev/null || true
+            exit "$code"

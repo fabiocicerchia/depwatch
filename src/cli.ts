@@ -30,6 +30,11 @@ Options
   --ci                    exit non-zero when a threshold is breached
   --max-libyears <n>      CI: fail above this total drift
   --max-replace <n>       CI: fail above this many deps in the "replace" quadrant
+  --max-libyears-increase <n>
+                          CI: fail when drift grew more than this against
+                          --baseline. The ratchet: gates a repo that is already
+                          behind without failing it for debt it did not create
+  --baseline <file>       a previous --json report to compare against
   --stale <n>             libyears above which a dep counts as behind (default 1)
   --risky <n>             viability below which a dep counts as fading (default 0.5)
   --out <file>            write chart/JSON to a file instead of stdout
@@ -39,10 +44,10 @@ Options
   --transitive            score the whole dependency tree from the lock file,
                           not just the dependencies you chose
   --max-points <n>        trend: how many commits to sample (default 12)
-  --baseline <file>       accept the findings recorded in <file>; only what got
+  --accepted <file>       accept the findings recorded in <file>; only what got
                           worse since is reported (default: ./${DEFAULT_BASELINE}
                           when it is there)
-  --write-baseline [file] record every current finding as accepted, and exit
+  --write-accepted [file] record every current finding as accepted, and exit
 
 Inputs, in order of accuracy:
   SBOM         CycloneDX or SPDX JSON — resolved versions, every ecosystem at once
@@ -56,8 +61,8 @@ Ecosystems (files recognised)
 
 interface Flags {
   json: boolean
-  baseline?: string
-  writeBaseline?: string
+  accepted?: string
+  writeAccepted?: string
   deep: boolean
   ci: boolean
   labelAll: boolean
@@ -65,6 +70,8 @@ interface Flags {
   out?: string
   maxLibyears?: number
   maxReplace?: number
+  maxLibyearsIncrease?: number
+  baseline?: string
   maxPoints?: number
   noLock: boolean
   transitive: boolean
@@ -96,19 +103,26 @@ function parseFlags(argv: string[]): Flags {
       case '--out': f.out = value(); break
       case '--max-libyears': f.maxLibyears = num(); break
       case '--max-replace': f.maxReplace = num(); break
-      case '--max-points': f.maxPoints = num(); break
+      case '--max-libyears-increase': f.maxLibyearsIncrease = num(); break
       case '--baseline': f.baseline = value(); break
+      case '--max-points': f.maxPoints = num(); break
+      case '--accepted': f.accepted = value(); break
       // The value is optional, so only take the next argument when there is one
-      // that is not itself a flag — `--write-baseline --json` must not consume
+      // that is not itself a flag — `--write-accepted --json` must not consume
       // `--json` as a filename.
-      case '--write-baseline':
-        f.writeBaseline = argv[i + 1] && !argv[i + 1].startsWith('-') ? value() : DEFAULT_BASELINE
+      case '--write-accepted':
+        f.writeAccepted = argv[i + 1] && !argv[i + 1].startsWith('-') ? value() : DEFAULT_BASELINE
         break
       case '--stale': f.thresholds.staleLibyears = num(); break
       case '--risky': f.thresholds.riskyViability = num(); break
       default:
         throw new Error(`unknown option ${a}`)
     }
+  }
+  // A ratchet with nothing to ratchet against is a gate that silently never
+  // fires — the failure mode worth catching here rather than in a green build.
+  if (f.maxLibyearsIncrease !== undefined && f.baseline === undefined) {
+    throw new Error('--max-libyears-increase needs --baseline <file> to compare against')
   }
   return f
 }
@@ -123,6 +137,19 @@ async function loadReport(file: string, f: Flags): Promise<Report> {
   // because a machine reading the JSON has the same facts in the payload.
   if (!f.json) for (const note of notes) console.error(`depwatch: ${note}`)
   return analyse(manifest, { deep: f.deep, thresholds: f.thresholds })
+}
+
+// A baseline is a report this same CLI wrote with --json, so the only field
+// that matters is the total. Read narrowly: a truncated or half-written file
+// should say so here, not compare as 0 and pass a ratchet that should have
+// failed.
+function readBaseline(file: string): number {
+  const parsed: unknown = JSON.parse(readFileSync(file, 'utf8'))
+  const total = (parsed as { totalLibyears?: unknown }).totalLibyears
+  if (typeof total !== 'number' || !Number.isFinite(total)) {
+    throw new Error(`baseline ${file} has no usable totalLibyears`)
+  }
+  return total
 }
 
 function emit(text: string, out?: string) {
@@ -179,13 +206,13 @@ function labelFor(manifest: string, baselinePath: string): string {
 }
 
 /**
- * The report as a baselined project should read it. An explicit --baseline must
+ * The report as a baselined project should read it. An explicit --accepted must
  * exist; the default one is used when it happens to be there — a typo in a flag
  * should be an error, not a silent no-op.
  */
 function applyBaseline(report: Report, file: string, f: Flags): { report: Report; accepted: number; from: string } {
-  const path = f.baseline ?? DEFAULT_BASELINE
-  if (f.baseline && !existsSync(path)) throw new Error(`no such baseline: ${path}`)
+  const path = f.accepted ?? DEFAULT_BASELINE
+  if (f.accepted && !existsSync(path)) throw new Error(`no such baseline: ${path}`)
   if (!existsSync(path)) return { report, accepted: 0, from: path }
 
   const baseline = parseBaseline(readFileSync(path, 'utf8'))
@@ -213,8 +240,8 @@ async function main(argv: string[]): Promise<number> {
     case 'check': {
       const full = await loadReport(file, f)
 
-      if (f.writeBaseline !== undefined) {
-        const path = f.writeBaseline
+      if (f.writeAccepted !== undefined) {
+        const path = f.writeAccepted
         const accepted = full.deps.filter((d) => !d.degraded && d.quadrant !== 'healthy').length
         writeFileSync(path, serialise([{ label: labelFor(file, path), report: full }], new Date().toISOString()))
         console.error(`depwatch: ${accepted} finding(s) accepted in ${path}`)
@@ -226,7 +253,12 @@ async function main(argv: string[]): Promise<number> {
       // stderr, so --json stays a clean pipe.
       if (accepted > 0) console.error(`depwatch: ${accepted} finding(s) accepted by ${from}`)
       if (f.ci) {
-        const fails = gateFailures(r, { maxLibyears: f.maxLibyears, maxReplace: f.maxReplace })
+        const fails = gateFailures(r, {
+          maxLibyears: f.maxLibyears,
+          maxReplace: f.maxReplace,
+          maxLibyearsIncrease: f.maxLibyearsIncrease,
+          baselineLibyears: f.baseline === undefined ? undefined : readBaseline(f.baseline),
+        })
         for (const { message } of fails) console.error(`depwatch: ${message}`)
         return fails.length > 0 ? 1 : 0
       }

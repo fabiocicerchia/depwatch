@@ -1,0 +1,30 @@
+# AWS CodeBuild (CodePipeline) — buildspec.yml
+#
+# CODEBUILD_WEBHOOK_BASE_REF is set on pull request webhook builds and empty on a
+# pipeline-triggered build, which is the distinction the ratchet needs. Note that
+# a CodePipeline source action hands CodeBuild a zip, not a git checkout — the
+# ratchet needs git history, so it is skipped there with a note. Use a webhook
+# build, or set the source's "full clone" option, to gate on the delta.
+
+version: 0.2
+
+env:
+  variables:
+    MANIFEST: package.json
+    DEPWATCH_REF: main            # pin to a tag
+    MAX_LIBYEARS: "25"
+    MAX_LIBYEARS_INCREASE: "0"
+    REPORT: depwatch.json
+
+phases:
+  install:
+    runtime-versions:
+      nodejs: 22
+  build:
+    commands:
+      - export BASE_REF="${CODEBUILD_WEBHOOK_BASE_REF#refs/heads/}"
+      - ./examples/ci/depwatch-ci.sh
+
+artifacts:
+  files: [depwatch.json]
+  name: depwatch

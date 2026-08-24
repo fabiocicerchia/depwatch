@@ -1,0 +1,24 @@
+# Buildkite — .buildkite/pipeline.yml
+#
+# BUILDKITE_PULL_REQUEST_BASE_BRANCH is set on pull request builds and empty on a
+# branch build, so one step covers both: the ratchet fires where there is
+# something to compare against, and reports itself skipped where there is not.
+
+steps:
+  - label: ":chart_with_downwards_trend: dependency drift"
+    plugins:
+      - docker#v5.11.0:
+          image: node:22
+          propagate-environment: true
+    env:
+      MANIFEST: package.json
+      DEPWATCH_REF: main            # pin to a tag
+      MAX_LIBYEARS: "25"
+      MAX_LIBYEARS_INCREASE: "0"
+      BASE_REF: "${BUILDKITE_PULL_REQUEST_BASE_BRANCH:-}"
+      REPORT: depwatch.json
+      CHART: depwatch.svg
+    command: ./examples/ci/depwatch-ci.sh
+    artifact_paths:
+      - depwatch.json
+      - depwatch.svg

@@ -1,0 +1,31 @@
+# Drone CI — .drone.yml
+#
+# Woodpecker is a fork of Drone and reads this file almost unchanged: rename
+# `steps` entries' `image` the same way, and swap DRONE_ prefixed variables for
+# CI_ ones (CI_COMMIT_TARGET_BRANCH is Woodpecker's DRONE_TARGET_BRANCH).
+#
+# DRONE_TARGET_BRANCH is the branch a pull request targets, and on a push build
+# it is the branch being pushed — where base and head coincide and the ratchet is
+# a no-op rather than a false failure.
+
+kind: pipeline
+type: docker
+name: depwatch
+
+steps:
+  - name: dependency drift
+    image: node:22
+    environment:
+      MANIFEST: package.json
+      DEPWATCH_REF: main            # pin to a tag
+      MAX_LIBYEARS: "25"
+      MAX_LIBYEARS_INCREASE: "0"
+      BASE_REF: ${DRONE_TARGET_BRANCH}
+      REPORT: depwatch.json
+    commands:
+      - ./examples/ci/depwatch-ci.sh
+
+# Drone clones at depth 50 by default, which reaches the base commit in almost
+# every pull request. Raise it here if your pull requests run longer than that.
+clone:
+  depth: 50

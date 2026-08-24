@@ -1,0 +1,48 @@
+# Devtron — a pre-build stage task on a CI pipeline.
+#
+# Devtron runs pre- and post-build stages as containerised scripts with the
+# source checked out, so the gate is a shell task that fails the build. Add it in
+# the UI under the pipeline's "Pre-build stage" as a "Execute custom script" task
+# of type Shell, or apply the equivalent config below.
+#
+# The variables map onto Devtron's input variables, so a team can override the
+# budget per pipeline without editing the script.
+
+apiVersion: devtron.ai/v1
+kind: PreBuildTask
+metadata:
+  name: depwatch
+spec:
+  type: SHELL
+  # Devtron's default CI image has no Node; run the task in one that does.
+  image: node:22
+  inputVariables:
+    - name: MANIFEST
+      format: STRING
+      value: package.json
+    - name: DEPWATCH_REF
+      format: STRING
+      value: main                 # pin to a tag
+    - name: MAX_LIBYEARS
+      format: STRING
+      value: "25"
+    - name: MAX_REPLACE
+      format: STRING
+      value: "0"
+    # Devtron builds a branch rather than a merge, so there is no base ref to
+    # ratchet against — the absolute budget is the gate that fits here.
+    - name: REPORT
+      format: STRING
+      value: /devtroncd/depwatch.json
+  outputVariables:
+    - name: LIBYEARS
+      format: STRING
+  script: |
+    #!/bin/sh
+    set -eu
+    cd /devtroncd
+    code=0
+    ./examples/ci/depwatch-ci.sh || code=$?
+    LIBYEARS=$(node -e 'process.stdout.write(String(JSON.parse(require("fs").readFileSync("/devtroncd/depwatch.json","utf8")).totalLibyears.toFixed(2)))' 2>/dev/null || echo "")
+    echo "LIBYEARS=$LIBYEARS"
+    exit "$code"

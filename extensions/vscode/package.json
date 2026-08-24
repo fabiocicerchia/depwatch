@@ -57,9 +57,26 @@
   "activationEvents": [
     "workspaceContains:**/package.json",
     "workspaceContains:**/requirements*.txt",
+    "workspaceContains:**/pyproject.toml",
     "workspaceContains:**/Cargo.toml",
     "workspaceContains:**/composer.json",
-    "workspaceContains:**/Gemfile.lock"
+    "workspaceContains:**/Gemfile.lock",
+    "workspaceContains:**/go.mod",
+    "workspaceContains:**/pom.xml",
+    "workspaceContains:**/build.gradle",
+    "workspaceContains:**/build.gradle.kts",
+    "workspaceContains:**/packages.config",
+    "workspaceContains:**/mix.exs",
+    "workspaceContains:**/pubspec.yaml",
+    "workspaceContains:**/Podfile.lock",
+    "workspaceContains:**/environment.yml",
+    "workspaceContains:**/environment.yaml",
+    "workspaceContains:**/Chart.yaml",
+    "workspaceContains:**/Dockerfile",
+    "workspaceContains:**/Containerfile",
+    "workspaceContains:**/action.yml",
+    "workspaceContains:**/action.yaml",
+    "workspaceContains:**/.terraform.lock.hcl"
   ],
   "contributes": {
     "viewsContainers": {
@@ -300,13 +317,30 @@
           "default": [
             "**/package.json",
             "**/requirements*.txt",
+            "**/pyproject.toml",
             "**/Cargo.toml",
             "**/composer.json",
             "**/Gemfile.lock",
+            "**/go.mod",
+            "**/pom.xml",
+            "**/build.gradle",
+            "**/build.gradle.kts",
+            "**/packages.config",
+            "**/mix.exs",
+            "**/pubspec.yaml",
+            "**/Podfile.lock",
+            "**/environment.yml",
+            "**/environment.yaml",
+            "**/Chart.yaml",
+            "**/Dockerfile",
+            "**/Containerfile",
+            "**/action.yml",
+            "**/action.yaml",
+            "**/.terraform.lock.hcl",
             "**/bom.json",
             "**/*.cdx.json"
           ],
-          "markdownDescription": "Globs for the files to scan. A lock file sitting beside a manifest is picked up automatically — list the manifests, not the locks."
+          "markdownDescription": "Globs for the files to scan. A lock file sitting beside a manifest is picked up automatically — list the manifests, not the locks, which is why `go.mod` appears here and `go.sum` does not. `Gemfile.lock` and `Podfile.lock` are the exception: Bundler and CocoaPods resolve versions only in the lock. Workflow files under `.github/workflows/` are understood but not listed, because the glob that would find them (`*.yml`) matches every YAML file in the repository — add it yourself if you want pinned action versions scored."
         },
         "depwatch.exclude": {
           "type": "array",

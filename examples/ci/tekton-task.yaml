@@ -1,0 +1,104 @@
+# Tekton — a Task, and a Pipeline that runs it against a cloned repository.
+#
+# Everything depwatch-ci.sh reads from the environment is a Task param here, so
+# the ratchet is wired by passing base-ref from whatever triggered the run — a
+# Tekton Trigger binding it from the pull request payload, most often.
+#
+#   kubectl apply -f tekton-task.yaml
+#   tkn pipeline start depwatch --param repo=https://github.com/you/yours \
+#       --param base-ref=main --workspace name=source,volumeClaimTemplateFile=pvc.yaml
+
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: depwatch
+spec:
+  description: >-
+    Measure dependency drift (libyears) and viability, and fail when drift
+    crosses a threshold.
+  params:
+    - name: manifest
+      type: string
+      default: package.json
+    - name: depwatch-ref
+      type: string
+      default: main               # pin to a tag
+    - name: max-libyears
+      type: string
+      default: ""
+    - name: max-libyears-increase
+      type: string
+      default: ""
+      description: The ratchet — how much drift this change may add. Needs base-ref.
+    - name: base-ref
+      type: string
+      default: ""
+      description: Empty outside a pull request, where the ratchet is skipped.
+  workspaces:
+    - name: source
+      description: A checkout of the repository to measure.
+  results:
+    - name: libyears
+      description: Total drift, to two decimals.
+  steps:
+    - name: check
+      image: node:22
+      workingDir: $(workspaces.source.path)
+      env:
+        - name: MANIFEST
+          value: $(params.manifest)
+        - name: DEPWATCH_REF
+          value: $(params.depwatch-ref)
+        - name: MAX_LIBYEARS
+          value: $(params.max-libyears)
+        - name: MAX_LIBYEARS_INCREASE
+          value: $(params.max-libyears-increase)
+        - name: BASE_REF
+          value: $(params.base-ref)
+        - name: REPORT
+          value: $(workspaces.source.path)/depwatch.json
+      script: |
+        #!/usr/bin/env sh
+        set -eu
+        # The gate's exit code is the step's, and so the TaskRun's. The result is
+        # emitted first so a failed run still reports the number it failed on.
+        code=0
+        ./examples/ci/depwatch-ci.sh || code=$?
+        node -e 'process.stdout.write(String(JSON.parse(require("fs").readFileSync(process.env.REPORT,"utf8")).totalLibyears.toFixed(2)))' \
+          > "$(results.libyears.path)" 2>/dev/null || printf '0.00' > "$(results.libyears.path)"
+        exit "$code"
+---
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+  name: depwatch
+spec:
+  params:
+    - name: repo
+      type: string
+    - name: base-ref
+      type: string
+      default: ""
+  workspaces:
+    - name: source
+  tasks:
+    - name: clone
+      taskRef: { name: git-clone }   # from the Tekton catalog
+      workspaces: [{ name: output, workspace: source }]
+      params:
+        - name: url
+          value: $(params.repo)
+        # The ratchet needs history, which the catalog task truncates by default.
+        - name: depth
+          value: "50"
+    - name: drift
+      runAfter: [clone]
+      taskRef: { name: depwatch }
+      workspaces: [{ name: source, workspace: source }]
+      params:
+        - name: max-libyears
+          value: "25"
+        - name: max-libyears-increase
+          value: "0"
+        - name: base-ref
+          value: $(params.base-ref)

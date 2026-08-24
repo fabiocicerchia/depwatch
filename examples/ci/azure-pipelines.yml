@@ -1,0 +1,35 @@
+# Azure DevOps Pipelines — azure-pipelines.yml
+#
+# System.PullRequest.TargetBranch arrives as a full ref (refs/heads/main) on pull
+# request validation builds and empty otherwise. depwatch-ci.sh passes BASE_REF
+# to `git fetch`, which takes a full ref happily, so no trimming is needed.
+
+trigger: [main]
+pr: ["*"]
+
+pool:
+  vmImage: ubuntu-latest
+
+steps:
+  - checkout: self
+    fetchDepth: 50   # the ratchet needs the base commit
+
+  - task: NodeTool@0
+    inputs:
+      versionSpec: "22.x"
+
+  - script: ./examples/ci/depwatch-ci.sh
+    displayName: Dependency drift
+    env:
+      MANIFEST: package.json
+      DEPWATCH_REF: main          # pin to a tag
+      MAX_LIBYEARS: "25"
+      MAX_LIBYEARS_INCREASE: "0"
+      BASE_REF: $(System.PullRequest.TargetBranch)
+      REPORT: $(Build.ArtifactStagingDirectory)/depwatch.json
+
+  - task: PublishBuildArtifacts@1
+    condition: always()   # the report is most worth having on the run that failed
+    inputs:
+      PathtoPublish: $(Build.ArtifactStagingDirectory)
+      ArtifactName: depwatch

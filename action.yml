@@ -1,0 +1,430 @@
+name: depwatch
+description: >-
+  Measure dependency drift (libyears) and viability, and fail the build when
+  drift crosses a threshold you set.
+author: Fabio Cicerchia
+
+branding:
+  icon: activity
+  color: purple
+
+# A composite action rather than a JavaScript one: depwatch is not published to
+# a registry, so there is no `dist/` to commit and keep in sync with `src/`.
+# The action builds the CLI from the checkout GitHub already made of this
+# repository at the ref the caller pinned — what runs is exactly the code at
+# that tag, which is also what makes the SHA worth pinning.
+
+inputs:
+  manifest:
+    description: >-
+      Manifest, lock file or SBOM to measure. A lock file beside the manifest is
+      preferred automatically — see `no-lock`.
+    required: false
+    default: package.json
+
+  # --- the threshold ---
+  max-libyears:
+    description: >-
+      Fail when total drift exceeds this many libyears. A ceiling that may be
+      reached: `10` passes at exactly 10.00 and fails above it. Unset means
+      measure and report, never fail.
+    required: false
+    default: ""
+  max-replace:
+    description: >-
+      Fail when more than this many dependencies land in the "replace" quadrant
+      (far behind *and* fading). Unset means no gate.
+    required: false
+    default: ""
+  max-libyears-increase:
+    description: >-
+      The ratchet. Fail when this ref's drift has grown by more than this many
+      libyears against `base-ref`. An absolute `max-libyears` is awkward to adopt
+      on a repository that is already behind — set it high and it never fires,
+      set it low and every pull request is red for debt it did not create. This
+      gates from the first day: whatever the total is, do not make it worse.
+      `0` means "must not grow at all". Unset means no ratchet.
+    required: false
+    default: ""
+  base-ref:
+    description: >-
+      Ref the ratchet compares against. Defaults to the pull request's base
+      branch. Outside a pull request there is nothing to compare to and the
+      ratchet is skipped with a notice rather than failing.
+    required: false
+    default: ""
+
+  fail-on-threshold:
+    description: >-
+      Whether a breached threshold fails the step. Set to `false` to publish the
+      numbers and the summary while a team works its budget down, then flip it
+      to `true` once the number is one you are willing to defend.
+    required: false
+    default: "true"
+
+  # --- what counts as behind, and as fading ---
+  stale:
+    description: Libyears above which a dependency counts as behind (CLI default 1).
+    required: false
+    default: ""
+  risky:
+    description: Viability below which a dependency counts as fading (CLI default 0.5).
+    required: false
+    default: ""
+
+  # --- how much to measure ---
+  deep:
+    description: >-
+      Fetch maintainer, archived and last-commit signals. Costs extra requests;
+      `github-token` is passed through to avoid throttling.
+    required: false
+    default: "false"
+  transitive:
+    description: Score the whole dependency tree from the lock file, not just direct dependencies.
+    required: false
+    default: "false"
+  no-lock:
+    description: >-
+      Read the manifest even when a lock file sits beside it. Drift then becomes
+      an upper bound rather than a measurement.
+    required: false
+    default: "false"
+  eco:
+    description: Force the ecosystem instead of inferring it from the filename.
+    required: false
+    default: ""
+
+  # --- artifacts ---
+  json:
+    description: Path to write the full JSON report to. Defaults to a file under RUNNER_TEMP.
+    required: false
+    default: ""
+  chart:
+    description: >-
+      Path to write the quadrant SVG to. Off by default: charting re-analyses the
+      manifest, so it costs a second pass over the registries.
+    required: false
+    default: ""
+  summary:
+    description: Write the report to the job summary.
+    required: false
+    default: "true"
+  comment:
+    description: >-
+      Post the report as a comment on the pull request, updating the same
+      comment on each run rather than adding one per push. Needs
+      `permissions: pull-requests: write`. Off by default: an action that writes
+      to pull requests should be something you asked for.
+    required: false
+    default: "false"
+  artifact:
+    description: >-
+      Name of a workflow artifact to upload the JSON report — and the chart, if
+      `chart` is set — to. Empty means no upload.
+    required: false
+    default: ""
+  artifact-retention-days:
+    description: Days to keep the artifact. Empty uses the repository default.
+    required: false
+    default: ""
+
+  # --- runner ---
+  node-version:
+    description: Node version used to build and run depwatch.
+    required: false
+    default: "22"
+  github-token:
+    description: Token used for GitHub API signals under `deep`. Read-only; only public metadata is read.
+    required: false
+    default: ${{ github.token }}
+  working-directory:
+    description: Directory to resolve `manifest` against.
+    required: false
+    default: "."
+
+outputs:
+  libyears:
+    description: Total drift, in libyears, to two decimal places.
+    value: ${{ steps.check.outputs.libyears }}
+  deps:
+    description: Number of dependencies measured.
+    value: ${{ steps.check.outputs.deps }}
+  ecosystem:
+    description: Ecosystem depwatch read the input as.
+    value: ${{ steps.check.outputs.ecosystem }}
+  file:
+    description: The file that was actually measured (the lock file, where one was preferred).
+    value: ${{ steps.check.outputs.file }}
+  replace:
+    description: Dependencies in the "replace" quadrant.
+    value: ${{ steps.check.outputs.replace }}
+  upgrade:
+    description: Dependencies in the "upgrade" quadrant.
+    value: ${{ steps.check.outputs.upgrade }}
+  watch:
+    description: Dependencies in the "watch" quadrant.
+    value: ${{ steps.check.outputs.watch }}
+  healthy:
+    description: Dependencies in the "healthy" quadrant.
+    value: ${{ steps.check.outputs.healthy }}
+  degraded:
+    description: Dependencies the registry would not answer for, and which were not scored.
+    value: ${{ steps.check.outputs.degraded }}
+  baseline-libyears:
+    description: Total drift of `base-ref`, or empty when the ratchet did not run.
+    value: ${{ steps.baseline.outputs.libyears }}
+  delta:
+    description: >-
+      Change in libyears against `base-ref`, signed — `+0.42` for a pull request
+      that added drift. Empty when the ratchet did not run.
+    value: ${{ steps.check.outputs.delta }}
+  passed:
+    description: >-
+      `true` when no threshold was breached. Readable even with
+      `fail-on-threshold: false`, which is how you gate something other than the
+      build on it.
+    value: ${{ steps.check.outputs.passed }}
+  report:
+    description: Path to the JSON report.
+    value: ${{ steps.check.outputs.report }}
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
+      with:
+        node-version: ${{ inputs.node-version }}
+
+    # npm ci in the action's own checkout, not the caller's: the caller's
+    # node_modules (if they have any) is the thing being measured, and must not
+    # be disturbed. --ignore-scripts because the only reason to install here is
+    # to run esbuild.
+    - name: Build depwatch
+      shell: bash
+      working-directory: ${{ github.action_path }}
+      run: |
+        npm ci --ignore-scripts
+        npm run build
+
+    # The ratchet's other half: measure the base ref the same way, so the two
+    # totals are comparable. Skipped entirely when no ratchet is configured —
+    # this is a second pass over the registries and nobody should pay for it
+    # unless they asked.
+    - name: Measure the base ref
+      id: baseline
+      if: inputs.max-libyears-increase != ''
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      env:
+        ACTION_PATH: ${{ github.action_path }}
+        IN_MANIFEST: ${{ inputs.manifest }}
+        IN_BASE_REF: ${{ inputs.base-ref }}
+        IN_STALE: ${{ inputs.stale }}
+        IN_RISKY: ${{ inputs.risky }}
+        IN_TRANSITIVE: ${{ inputs.transitive }}
+        IN_NO_LOCK: ${{ inputs.no-lock }}
+        IN_ECO: ${{ inputs.eco }}
+      run: |
+        set -euo pipefail
+
+        base="${IN_BASE_REF:-${GITHUB_BASE_REF:-}}"
+        if [[ -z "$base" ]]; then
+          echo "::notice::depwatch: no base ref to compare against (not a pull request) — the ratchet is skipped"
+          exit 0
+        fi
+        if ! git rev-parse --git-dir >/dev/null 2>&1; then
+          echo "::warning::depwatch: not a git checkout — the ratchet is skipped"
+          exit 0
+        fi
+
+        # The manifest path is relative to working-directory; in the worktree it
+        # has to be relative to the repository root.
+        prefix="$(git rev-parse --show-prefix)"
+        work="${RUNNER_TEMP}/depwatch-base"
+        rm -rf "$work"
+
+        # A shallow fetch of just that ref: actions/checkout defaults to depth 1,
+        # so the base commit is normally not in the checkout at all.
+        if ! git fetch --no-tags --depth=1 origin "$base" 2>&1; then
+          echo "::warning::depwatch: could not fetch ${base} — the ratchet is skipped"
+          exit 0
+        fi
+        git worktree add --detach "$work" FETCH_HEAD >/dev/null
+
+        code=0
+        base_manifest="${work}/${prefix}${IN_MANIFEST}"
+        if [[ ! -e "$base_manifest" ]]; then
+          echo "::notice::depwatch: ${IN_MANIFEST} does not exist on ${base} — the ratchet is skipped"
+        else
+          args=()
+          if [[ -n "$IN_ECO" ]]; then args+=(--eco "$IN_ECO"); fi
+          if [[ -n "$IN_STALE" ]]; then args+=(--stale "$IN_STALE"); fi
+          if [[ -n "$IN_RISKY" ]]; then args+=(--risky "$IN_RISKY"); fi
+          if [[ "$IN_TRANSITIVE" == "true" ]]; then args+=(--transitive); fi
+          if [[ "$IN_NO_LOCK" == "true" ]]; then args+=(--no-lock); fi
+          # No --deep: the ratchet compares totalLibyears, which the maintainer
+          # and archived signals do not feed into. Fetching them for the base ref
+          # would double the cost of the run and change nothing.
+          node "${ACTION_PATH}/dist/cli.js" check "$base_manifest" \
+            --json --out "${RUNNER_TEMP}/depwatch-baseline.json" "${args[@]}" || code=$?
+        fi
+
+        # Composite actions have no post step, so the worktree is cleaned up
+        # here rather than left registered in the caller's .git.
+        git worktree remove --force "$work" >/dev/null 2>&1 || true
+
+        if [[ $code -ne 0 || ! -s "${RUNNER_TEMP}/depwatch-baseline.json" ]]; then
+          echo "::warning::depwatch: could not measure ${base} — the ratchet is skipped"
+          exit 0
+        fi
+
+        baseline="$(node -e 'process.stdout.write(String(JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).totalLibyears.toFixed(2)))' "${RUNNER_TEMP}/depwatch-baseline.json")"
+        echo "libyears=${baseline}" >> "$GITHUB_OUTPUT"
+        echo "path=${RUNNER_TEMP}/depwatch-baseline.json" >> "$GITHUB_OUTPUT"
+        echo "depwatch: ${base} measures ${baseline} libyears"
+
+    - name: Check
+      id: check
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      env:
+        GITHUB_TOKEN: ${{ inputs.github-token }}
+        DEPWATCH_SUMMARY: ${{ inputs.summary }}
+        ACTION_PATH: ${{ github.action_path }}
+        IN_MANIFEST: ${{ inputs.manifest }}
+        IN_MAX_LIBYEARS: ${{ inputs.max-libyears }}
+        IN_MAX_REPLACE: ${{ inputs.max-replace }}
+        IN_FAIL: ${{ inputs.fail-on-threshold }}
+        IN_STALE: ${{ inputs.stale }}
+        IN_RISKY: ${{ inputs.risky }}
+        IN_DEEP: ${{ inputs.deep }}
+        IN_TRANSITIVE: ${{ inputs.transitive }}
+        IN_NO_LOCK: ${{ inputs.no-lock }}
+        IN_ECO: ${{ inputs.eco }}
+        IN_JSON: ${{ inputs.json }}
+        IN_CHART: ${{ inputs.chart }}
+        IN_MAX_INCREASE: ${{ inputs.max-libyears-increase }}
+        IN_BASELINE: ${{ steps.baseline.outputs.path }}
+      # Inputs arrive as environment variables rather than being interpolated
+      # into the script: `${{ }}` expands before bash sees the line, so a value
+      # containing a quote would otherwise be shell syntax.
+      run: |
+        set -euo pipefail
+
+        report="${IN_JSON:-${RUNNER_TEMP}/depwatch-report.json}"
+        mkdir -p "$(dirname "$report")"
+        gate_log="${RUNNER_TEMP}/depwatch-gate.log"
+
+        # Built with `if`, not `[[ ... ]] && args+=(...)`: under `set -e` that
+        # idiom exits the script when it is the last statement to run, and the
+        # last flag appended would decide whether this step silently stops.
+        args=()
+        if [[ -n "$IN_ECO" ]]; then args+=(--eco "$IN_ECO"); fi
+        if [[ -n "$IN_STALE" ]]; then args+=(--stale "$IN_STALE"); fi
+        if [[ -n "$IN_RISKY" ]]; then args+=(--risky "$IN_RISKY"); fi
+        if [[ "$IN_TRANSITIVE" == "true" ]]; then args+=(--transitive); fi
+        if [[ "$IN_NO_LOCK" == "true" ]]; then args+=(--no-lock); fi
+
+        # Every flag above also applies to the chart, which re-analyses the
+        # manifest; --deep does not, because the chart plots what is already
+        # scored and the signal fetches would be paid for twice.
+        chart_args=("${args[@]}")
+        if [[ "$IN_DEEP" == "true" ]]; then args+=(--deep); fi
+
+        # --ci is what makes a breached threshold a non-zero exit. It is set
+        # whenever a threshold is configured, independent of fail-on-threshold:
+        # the exit code is how the summary learns the verdict, and swallowing it
+        # is done below, deliberately and in one place.
+        if [[ -n "$IN_MAX_LIBYEARS" ]]; then args+=(--ci --max-libyears "$IN_MAX_LIBYEARS"); fi
+        if [[ -n "$IN_MAX_REPLACE" ]]; then
+          if [[ -z "$IN_MAX_LIBYEARS" ]]; then args+=(--ci); fi
+          args+=(--max-replace "$IN_MAX_REPLACE")
+        fi
+        # IN_BASELINE is empty whenever the step above skipped, so a ratchet that
+        # had nothing to compare against does not reach the CLI — which rejects
+        # --max-libyears-increase without --baseline rather than passing quietly.
+        if [[ -n "$IN_MAX_INCREASE" && -n "${IN_BASELINE:-}" ]]; then
+          if [[ -z "$IN_MAX_LIBYEARS" && -z "$IN_MAX_REPLACE" ]]; then args+=(--ci); fi
+          args+=(--max-libyears-increase "$IN_MAX_INCREASE" --baseline "$IN_BASELINE")
+        fi
+
+        # stderr to a file, then replayed: the gate messages have to be both in
+        # the log for a human and on disk for the summary. A `tee` through a
+        # process substitution would race the reader that comes next.
+        code=0
+        node "${ACTION_PATH}/dist/cli.js" check "$IN_MANIFEST" \
+          --json --out "$report" "${args[@]}" 2> "$gate_log" || code=$?
+        cat "$gate_log" >&2
+
+        # 2 is a usage or read error — a manifest that does not exist, an
+        # ecosystem that cannot be parsed. That is a broken invocation, not a
+        # breached threshold, and fail-on-threshold must not mask it.
+        if [[ $code -ne 0 && $code -ne 1 ]]; then
+          echo "::error::depwatch could not measure ${IN_MANIFEST} (exit ${code})"
+          exit "$code"
+        fi
+
+        node "${ACTION_PATH}/scripts/action-report.mjs" "$report" "$gate_log" "$code" "${IN_BASELINE:-}"
+
+        if [[ -n "$IN_CHART" ]]; then
+          mkdir -p "$(dirname "$IN_CHART")"
+          node "${ACTION_PATH}/dist/cli.js" chart "$IN_MANIFEST" --out "$IN_CHART" "${chart_args[@]}"
+        fi
+
+        if [[ $code -ne 0 ]]; then
+          if [[ "$IN_FAIL" == "true" ]]; then
+            echo "::error::depwatch threshold breached — see the job summary"
+            exit 1
+          fi
+          echo "::warning::depwatch threshold breached (fail-on-threshold is false)"
+        fi
+
+    # Written whether or not the comment is posted, so the summary and the
+    # comment are always the same text.
+    - name: Comment on the pull request
+      if: always() && inputs.comment == 'true' && github.event.pull_request.number
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.github-token }}
+        PR: ${{ github.event.pull_request.number }}
+        REPO: ${{ github.repository }}
+      # One comment that gets edited, not one per push: a bot that appends to a
+      # pull request on every commit is a bot people learn to collapse.
+      run: |
+        set -euo pipefail
+
+        body="${RUNNER_TEMP}/depwatch-comment.md"
+        if [[ ! -s "$body" ]]; then
+          echo "::warning::depwatch: nothing to comment"
+          exit 0
+        fi
+        if ! command -v gh >/dev/null 2>&1; then
+          echo "::warning::depwatch: gh is not available on this runner — skipping the comment"
+          exit 0
+        fi
+
+        marker="$(head -n 1 "$body")"
+        existing="$(gh api "repos/${REPO}/issues/${PR}/comments" --paginate \
+          --jq "map(select(.body | startswith(\"${marker}\"))) | .[0].id // empty")"
+
+        # A missing pull-requests: write permission is the likely failure here,
+        # and it should not fail a build whose gates passed.
+        if [[ -n "$existing" ]]; then
+          gh api -X PATCH "repos/${REPO}/issues/comments/${existing}" -F "body=@${body}" --silent \
+            || echo "::warning::depwatch: could not update the comment (needs permissions: pull-requests: write)"
+        else
+          gh api -X POST "repos/${REPO}/issues/${PR}/comments" -F "body=@${body}" --silent \
+            || echo "::warning::depwatch: could not post the comment (needs permissions: pull-requests: write)"
+        fi
+
+    # Last, and always: the report is most worth having on the run that failed.
+    - name: Upload the report
+      if: always() && inputs.artifact != ''
+      uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v5.0.0
+      with:
+        name: ${{ inputs.artifact }}
+        retention-days: ${{ inputs.artifact-retention-days }}
+        if-no-files-found: ignore
+        path: |
+          ${{ steps.check.outputs.report }}
+          ${{ inputs.chart }}

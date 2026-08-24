@@ -1,0 +1,29 @@
+# Spacelift — .spacelift/config.yml
+#
+# Spacelift stacks are infrastructure, so the manifest worth measuring is usually
+# .terraform.lock.hcl rather than a package.json: a provider two major versions
+# behind is the same debt in a different vocabulary, and depwatch reads Terraform
+# provider locks natively.
+#
+# before_init runs before the stack is planned, so a breach stops the run before
+# it proposes changes.
+
+version: "1"
+
+before_init:
+  - apt-get update -qq && apt-get install -y -qq nodejs npm git
+  - |
+    export MANIFEST=.terraform.lock.hcl
+    export DEPWATCH_REF=main          # pin to a tag
+    export MAX_LIBYEARS=10
+    export MAX_REPLACE=0
+    # A Spacelift proposed run has a base to compare against; a tracked run does
+    # not, and the ratchet reports itself skipped there.
+    export MAX_LIBYEARS_INCREASE=0
+    export BASE_REF="${SPACELIFT_STACK_BRANCH:-}"
+    export REPORT=/mnt/workspace/depwatch.json
+    ./examples/ci/depwatch-ci.sh
+
+# Keep the report with the run.
+after_run:
+  - cp /mnt/workspace/depwatch.json /mnt/workspace/artifacts/ 2>/dev/null || true

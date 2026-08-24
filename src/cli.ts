@@ -5,7 +5,7 @@
 // tsconfig.json — resolved by esbuild at bundle time, never copied. What lives
 // here is the second axis (viability), the quadrant, and the CLI itself.
 
-import { writeFileSync } from 'node:fs'
+import { readFileSync, writeFileSync } from 'node:fs'
 import { analyse, compareDeps, DEFAULT_THRESHOLDS, REPORT_COLUMNS, type Report, type Thresholds } from './report.js'
 import { assertEcosystem, type SupportedEcosystem } from './manifest.js'
 import { coverageLines, ecoIdList } from './ecosystems/registry.js'
@@ -28,6 +28,11 @@ Options
   --ci                    exit non-zero when a threshold is breached
   --max-libyears <n>      CI: fail above this total drift
   --max-replace <n>       CI: fail above this many deps in the "replace" quadrant
+  --max-libyears-increase <n>
+                          CI: fail when drift grew more than this against
+                          --baseline. The ratchet: gates a repo that is already
+                          behind without failing it for debt it did not create
+  --baseline <file>       a previous --json report to compare against
   --stale <n>             libyears above which a dep counts as behind (default 1)
   --risky <n>             viability below which a dep counts as fading (default 0.5)
   --out <file>            write chart/JSON to a file instead of stdout
@@ -57,6 +62,8 @@ interface Flags {
   out?: string
   maxLibyears?: number
   maxReplace?: number
+  maxLibyearsIncrease?: number
+  baseline?: string
   maxPoints?: number
   noLock: boolean
   transitive: boolean
@@ -88,12 +95,19 @@ function parseFlags(argv: string[]): Flags {
       case '--out': f.out = value(); break
       case '--max-libyears': f.maxLibyears = num(); break
       case '--max-replace': f.maxReplace = num(); break
+      case '--max-libyears-increase': f.maxLibyearsIncrease = num(); break
+      case '--baseline': f.baseline = value(); break
       case '--max-points': f.maxPoints = num(); break
       case '--stale': f.thresholds.staleLibyears = num(); break
       case '--risky': f.thresholds.riskyViability = num(); break
       default:
         throw new Error(`unknown option ${a}`)
     }
+  }
+  // A ratchet with nothing to ratchet against is a gate that silently never
+  // fires — the failure mode worth catching here rather than in a green build.
+  if (f.maxLibyearsIncrease !== undefined && f.baseline === undefined) {
+    throw new Error('--max-libyears-increase needs --baseline <file> to compare against')
   }
   return f
 }
@@ -108,6 +122,19 @@ async function loadReport(file: string, f: Flags): Promise<Report> {
   // because a machine reading the JSON has the same facts in the payload.
   if (!f.json) for (const note of notes) console.error(`depwatch: ${note}`)
   return analyse(manifest, { deep: f.deep, thresholds: f.thresholds })
+}
+
+// A baseline is a report this same CLI wrote with --json, so the only field
+// that matters is the total. Read narrowly: a truncated or half-written file
+// should say so here, not compare as 0 and pass a ratchet that should have
+// failed.
+function readBaseline(file: string): number {
+  const parsed: unknown = JSON.parse(readFileSync(file, 'utf8'))
+  const total = (parsed as { totalLibyears?: unknown }).totalLibyears
+  if (typeof total !== 'number' || !Number.isFinite(total)) {
+    throw new Error(`baseline ${file} has no usable totalLibyears`)
+  }
+  return total
 }
 
 function emit(text: string, out?: string) {
@@ -167,7 +194,12 @@ async function main(argv: string[]): Promise<number> {
       const r = await loadReport(file, f)
       emit(f.json ? JSON.stringify(r, null, 2) : table(r, f.thresholds), f.out)
       if (f.ci) {
-        const fails = gateFailures(r, { maxLibyears: f.maxLibyears, maxReplace: f.maxReplace })
+        const fails = gateFailures(r, {
+          maxLibyears: f.maxLibyears,
+          maxReplace: f.maxReplace,
+          maxLibyearsIncrease: f.maxLibyearsIncrease,
+          baselineLibyears: f.baseline === undefined ? undefined : readBaseline(f.baseline),
+        })
         for (const { message } of fails) console.error(`depwatch: ${message}`)
         return fails.length > 0 ? 1 : 0
       }

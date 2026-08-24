@@ -1,0 +1,29 @@
+# GitLab CI — .gitlab-ci.yml
+#
+# The ratchet has a proper home here: CI_MERGE_REQUEST_TARGET_BRANCH_NAME is set
+# on merge request pipelines and unset everywhere else, which is exactly when the
+# gate should and should not fire. depwatch-ci.sh skips it with a note when the
+# variable is empty, so one job covers both pipeline kinds.
+
+depwatch:
+  stage: test
+  image: node:22-alpine
+  before_script:
+    - apk add --no-cache git
+  variables:
+    MANIFEST: package.json
+    DEPWATCH_REF: main            # pin to a tag
+    MAX_LIBYEARS: "25"            # the absolute budget
+    MAX_LIBYEARS_INCREASE: "0"    # ...and the ratchet, on merge requests
+    BASE_REF: $CI_MERGE_REQUEST_TARGET_BRANCH_NAME
+    REPORT: depwatch.json
+    CHART: depwatch.svg
+    # The ratchet needs the base commit, which a depth-1 clone does not have.
+    # depwatch-ci.sh fetches it, but only if the clone is not a single blob.
+    GIT_DEPTH: "50"
+  script:
+    - ./examples/ci/depwatch-ci.sh
+  artifacts:
+    when: always
+    paths: [depwatch.json, depwatch.svg]
+    expire_in: 30 days

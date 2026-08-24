@@ -35,6 +35,12 @@ Screenshots of a real workspace show real paths. Check what is legible in one
 before committing it: the Marketplace page is public, and a package tree is a
 description of somebody's codebase.
 
+`sponsor.url` in the manifest is what puts a **Sponsor** button on the
+Marketplace page — a single URL, and the only funding hook the Marketplace
+reads. It points at the same GitHub Sponsors profile as `.github/FUNDING.yml`,
+which is the repository sidebar's separate copy of the same fact; change one
+and change the other. Open VSX ignores the field rather than rejecting it.
+
 ## Releasing
 
 The extension has no version of its own. `release-please-config.json` lists

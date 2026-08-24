@@ -38,22 +38,30 @@ your colour theme.
 
 ## Install
 
-From the repository root:
+From the **VS Code Marketplace** — search `depwatch` in the Extensions view
+(<kbd>Ctrl/Cmd</kbd>+<kbd>Shift</kbd>+<kbd>X</kbd>) and press *Install*, or from a
+terminal:
 
 ```sh
-make ext-install
+code --install-extension fabiocicerchia.depwatch-vscode
 ```
 
-That installs dependencies, type-checks, bundles, packages a VSIX and installs
-it. Reload the VS Code window afterwards.
+VSCodium and Cursor read Open VSX rather than the Marketplace, under the same
+id — `codium --install-extension fabiocicerchia.depwatch-vscode`.
 
-It needs the `code` CLI on your PATH. If `code` is not found — common on macOS —
+- VS Marketplace — <https://marketplace.visualstudio.com/items?itemName=fabiocicerchia.depwatch-vscode>
+- Open VSX — <https://open-vsx.org/extension/fabiocicerchia/depwatch-vscode>
+
+The CLI form needs `code` on your PATH. If it is not found — common on macOS —
 open the Command Palette and run *Shell Command: Install 'code' command in
-PATH*. Or skip the CLI entirely: `make ext-package` writes
-`extensions/vscode/depwatch-vscode-<version>.vsix`, and the Extensions view's
-`...` menu has *Install from VSIX…*.
+PATH*. Every release also attaches the `.vsix` to its [GitHub
+release](https://github.com/fabiocicerchia/depwatch/releases), for the Extensions
+view's `...` menu → *Install from VSIX…*.
 
-VSCodium and Cursor take the same flag — `codium --install-extension <file>.vsix`.
+### From source
+
+`make ext-install`, from the repository root: it builds, packages a VSIX and
+installs it. Reload the VS Code window afterwards.
 
 ### Trying it without installing
 
@@ -66,6 +74,46 @@ normal editor untouched.
 The extension activates on a workspace containing a manifest it recognises. You
 should see a **depwatch** tab in the bottom panel, total drift in the status
 bar, and a scan starting on its own. `depwatch: Scan the workspace` forces one.
+
+## Supported languages
+
+The same 16 ecosystems the CLI reads — the extension shares the engine, so a
+file `depwatch check` understands is a file it annotates.
+
+| Language / stack | Registry | Recognised files |
+| --- | --- | --- |
+| JavaScript / TypeScript | npm | `package.json`, `package-lock.json`, `yarn.lock`, `pnpm-lock.yaml`, `bun.lock` |
+| Python | PyPI | `requirements*.txt`, `pyproject.toml` (Poetry & PEP 621), `poetry.lock`, `uv.lock` |
+| conda environments | Anaconda.org (conda-forge by default) | `environment.yml`, `conda-lock.yml` |
+| Rust | crates.io | `Cargo.toml`, `Cargo.lock` |
+| PHP | Packagist | `composer.json`, `composer.lock` |
+| Ruby | RubyGems | `Gemfile.lock` |
+| Go | Go modules | `go.mod`, `go.sum` |
+| Java / Kotlin | Maven Central | `pom.xml`, `build.gradle(.kts)`, `gradle.lockfile` |
+| C# / .NET | NuGet | `packages.config`, `*.csproj`, `packages.lock.json` |
+| Dart / Flutter | pub.dev | `pubspec.yaml`, `pubspec.lock` |
+| Elixir / Erlang | Hex | `mix.exs`, `mix.lock` |
+| Swift / Objective-C | CocoaPods | `Podfile.lock` |
+| Terraform / OpenTofu | Terraform Registry | `.terraform.lock.hcl`, `*.tf` |
+| Helm | the chart repo's own `index.yaml` | `Chart.yaml`, `Chart.lock` |
+| GitHub Actions | GitHub | `.github/workflows/*.yml`, `action.yml` |
+| Docker | Docker Hub | `Dockerfile`, `Containerfile` — pulse and viability only |
+
+CycloneDX SBOMs (`bom.json`, `*.cdx.json`) are read too, scored per component
+ecosystem.
+
+Docker is the one entry scored on a single axis: a tag has an honest publish
+date but no orderable version series, so drift shows as `—` and only pulse and
+viability are reported.
+
+**Discovery is narrower than support**, deliberately: `depwatch.manifests`
+defaults to `package.json`, `requirements*.txt`, `Cargo.toml`, `composer.json`,
+`Gemfile.lock` and the SBOM names, because globbing sixteen ecosystems across
+every workspace costs more than most repositories get back. Add what your
+project uses — `["**/package.json", "**/go.mod", "**/pom.xml"]` — and the rest
+follows on its own. Those same five names are what the extension auto-activates
+on, so in a workspace with none of them run any `depwatch:` command once to wake
+it up.
 
 ## Commands
 

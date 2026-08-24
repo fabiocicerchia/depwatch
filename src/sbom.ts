@@ -37,7 +37,15 @@ export interface SbomParse {
   rootRef?: string
 }
 
-// pkg:npm/%40remix-run/router@1.23.3 -> { type: npm, name: @remix-run/router, version: 1.23.3 }
+/**
+ * Splits a package URL into its type, name and version.
+ *
+ * `pkg:npm/%40remix-run/router@1.23.3` ->
+ * `{ type: npm, name: @remix-run/router, version: 1.23.3 }`.
+ *
+ * @param purl A purl string.
+ * @returns The three parts, or null when the string is not a usable purl.
+ */
 export function parsePurl(purl: string): { type: string; name: string; version: string } | null {
   if (!purl.startsWith('pkg:')) return null
   // Qualifiers and subpath are not part of identity here.
@@ -64,6 +72,12 @@ export function parsePurl(purl: string): { type: string; name: string; version: 
   return { type, name, version }
 }
 
+/**
+ * Identifies which SBOM format a document is, from its contents.
+ *
+ * @param text The document.
+ * @returns The format, or null when it is not an SBOM depwatch reads.
+ */
 export function detectSbom(text: string): 'cyclonedx' | 'spdx' | null {
   const trimmed = text.trimStart()
   if (!trimmed.startsWith('{')) return null
@@ -77,6 +91,13 @@ export function detectSbom(text: string): 'cyclonedx' | 'spdx' | null {
   return null
 }
 
+/**
+ * Reads a CycloneDX or SPDX document into components and, where recorded, the
+ * dependency graph.
+ *
+ * @param text The document.
+ * @returns The parsed SBOM, or null when the format is not recognised.
+ */
 export function parseSbom(text: string): SbomParse | null {
   const format = detectSbom(text)
   if (!format) return null
@@ -160,10 +181,17 @@ function parseSpdx(doc: any): SbomParse {
   return collect(entries, 'spdx', direct, rootRef)
 }
 
-// Narrow to the root's direct dependencies when the SBOM recorded a graph.
-// Same reasoning as the lock files: libyear is a statement about what you
-// chose, and quietly including the transitive tree changes what the number
-// means.
+/**
+ * Narrows an SBOM to the root's direct dependencies, when it recorded a graph.
+ *
+ * Same reasoning as the lock files: libyear is a statement about what you
+ * chose, and quietly including the transitive tree changes what the number
+ * means.
+ *
+ * @param parsed The parsed SBOM.
+ * @returns The direct components, or every component when no graph was
+ *          recorded.
+ */
 export function directOnly(parsed: SbomParse): SbomComponent[] {
   if (!parsed.direct || parsed.direct.size === 0) return parsed.components
   const filtered = parsed.components.filter((c) => c.ref && parsed.direct!.has(c.ref))
@@ -171,6 +199,16 @@ export function directOnly(parsed: SbomParse): SbomComponent[] {
   return filtered.length > 0 ? filtered : parsed.components
 }
 
+/**
+ * Renders the "what was skipped" line for an SBOM containing purl types
+ * depwatch has no registry for.
+ *
+ * Skipped components are reported rather than dropped silently: a total that
+ * quietly ignores half the SBOM is not a total.
+ *
+ * @param skipped Count per purl type.
+ * @returns A comma-separated summary, commonest first.
+ */
 export function skippedSummary(skipped: Record<string, number>): string {
   const parts = Object.entries(skipped)
     .sort((a, b) => b[1] - a[1])

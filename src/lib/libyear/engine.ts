@@ -35,6 +35,20 @@ const WORST_N = 5
 
 const round2 = (n: number) => Math.round(n * 100) / 100
 
+/**
+ * Scores one dependency's drift against a registry's version list.
+ *
+ * Drift is the age gap between the release you run and the newest one, in
+ * years. Undatable at either end scores 0 rather than a guess: a metric people
+ * gate on has to be objectively computable, and "we could not date it" is not
+ * evidence of freshness or of staleness.
+ *
+ * @param dep      The dependency and the version in the manifest or lock.
+ * @param versions Every version the registry knows about, with release dates.
+ * @param asOf     Instant to measure pulse against; overridden in trend mode so
+ *                 a past commit is scored as of its own date.
+ * @returns The dependency with its drift, pulse and both release dates.
+ */
 export function libyearsForDep(dep: Dep, versions: RegistryVersion[], asOf = Date.now()): DepFreshness {
   // A package that has only ever shipped prereleases still has a latest.
   const stable = versions.filter((v) => !isPrerelease(v.version))
@@ -74,6 +88,12 @@ function matchVersion(versions: RegistryVersion[], current: string): RegistryVer
   return newest(versions.filter((v) => compareVersions(v.version, current) <= 0))
 }
 
+/**
+ * Totals the drift across a manifest and names the worst offenders.
+ *
+ * @param deps Every scored dependency.
+ * @returns The summed libyears and the five deepest in debt.
+ */
 export function buildReport(deps: DepFreshness[]): LibyearReport {
   return {
     totalLibyears: round2(deps.reduce((sum, d) => sum + d.libyearsBehind, 0)),
@@ -85,9 +105,16 @@ export function buildReport(deps: DepFreshness[]): LibyearReport {
 
 export type ManifestKind = 'npm' | 'package-lock' | 'yarn-lock' | 'pnpm-lock' | 'pep440'
 
-// Content, not filename: a lock read as a manifest (or the reverse) produces a
-// wrong number with no error, and the caller cannot always trust the path it
-// was handed (`git show <sha>:file`, stdin, a renamed file).
+/**
+ * Identifies what a file is from its contents.
+ *
+ * Content, not filename: a lock read as a manifest (or the reverse) produces a
+ * wrong number with no error, and the caller cannot always trust the path it
+ * was handed (`git show <sha>:file`, stdin, a renamed file).
+ *
+ * @param text The file's contents.
+ * @returns The manifest kind, or null when nothing matches.
+ */
 export function detectKind(text: string): ManifestKind | null {
   const head = text.trimStart()
   if (head.startsWith('{')) {
@@ -102,6 +129,14 @@ export function detectKind(text: string): ManifestKind | null {
   return null
 }
 
+/**
+ * Extracts the dependency list from a manifest or lock file.
+ *
+ * @param text The file's contents.
+ * @param kind Which format to read it as — see {@link detectKind}.
+ * @returns One entry per dependency, with `resolved` set when the version came
+ *          from a lock rather than a range.
+ */
 export function parseManifest(text: string, kind: ManifestKind): Dep[] {
   switch (kind) {
     case 'npm':

@@ -37,6 +37,13 @@ export const QUADRANT_ORDER: Quadrant[] = ['replace', 'upgrade', 'watch', 'healt
 
 const RANK: Record<Quadrant, number> = { replace: 0, upgrade: 1, watch: 2, healthy: 3 }
 
+/**
+ * Orders dependencies for display: worst first.
+ *
+ * @param a First dependency.
+ * @param b Second dependency.
+ * @returns An Array#sort comparator result.
+ */
 export function compareDeps(a: DepReport, b: DepReport): number {
   return RANK[a.quadrant] - RANK[b.quadrant] || b.libyearsBehind - a.libyearsBehind || a.name.localeCompare(b.name)
 }
@@ -69,7 +76,19 @@ export interface Thresholds {
 
 export const DEFAULT_THRESHOLDS: Thresholds = { staleLibyears: 1, riskyViability: 0.5 }
 
-// Quadrant classification: the whole point of the tool.
+/**
+ * Places one dependency on the two axes — the whole point of the tool.
+ *
+ * Drift alone says how far behind you are; viability says whether catching up
+ * is even possible. A single "outdated" number cannot separate a library that
+ * is two years old and actively maintained from one that is two years old and
+ * archived, and those need opposite decisions.
+ *
+ * @param libyearsBehind Drift, in libyears.
+ * @param viability      Viability score, 0..1, higher is healthier.
+ * @param t              Threshold overrides.
+ * @returns healthy, upgrade, watch or replace.
+ */
 export function quadrant(libyearsBehind: number, viability: number, t = DEFAULT_THRESHOLDS): Quadrant {
   const stale = libyearsBehind > t.staleLibyears
   const risky = viability < t.riskyViability
@@ -190,6 +209,18 @@ async function mapPool<T, R>(items: T[], limit: number, fn: (item: T) => Promise
   return out
 }
 
+/**
+ * Scores a whole manifest: drift, viability and quadrant per dependency.
+ *
+ * Registry lookups are cached and rate-limited, so trend mode can re-analyse
+ * the same manifest at a dozen commits without a dozen times the traffic. A
+ * dependency whose registry could not be reached is marked `degraded` rather
+ * than dropped or scored as stale.
+ *
+ * @param manifest The parsed manifest.
+ * @param opts     Deep-signal toggle, thresholds, and `asOf` for trend mode.
+ * @returns The full report.
+ */
 export async function analyse(manifest: Manifest, opts: AnalyseOptions = {}): Promise<Report> {
   const now = opts.now ?? Date.now()
   const thresholds = opts.thresholds ?? DEFAULT_THRESHOLDS

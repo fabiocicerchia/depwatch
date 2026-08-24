@@ -10,12 +10,19 @@
 // since you accepted it has changed in exactly the way this tool exists to
 // notice. Anything else stays quiet.
 //
-// Pure, and free of any `vscode` import: reading and writing the file is the
-// caller's business.
+// Pure: reading and writing the file is the caller's business, which is what
+// lets the CLI and the editor share one answer to "what do we already accept".
 
-import { compareDeps, type DepReport, QUADRANT_ORDER, type Quadrant, type Report } from '../../../src/report.js'
+import { compareDeps, type DepReport, QUADRANT_ORDER, type Quadrant, type Report } from './report.js'
 
 export const BASELINE_VERSION = 1
+
+/**
+ * Where a baseline lives when nobody says otherwise. Shared so `depwatch check`
+ * and the editor look in the same place — a baseline only earns its keep if
+ * both honour it.
+ */
+export const DEFAULT_BASELINE = '.depwatch-baseline.json'
 
 interface Accepted {
   /** Libyears behind when this was accepted. */

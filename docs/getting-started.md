@@ -11,6 +11,7 @@ node dist/cli.js check package.json
 depwatch check <manifest>              # table: drift + pulse + viability + quadrant
 depwatch check <manifest> --json       # machine-readable, for CI
 depwatch check <manifest> --ci --max-libyears 50 --max-replace 0
+depwatch check <manifest> --ci --max-libyears-increase 0 --baseline base.json
 depwatch chart <manifest> --out q.svg  # the quadrant: drift × viability
 depwatch trend <manifest>              # across git history — are we improving?
 ```

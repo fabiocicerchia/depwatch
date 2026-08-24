@@ -35,10 +35,19 @@ export interface LoadedManifest {
   notes: string[]
 }
 
-// A manifest range gives its floor, not the installed version, so drift read
-// from one is an upper bound. If the lock file is sitting right next to it, use
-// that instead — silently reporting a worse number than reality is not a
-// conservative default, it is a wrong one.
+/**
+ * Picks the file to actually read: the lock beside the manifest, when there is
+ * one.
+ *
+ * A manifest range gives its floor, not the installed version, so drift read
+ * from one is an upper bound. If the lock file is sitting right next to it, use
+ * that instead — silently reporting a worse number than reality is not a
+ * conservative default, it is a wrong one.
+ *
+ * @param file The path the user asked for.
+ * @param opts Filesystem override, for tests and the editor extension.
+ * @returns The path to read.
+ */
 export function resolveInput(file: string, opts: InputOptions = {}): string {
   if (opts.noLock) return file
   const fs = opts.fs ?? NODE_FS
@@ -53,6 +62,14 @@ export function resolveInput(file: string, opts: InputOptions = {}): string {
   return file
 }
 
+/**
+ * Resolves, reads and parses a manifest in one step.
+ *
+ * @param file The path the user asked for.
+ * @param opts Ecosystem override, transitive flag and filesystem override.
+ * @returns The parsed manifest, plus the path that was actually read so the
+ *          caller can say so.
+ */
 export function loadManifest(file: string, opts: InputOptions = {}): LoadedManifest {
   const fs = opts.fs ?? NODE_FS
   const input = resolveInput(file, opts)

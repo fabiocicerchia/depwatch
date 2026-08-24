@@ -38,6 +38,9 @@
   ],
   "icon": "media/icon.png",
   "pricing": "Free",
+  "sponsor": {
+    "url": "https://github.com/sponsors/fabiocicerchia"
+  },
   "main": "./dist/extension.js",
   "capabilities": {
     "untrustedWorkspaces": {

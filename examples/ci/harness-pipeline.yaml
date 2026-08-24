@@ -1,0 +1,47 @@
+# Harness — a CI stage with the gate as a Run step.
+#
+# <+codebase.targetBranch> is populated on a pull request build and empty on a
+# branch build, which is where the ratchet should and should not fire. The
+# absolute budget rides along on both.
+
+pipeline:
+  name: depwatch
+  identifier: depwatch
+  projectIdentifier: your_project
+  orgIdentifier: your_org
+  stages:
+    - stage:
+        name: Dependency drift
+        identifier: drift
+        type: CI
+        spec:
+          cloneCodebase: true
+          # The ratchet needs the base commit, not just the tip.
+          caching: { enabled: true, paths: ["/tmp/depwatch"] }
+          platform:
+            os: Linux
+            arch: Amd64
+          runtime:
+            type: Cloud
+            spec: {}
+          execution:
+            steps:
+              - step:
+                  type: Run
+                  name: depwatch
+                  identifier: depwatch
+                  spec:
+                    shell: Sh
+                    image: node:22
+                    envVariables:
+                      MANIFEST: package.json
+                      DEPWATCH_REF: main          # pin to a tag
+                      MAX_LIBYEARS: "25"
+                      MAX_LIBYEARS_INCREASE: "0"
+                      BASE_REF: <+codebase.targetBranch>
+                      REPORT: depwatch.json
+                    command: |
+                      git fetch --depth=50 origin "$BASE_REF" || true
+                      ./examples/ci/depwatch-ci.sh
+                    outputVariables:
+                      - name: LIBYEARS

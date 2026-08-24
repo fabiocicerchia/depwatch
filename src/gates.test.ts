@@ -68,6 +68,49 @@ describe('gateFailures', () => {
     expect(gateFailures(report([dep({ libyearsBehind: 2 })]), { maxLibyears: 2 })).toEqual([])
   })
 
+  describe('the ratchet', () => {
+    it('fails when drift grew by more than --max-libyears-increase', () => {
+      const r = report([dep({ libyearsBehind: 3.52 })])
+      const fails = gateFailures(r, { maxLibyearsIncrease: 0.25, baselineLibyears: 3.1 })
+      expect(fails).toHaveLength(1)
+      expect(fails[0].gate).toBe('max-libyears-increase')
+      expect(fails[0].message).toContain('grew by 0.42 libyears')
+      expect(fails[0].message).toContain('3.10 → 3.52')
+    })
+
+    it('passes when drift grew by exactly the allowance', () => {
+      const r = report([dep({ libyearsBehind: 3.35 })])
+      expect(gateFailures(r, { maxLibyearsIncrease: 0.25, baselineLibyears: 3.1 })).toEqual([])
+    })
+
+    // The point of the ratchet: a repository already 40 libyears behind is not
+    // failed for its history, only for adding to it.
+    it('passes on a large total that did not grow', () => {
+      const r = report([dep({ libyearsBehind: 40 })])
+      expect(gateFailures(r, { maxLibyearsIncrease: 0, baselineLibyears: 40 })).toEqual([])
+    })
+
+    it('passes when drift shrank', () => {
+      const r = report([dep({ libyearsBehind: 1 })])
+      expect(gateFailures(r, { maxLibyearsIncrease: 0, baselineLibyears: 9 })).toEqual([])
+    })
+
+    // 3.52 - 3.10 is 0.42000000000000004 in binary floating point. Comparing at
+    // full precision would fail a ratchet of 0.42, and a ratchet of 0 would fail
+    // on totals that only differ below the two decimals anything reports.
+    it('compares at the two decimals every surface reports', () => {
+      expect(gateFailures(report([dep({ libyearsBehind: 3.52 })]), { maxLibyearsIncrease: 0.42, baselineLibyears: 3.1 })).toEqual([])
+      expect(gateFailures(report([dep({ libyearsBehind: 0.10000000000000002 })]), { maxLibyearsIncrease: 0, baselineLibyears: 0.1 })).toEqual([])
+    })
+
+    // Without a baseline there is nothing to ratchet against. Silently passing
+    // is right here: the CLI rejects the flag combination up front, so a gate
+    // that invented a baseline of 0 would only ever fire on a bug.
+    it('is inert without a baseline', () => {
+      expect(gateFailures(report([dep({ libyearsBehind: 40 })]), { maxLibyearsIncrease: 0 })).toEqual([])
+    })
+  })
+
   it('fails on too many deps in the replace quadrant', () => {
     const r = report([dep({ name: 'a', quadrant: 'replace' }), dep({ name: 'b', quadrant: 'replace' })])
     const fails = gateFailures(r, { maxReplace: 1 })
@@ -77,9 +120,8 @@ describe('gateFailures', () => {
 
   it('reports every breached gate, not just the first', () => {
     const r = report([dep({ libyearsBehind: 9, quadrant: 'replace' })])
-    expect(gateFailures(r, { maxLibyears: 1, maxReplace: 0 }).map((f) => f.gate)).toEqual([
-      'max-libyears',
-      'max-replace',
-    ])
+    expect(
+      gateFailures(r, { maxLibyears: 1, maxReplace: 0, maxLibyearsIncrease: 0, baselineLibyears: 1 }).map((f) => f.gate),
+    ).toEqual(['max-libyears', 'max-libyears-increase', 'max-replace'])
   })
 })

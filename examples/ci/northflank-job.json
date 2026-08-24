@@ -1,0 +1,40 @@
+{
+  "//": [
+    "Northflank — a manual/scheduled job that gates on dependency drift.",
+    "",
+    "Northflank builds from a repository and runs jobs in the built image, so",
+    "depwatch runs as a job with the repository as its build context. A",
+    "non-zero exit fails the job run, which is the gate.",
+    "",
+    "Northflank clones a single commit, so there is no base to ratchet",
+    "against — the absolute budget is the gate that fits here. Schedule it",
+    "rather than only running it on push: drift grows while nobody commits.",
+    "",
+    "Create with: northflank create job --file northflank-job.json"
+  ],
+  "name": "depwatch",
+  "description": "Dependency drift (libyears) x viability, gated on a threshold.",
+  "billing": { "deploymentPlan": "nf-compute-20" },
+  "deployment": {
+    "instances": 1,
+    "docker": {
+      "configType": "customCommand",
+      "customCommand": "./examples/ci/depwatch-ci.sh"
+    }
+  },
+  "runtimeEnvironment": {
+    "MANIFEST": "package.json",
+    "DEPWATCH_REF": "main",
+    "MAX_LIBYEARS": "25",
+    "MAX_REPLACE": "0",
+    "REPORT": "/tmp/depwatch.json"
+  },
+  "buildSettings": {
+    "dockerfile": {
+      "buildEngine": "kaniko",
+      "dockerFilePath": "/examples/ci/Dockerfile",
+      "dockerWorkDir": "/"
+    }
+  },
+  "schedule": "0 5 * * 1"
+}

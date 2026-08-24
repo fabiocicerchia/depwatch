@@ -39,6 +39,17 @@ export interface ChartOptions {
   labelAll?: boolean
 }
 
+/**
+ * Renders the two-axis plot as a standalone SVG.
+ *
+ * The plot is the product: drift on one axis, viability on the other, so the
+ * four decisions — leave it, upgrade it, watch it, replace it — are positions
+ * rather than a ranking.
+ *
+ * @param deps The scored dependencies.
+ * @param opts Size and threshold overrides.
+ * @returns SVG markup, self-contained and safe to inline.
+ */
 export function quadrantSVG(deps: DepReport[], opts: ChartOptions = {}): string {
   const t = opts.thresholds ?? DEFAULT_THRESHOLDS
   const plot = deps.filter((d) => !d.degraded && !d.driftUnscored)
@@ -147,6 +158,15 @@ function xTicks(max: number): number[] {
 const fmt = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(1))
 const r2 = (n: number) => Math.round(n * 100) / 100
 
+/**
+ * Escapes the five XML-significant characters.
+ *
+ * Package names reach the SVG verbatim, and a name containing `&` or `<` would
+ * otherwise produce markup no renderer will open.
+ *
+ * @param s Raw text.
+ * @returns Text safe to place in an XML text node or attribute.
+ */
 export function escapeXml(s: string): string {
   return s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' })[c]!)
 }

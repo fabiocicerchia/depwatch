@@ -37,7 +37,23 @@
     "outdated"
   ],
   "icon": "media/icon.png",
+  "pricing": "Free",
   "main": "./dist/extension.js",
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": "limited",
+      "description": "Scanning sends the dependency names found in this workspace's manifests to public registries, and the trend command runs git in the workspace. Undeclared, the extension would simply be off in Restricted Mode.",
+      "restrictedConfigurations": [
+        "depwatch.manifests",
+        "depwatch.exclude",
+        "depwatch.baseline.path"
+      ]
+    },
+    "virtualWorkspaces": {
+      "supported": false,
+      "description": "Manifests are read from disk and the trend command shells out to git, neither of which exists in a virtual workspace."
+    }
+  },
   "activationEvents": [
     "workspaceContains:**/package.json",
     "workspaceContains:**/requirements*.txt",

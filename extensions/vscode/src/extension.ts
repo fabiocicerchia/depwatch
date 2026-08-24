@@ -11,7 +11,7 @@ import { basename, LOCK_FOR } from '../../../src/manifest.js'
 import { quadrantSVG } from '../../../src/quadrant.js'
 import { ScanAborted } from '../../../src/report.js'
 import { gateFailures } from '../../../src/gates.js'
-import { trend } from '../../../src/trend.js'
+import { INSTALL_GIT, isMissingGit, trend } from '../../../src/trend.js'
 import { Annotator } from './annotate.js'
 import { acceptedIn, type Baseline, parse as parseBaseline, serialise, withoutAccepted } from './baseline.js'
 import { affectsResults, type Config, readConfig } from './config.js'
@@ -398,7 +398,20 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
           })
           showTrend(rel, points)
         } catch (e: unknown) {
-          vscode.window.showWarningMessage(`depwatch: ${e instanceof Error ? e.message : String(e)}`)
+          const message = `depwatch: ${e instanceof Error ? e.message : String(e)}`
+          // A missing binary is the one failure the editor can actually fix, so
+          // offer the command rather than only naming it. It runs in a terminal
+          // and not through exec: `sudo` needs somewhere to ask for a password,
+          // and a package manager mid-install is something you want to watch.
+          if (!isMissingGit(e)) {
+            vscode.window.showWarningMessage(message)
+            return
+          }
+          const pick = await vscode.window.showWarningMessage(message, `Run \`${INSTALL_GIT}\``)
+          if (!pick) return
+          const terminal = vscode.window.createTerminal('depwatch: install git')
+          terminal.show()
+          terminal.sendText(INSTALL_GIT)
         }
       },
     )

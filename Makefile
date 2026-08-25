@@ -50,6 +50,24 @@ typecheck: ## Type-check without emitting (catches a half-added ecosystem)
 test: ## Run the tests
 	npm test
 
+# Not part of `make lint` or CI on purpose: a wall-clock number from a shared
+# runner measures the runner. The checks that guard performance are the counting
+# ones in the test suite (the request budget, the cache caps); this is the tool
+# for when one of those moves and you want to know where the time went.
+.PHONY: bench
+bench: ## Run the performance benchmarks
+	npx vitest bench --run
+
+# The chart is the artefact worth committing, not the raw timings — so the JSON
+# is a shell-local temp file. Made inside the recipe, not in a `:=` variable:
+# that would run mktemp on every make invocation, `make help` included.
+.PHONY: bench-chart
+bench-chart: ## Re-run the benchmarks and redraw docs/performance.svg
+	tmp=$$(mktemp -t depwatch-bench-XXXXXX.json); \
+	  trap 'rm -f "$$tmp"' EXIT; \
+	  npx vitest bench --run --outputJson="$$tmp" && \
+	  node scripts/bench-chart.mjs "$$tmp" docs/performance.svg
+
 ##@ VS Code extension
 
 # The same four extension verbs, with the same meanings, in gandalf, greenlint

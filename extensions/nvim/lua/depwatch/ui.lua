@@ -40,6 +40,12 @@ local function text_of(path, buf)
   return ok and table.concat(lines, '\n') or nil
 end
 
+--- The manifest's text, buffer first. Exported because the quickfix list has to
+--- locate the same dependencies on the same lines the marks are drawn on.
+function M.text_of(path)
+  return text_of(path, buffers_for(path)[1])
+end
+
 --- Publish one manifest's findings.
 function M.render(path, report, cfg)
   local bufs = buffers_for(path)
@@ -170,31 +176,51 @@ function M.float(lines, opts)
   return buf, win
 end
 
+--- One dependency's row. The columns that are constant inside a group are the
+--- ones left out of it: repeating "Replace" down a group headed "Replace" is
+--- noise, and so is repeating the filename under a filename.
+local function report_row(row, show_lens, show_file)
+  local dep = row.dep
+  local cols = {
+    string.format('%-28s', dep.name),
+    string.format('%-12s', dep.current),
+    string.format('%8s', dep.degraded and '—' or string.format('%.2f', dep.libyearsBehind)),
+  }
+  if show_lens then
+    cols[#cols + 1] = string.format('%-9s', core.LABEL[core.lens_of(dep)])
+  end
+  local bump = dep.latest and dep.latest ~= dep.current and ('→ ' .. dep.latest) or ''
+  cols[#cols + 1] = show_file and string.format('%-16s', bump) or bump
+  if show_file then
+    cols[#cols + 1] = row.scan.label
+  end
+  local line = '  ' .. table.concat(cols, ' ')
+  return (line:gsub('%s+$', ''))
+end
+
 --- The report, as the CLI's own table plus the bottom line.
-function M.report_lines(scans)
+---@param scans table[] every scan, ordered by label
+---@param group_by string|nil see core.GROUP_BY; defaults to 'file'
+function M.report_lines(scans, group_by)
   local lines = {}
   local reports = {}
   for _, scan in ipairs(scans) do
     reports[#reports + 1] = scan.report
   end
 
-  for _, scan in ipairs(scans) do
-    local report = scan.report
-    lines[#lines + 1] = string.format('%s  (%s)', scan.label, report.ecosystem)
-    lines[#lines + 1] = string.rep('─', #lines[#lines])
-    local deps = core.sorted_deps(report)
-    if #deps == 0 then
+  local show_lens = group_by ~= 'severity'
+  local show_file = group_by ~= nil and group_by ~= 'file'
+
+  for _, group in ipairs(core.group_report(scans, group_by)) do
+    lines[#lines + 1] = group.title
+    -- Display width, not byte length: an em-dash in the title is three bytes
+    -- and one column, and a rule three times too long is worse than none.
+    lines[#lines + 1] = string.rep('─', vim.fn.strdisplaywidth(group.title))
+    if #group.rows == 0 then
       lines[#lines + 1] = '  nothing to address'
     end
-    for _, dep in ipairs(deps) do
-      lines[#lines + 1] = string.format(
-        '  %-28s %-12s %8s  %-9s %s',
-        dep.name,
-        dep.current,
-        dep.degraded and '—' or string.format('%.2f', dep.libyearsBehind),
-        core.LABEL[core.lens_of(dep)],
-        dep.latest and dep.latest ~= dep.current and ('→ ' .. dep.latest) or ''
-      )
+    for _, row in ipairs(group.rows) do
+      lines[#lines + 1] = report_row(row, show_lens, show_file)
     end
     lines[#lines + 1] = ''
   end

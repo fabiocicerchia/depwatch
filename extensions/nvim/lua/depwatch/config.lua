@@ -1,6 +1,10 @@
 -- Defaults, and the validation that keeps a typo from becoming a runtime error
 -- three seconds later inside a callback.
 
+-- core has no `vim.` calls and requires nothing, so this cannot loop: it is
+-- here only so the list of grouping axes has one home.
+local core = require('depwatch.core')
+
 local M = {}
 
 ---@class DepwatchConfig
@@ -115,6 +119,12 @@ M.defaults = {
     path = '.depwatch-baseline.json',
   },
 
+  report = {
+    --- How |:DepwatchReport| buckets its rows: 'file', 'severity' (the
+    --- quadrant) or 'ecosystem'. |:DepwatchGroupBy| changes it for the session.
+    group_by = 'file',
+  },
+
   trend = {
     --- How many commits :DepwatchTrend samples.
     max_points = 12,
@@ -186,6 +196,9 @@ function M.validate(cfg)
   vim.validate('virtual_text.enabled', cfg.virtual_text.enabled, 'boolean')
   vim.validate('virtual_text.lenses', cfg.virtual_text.lenses, vim.islist, 'a list of quadrants')
   vim.validate('baseline.path', cfg.baseline.path, 'string')
+  vim.validate('report.group_by', cfg.report.group_by, function(v)
+    return vim.tbl_contains(core.GROUP_BY, v)
+  end, "one of '" .. table.concat(core.GROUP_BY, "', '") .. "'")
   vim.validate('trend.max_points', cfg.trend.max_points, function(v)
     return type(v) == 'number' and v >= 2
   end, 'a number >= 2')

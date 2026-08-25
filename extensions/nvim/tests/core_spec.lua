@@ -206,3 +206,77 @@ describe('saying why', function()
     assert.is_nil(core.registry_url('docker', 'alpine'))
   end)
 end)
+
+describe('grouping the report', function()
+  local function scan(label, deps, over)
+    return {
+      path = '/p/' .. label,
+      label = label,
+      report = report(deps, vim.tbl_extend('force', { file = label }, over or {})),
+    }
+  end
+
+  local healthy = dep({ name = 'ok', quadrant = 'healthy', libyearsBehind = 0.0, viability = 0.9 })
+  local upgrade = dep({ name = 'behind', quadrant = 'upgrade', libyearsBehind = 3.0, viability = 0.9 })
+  local replace = dep({ name = 'dead', quadrant = 'replace', libyearsBehind = 4.0 })
+  local unknown = dep({ name = 'ghost', degraded = 'not found in registry' })
+
+  local scans = {
+    scan('api/package.json', { healthy, upgrade }),
+    scan('web/Cargo.toml', { replace, unknown }, { ecosystem = 'cargo' }),
+  }
+
+  it('groups by file, one bucket per manifest', function()
+    local groups = core.group_report(scans, 'file')
+    assert.equals(2, #groups)
+    assert.equals('api/package.json', groups[1].key)
+    assert.equals('api/package.json  (npm)', groups[1].title)
+    assert.equals(2, #groups[1].rows)
+  end)
+
+  -- A clean manifest is an answer, not an absence: dropping it would read as
+  -- "not scanned" rather than "nothing to address".
+  it('keeps a manifest with nothing in it, but only when grouping by file', function()
+    local empty = { scan('tools/package.json', {}) }
+    assert.equals(1, #core.group_report(empty, 'file'))
+    assert.equals(0, #core.group_report(empty, 'file')[1].rows)
+    assert.equals(0, #core.group_report(empty, 'severity'))
+  end)
+
+  it('groups by severity, worst quadrant first and unknown last', function()
+    local groups = core.group_report(scans, 'severity')
+    local keys = vim.tbl_map(function(g)
+      return g.key
+    end, groups)
+    assert.same({ 'replace', 'upgrade', 'healthy', 'degraded' }, keys)
+    assert.is_truthy(groups[1].title:match('^Replace — '))
+  end)
+
+  it('collects a severity from every manifest into one bucket', function()
+    local both = core.group_report({ scan('a', { upgrade }), scan('b', { upgrade }) }, 'severity')
+    assert.equals(1, #both)
+    assert.equals(2, #both[1].rows)
+    assert.equals('a', both[1].rows[1].scan.label)
+    assert.equals('b', both[1].rows[2].scan.label)
+  end)
+
+  it('groups by ecosystem, alphabetically', function()
+    local groups = core.group_report(scans, 'ecosystem')
+    assert.same({ 'cargo', 'npm' }, vim.tbl_map(function(g)
+      return g.key
+    end, groups))
+  end)
+
+  -- An SBOM carries several ecosystems in one file, so the dep's own wins.
+  it('prefers the dependency ecosystem over the manifest one', function()
+    local mixed = { scan('bom.json', { dep({ name = 'serde', ecosystem = 'cargo' }), dep({ name = 'left-pad' }) }) }
+    assert.same({ 'cargo', 'npm' }, vim.tbl_map(function(g)
+      return g.key
+    end, core.group_report(mixed, 'ecosystem')))
+  end)
+
+  it('falls back to file for a mode it does not know', function()
+    assert.same(core.group_report(scans, 'file'), core.group_report(scans, 'rule'))
+    assert.same(core.group_report(scans, 'file'), core.group_report(scans, nil))
+  end)
+end)

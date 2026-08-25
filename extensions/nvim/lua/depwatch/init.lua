@@ -21,6 +21,17 @@ local running = {}
 local timers = {}
 local refresh_timer = nil
 local log_lines = {}
+--- The report's grouping for this session. Set from config at setup.
+local grouping = 'file'
+
+--- What each axis answers, for the picker. depwatch has no rule engine to group
+--- by -- the two axes are measured, not asserted -- so severity is the quadrant
+--- and ecosystem is the third real axis.
+local GROUP_BLURB = {
+  file = 'what is wrong in each manifest',
+  severity = 'what is worst, across every manifest',
+  ecosystem = 'which registry the drift is coming from',
+}
 
 local function log(fmt, ...)
   local line = string.format('[%s] ' .. fmt, os.date('%H:%M:%S'), ...)
@@ -438,8 +449,37 @@ function M.report()
     if #scans == 0 then
       return notify('nothing scanned yet.', vim.log.levels.WARN)
     end
-    ui.float(ui.report_lines(scans), { title = ' depwatch report ', filetype = 'depwatch-report' })
+    ui.float(ui.report_lines(scans, grouping), {
+      title = string.format(' depwatch report — by %s ', grouping),
+      filetype = 'depwatch-report',
+    })
   end)
+end
+
+--- How the report buckets its rows. Config sets the default and this changes it
+--- for the session: like the filter, it is a way of looking at today's report
+--- rather than a setting worth persisting.
+function M.group_by(mode)
+  if mode == nil or mode == '' then
+    return vim.ui.select(core.GROUP_BY, {
+      prompt = 'Group the report by',
+      format_item = function(item)
+        return string.format('%-10s %s', item, GROUP_BLURB[item])
+      end,
+    }, function(choice)
+      if choice then
+        M.group_by(choice)
+      end
+    end)
+  end
+  if not vim.tbl_contains(core.GROUP_BY, mode) then
+    return notify(
+      string.format('cannot group by "%s" — try %s.', mode, table.concat(core.GROUP_BY, ', ')),
+      vim.log.levels.WARN
+    )
+  end
+  grouping = mode
+  M.report()
 end
 
 --- The editor's copy of `depwatch check --ci`.
@@ -529,6 +569,75 @@ function M.clear_baseline()
   M.scan_all({})
 end
 
+-- --- the quickfix list -------------------------------------------------------
+
+--- Quickfix's own severity letters, by quadrant. Not the configured diagnostic
+--- severities: those decide what is worth underlining in a manifest, which is a
+--- different question from how a list of findings sorts and colours.
+local QF_TYPE = { replace = 'E', upgrade = 'W', watch = 'I', healthy = 'I', degraded = 'N' }
+
+--- Findings as quickfix rows, on the line each dependency is actually written
+--- on. The CLI reports names, not positions, so the manifest is indexed once
+--- per scan -- the same index the marks and the hover use, so jumping from the
+--- list lands where the underline is.
+local function qf_items(scans, keep)
+  local items = {}
+  for _, scan in ipairs(scans) do
+    local names = {}
+    for _, dep in ipairs(scan.report.deps or {}) do
+      names[#names + 1] = dep.name
+    end
+    local text = ui.text_of(scan.path)
+    local spans = text and core.locate(text, scan.path, names) or {}
+
+    for _, dep in ipairs(core.sorted_deps(scan.report)) do
+      if keep(dep) then
+        -- A transitive dep is written down nowhere in this manifest. It is
+        -- still a finding, so it goes in the list pointing at the file itself
+        -- rather than being dropped.
+        local span = spans[dep.name]
+        items[#items + 1] = {
+          filename = scan.path,
+          lnum = span and span.lnum + 1 or 1,
+          col = span and span.col + 1 or 1,
+          type = QF_TYPE[core.lens_of(dep)] or 'I',
+          text = core.summarise(dep, cfg.thresholds),
+        }
+      end
+    end
+  end
+  return items
+end
+
+local function to_quickfix(title, items, empty)
+  if #items == 0 then
+    return notify(empty)
+  end
+  vim.fn.setqflist({}, ' ', { title = title, items = items })
+  vim.cmd('copen')
+end
+
+--- Every finding, in the quickfix list.
+---
+--- A healthy dependency is not a finding, so the default list is everything off
+--- the healthy quadrant -- the same set the summary calls "to address". With a
+--- bang, the whole dependency list, healthy ones included.
+function M.list(opts)
+  opts = opts or {}
+  ensure_scanned(function()
+    local keep = opts.all and function()
+      return true
+    end or function(dep)
+      return core.lens_of(dep) ~= 'healthy'
+    end
+    to_quickfix(
+      opts.all and 'depwatch: every dependency' or 'depwatch',
+      qf_items(M.results(), keep),
+      opts.all and 'nothing scanned yet.' or 'nothing to address.'
+    )
+  end)
+end
+
 --- Show only some quadrants. A filter is a way of looking at today's list, so
 --- it is not persisted.
 function M.filter()
@@ -547,23 +656,13 @@ function M.filter()
     if not choice then
       return
     end
-    local rows = {}
-    for _, scan in ipairs(M.results()) do
-      for _, dep in ipairs(core.sorted_deps(scan.report)) do
-        if core.lens_of(dep) == choice.lens then
-          rows[#rows + 1] = {
-            filename = scan.path,
-            text = core.summarise(dep, cfg.thresholds),
-            lnum = 1,
-          }
-        end
-      end
-    end
-    if #rows == 0 then
-      return notify('nothing in ' .. core.LABEL[choice.lens] .. '.')
-    end
-    vim.fn.setqflist({}, ' ', { title = 'depwatch: ' .. core.LABEL[choice.lens], items = rows })
-    vim.cmd('copen')
+    to_quickfix(
+      'depwatch: ' .. core.LABEL[choice.lens],
+      qf_items(M.results(), function(dep)
+        return core.lens_of(dep) == choice.lens
+      end),
+      'nothing in ' .. core.LABEL[choice.lens] .. '.'
+    )
   end)
 end
 
@@ -598,6 +697,7 @@ end
 
 function M.setup(opts)
   cfg = config.resolve(opts)
+  grouping = cfg.report.group_by
   if not cfg.enabled then
     ui.clear_all()
     return

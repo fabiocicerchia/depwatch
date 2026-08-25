@@ -118,6 +118,108 @@ function M.sorted_deps(report)
   return deps
 end
 
+-- --- grouping the report -----------------------------------------------------
+--
+-- Three axes, because the report answers three different questions: "what is
+-- wrong in this file", "what is worst everywhere", and "which registry is the
+-- problem". depwatch has no rules to group by -- there is no rule engine, the
+-- two axes are measured -- so `severity` is the quadrant, which is what
+-- severity means here, and `ecosystem` is the third real axis.
+
+M.GROUP_BY = { 'file', 'severity', 'ecosystem' }
+
+--- Worst first, and unknown last: a dep the registry would not answer for is
+--- not a to-do, so it does not belong above one.
+local LENS_RANK = { replace = 0, upgrade = 1, watch = 2, healthy = 3, degraded = 4 }
+
+local GROUP = {
+  file = {
+    key = function(scan)
+      return scan.label
+    end,
+    title = function(scan)
+      return string.format('%s  (%s)', scan.label, scan.report.ecosystem or '?')
+    end,
+  },
+  severity = {
+    key = function(_, dep)
+      return M.lens_of(dep)
+    end,
+    title = function(_, dep)
+      local lens = M.lens_of(dep)
+      return string.format('%s — %s', M.LABEL[lens], M.BLURB[lens])
+    end,
+    rank = function(key)
+      return LENS_RANK[key] or 9
+    end,
+  },
+  ecosystem = {
+    key = function(scan, dep)
+      return dep.ecosystem or scan.report.ecosystem or 'unknown'
+    end,
+    title = function(scan, dep)
+      return dep.ecosystem or scan.report.ecosystem or 'unknown'
+    end,
+    -- Alphabetical; keys are unique, so this is a total order and Lua's
+    -- unstable sort cannot shuffle equal elements.
+    rank = function()
+      return 0
+    end,
+  },
+}
+
+--- The report's rows, bucketed.
+---
+--- Returns a list of `{ key, title, rows }`, each row `{ scan, dep }`, worst
+--- first within a group. `file` keeps a manifest with nothing to say, because
+--- "this one is clean" is an answer; the other axes have no bucket for it.
+---@param scans table[] list of { path, label, report }
+---@param mode string|nil one of M.GROUP_BY; anything else falls back to 'file'
+function M.group_report(scans, mode)
+  local spec = GROUP[mode] or GROUP.file
+  local groups, order = {}, {}
+
+  local function bucket(key, title)
+    local group = groups[key]
+    if not group then
+      group = { key = key, title = title, rows = {} }
+      groups[key] = group
+      order[#order + 1] = group
+    end
+    return group
+  end
+
+  for _, scan in ipairs(scans) do
+    -- Only `file` can name an empty bucket: there is no dependency to ask which
+    -- severity or ecosystem an empty manifest would sit under.
+    if spec == GROUP.file then
+      bucket(spec.key(scan), spec.title(scan))
+    end
+    for _, dep in ipairs(M.sorted_deps(scan.report)) do
+      local group = bucket(spec.key(scan, dep), spec.title(scan, dep))
+      group.rows[#group.rows + 1] = { scan = scan, dep = dep }
+    end
+  end
+
+  -- `file` is left in insertion order: the scans arrive sorted by label, and
+  -- table.sort is not stable, so sorting again could only make it worse.
+  if spec.rank then
+    table.sort(order, function(a, b)
+      local ra, rb = spec.rank(a.key), spec.rank(b.key)
+      if ra ~= rb then
+        return ra < rb
+      end
+      return a.key < b.key
+    end)
+    for _, group in ipairs(order) do
+      table.sort(group.rows, function(a, b)
+        return M.compare_deps(a.dep, b.dep)
+      end)
+    end
+  end
+  return order
+end
+
 --- Whether a decoded value actually looks like a depwatch report. A CLI that
 --- printed a warning before its JSON, or an older one with a different shape,
 --- should be an error the user can read rather than a nil index later on.

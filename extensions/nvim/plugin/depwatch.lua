@@ -55,9 +55,27 @@ command('DepwatchGates', function()
   ready().gates()
 end, { desc = 'depwatch: check the CI gates' })
 
+command('DepwatchList', function(opts)
+  ready().list({ all = opts.bang })
+end, { bang = true, desc = 'depwatch: every finding, in the quickfix list (! for healthy too)' })
+
 command('DepwatchFilter', function()
   ready().filter()
 end, { desc = 'depwatch: list findings for one quadrant' })
+
+command('DepwatchGroupBy', function(opts)
+  ready().group_by(opts.args)
+end, {
+  nargs = '?',
+  -- Neovim does not filter a function completion's return value, so the lead is
+  -- matched here rather than offering all three whatever has been typed.
+  complete = function(lead)
+    return vim.tbl_filter(function(mode)
+      return mode:find(lead, 1, true) == 1
+    end, require('depwatch.core').GROUP_BY)
+  end,
+  desc = 'depwatch: group the report by file, severity or ecosystem',
+})
 
 command('DepwatchHover', function()
   ready().hover()

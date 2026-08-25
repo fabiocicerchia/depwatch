@@ -75,6 +75,21 @@ describe('validation', function()
     assert.is_truthy(fails({ max_manifests = 0 }):match('max_manifests'))
   end)
 
+  -- depwatch has no rules, so "group by rule" is the one guess a user coming
+  -- from another linter will make. It should say so at setup.
+  it('rejects a grouping axis that does not exist', function()
+    local message = fails({ report = { group_by = 'rule' } })
+    assert.is_truthy(message:match('group_by'))
+    assert.is_truthy(message:match('ecosystem'))
+  end)
+
+  it('keeps the other defaults when only the grouping is set', function()
+    local cfg = config.resolve({ report = { group_by = 'severity' } })
+    assert.equals('severity', cfg.report.group_by)
+    assert.equals(12, cfg.trend.max_points)
+    assert.equals(1, cfg.thresholds.stale_libyears)
+  end)
+
   it('accepts the shapes it documents', function()
     assert.has_no.errors(function()
       config.resolve({

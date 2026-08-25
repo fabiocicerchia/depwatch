@@ -115,6 +115,9 @@ require('depwatch').setup({
   },
 
   baseline = { path = '.depwatch-baseline.json' },
+  -- 'file', 'severity' (the quadrant) or 'ecosystem'. :DepwatchGroupBy
+  -- changes it for the session.
+  report = { group_by = 'file' },
   trend = { max_points = 12 },
 })
 ```
@@ -130,9 +133,11 @@ rather than a nil index inside a callback later.
 | `:DepwatchScanAll` | Scan every manifest in the project |
 | `:DepwatchDeepScan` | Scan with maintainer / archived / last-commit signals |
 | `:DepwatchReport` | The report, in a float — worst first, with the bottom line |
+| `:DepwatchGroupBy` | Group the report by `file`, `severity` or `ecosystem` |
 | `:DepwatchTrend` | Drift over the manifest's git history |
 | `:DepwatchGates` | Check `gates` — the editor's copy of `--ci` |
-| `:DepwatchFilter` | Pick a quadrant; its findings go to the quickfix list |
+| `:DepwatchList` | Every finding, in the quickfix list (`!` for healthy too) |
+| `:DepwatchFilter` | Pick one quadrant; its findings go to the quickfix list |
 | `:DepwatchHover` | Explain the dependency under the cursor |
 | `:DepwatchBaselineWrite` | Accept every current finding |
 | `:DepwatchBaselineClear` | Delete the baseline |
@@ -183,7 +188,7 @@ cannot, so this runs the CLI — everything below follows from that.
 
 **Different**
 
-- **Findings pane** → a float (`:DepwatchReport`) and the quickfix list (`:DepwatchFilter`).
+- **Findings pane** → a float (`:DepwatchReport`) and the quickfix list (`:DepwatchList`).
 - **Hover** → `:DepwatchHover`, on request, so it never competes with your LSP.
 - **Inline drift** → virtual text at end of line. The VS Code extension does not do this.
 - **Baseline** → works in CI too, because `depwatch check` learned `--accepted`. In VS Code it was editor-only.

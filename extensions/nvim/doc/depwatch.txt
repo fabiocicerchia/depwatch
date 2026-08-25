@@ -153,7 +153,25 @@ startup rather than a nil index inside a callback later.
 
                                                               *:DepwatchReport*
 :DepwatchReport         The report, in a float: every dependency, worst first,
-                        with the bottom line underneath.
+                        with the bottom line underneath. |:DepwatchGroupBy|
+                        decides how it is bucketed.
+
+                                                             *:DepwatchGroupBy*
+:DepwatchGroupBy [axis] Group the report by `file`, `severity` or `ecosystem`,
+                        and open it. With no argument, pick from a list.
+
+                        `file`       what is wrong in each manifest
+                        `severity`   what is worst, across every manifest
+                        `ecosystem`  which registry the drift comes from
+
+                        Severity is the quadrant -- Replace before Upgrade
+                        before Watch -- because that is what severity means
+                        here: there is no rule engine to group by, the two
+                        axes are measured. See |depwatch-quadrants|.
+
+                        Set the starting axis with `report.group_by`; this
+                        command changes it for the session only, the same way
+                        |:DepwatchFilter| does.
 
                                                                *:DepwatchTrend*
 :DepwatchTrend          Drift over the manifest's git history, sampled across
@@ -163,8 +181,23 @@ startup rather than a nil index inside a callback later.
 :DepwatchGates          Check `gates` -- the editor's copy of
                         `depwatch check --ci`.
 
+                                                                *:DepwatchList*
+:DepwatchList[!]        Every finding, in the quickfix list, on the line the
+                        dependency is written on -- so |:cnext| walks them.
+
+                        A healthy dependency is not a finding, so the list is
+                        everything off the healthy quadrant: the same set the
+                        bottom line calls "to address". With `!`, every
+                        dependency, healthy ones included.
+
+                        A transitive dependency is written down nowhere in the
+                        manifest; it is still a finding, so it is listed
+                        against the file itself rather than dropped.
+
                                                               *:DepwatchFilter*
-:DepwatchFilter         Pick a quadrant; its findings go to the quickfix list.
+:DepwatchFilter         Pick one quadrant; its findings go to the quickfix
+                        list. |:DepwatchList| without the picker, for all of
+                        them at once.
 
                                                                *:DepwatchHover*
 :DepwatchHover          Explain the dependency under the cursor: its two
@@ -190,6 +223,8 @@ require('depwatch') exposes: >lua
     setup(opts)                 -- resolve config, attach autocmds
     scan(path, opts)            -- scan one manifest
     scan_all(opts)              -- scan every manifest
+    list(opts)                  -- findings to the quickfix list
+    group_by(axis)              -- regroup the report and open it
     cancel()                    -- stop what is running
     results()                   -- every scan, ordered by label
     result_for(path)            -- the scan a given file belongs to
@@ -280,14 +315,20 @@ Dropped, with reasons:
                         wrapping them in a Neovim command would only add a
                         prompt.
 
-  scope + expand/       The extension has a tree view with a file/project
-  collapse commands     toggle. This has a float and the quickfix list, neither
-                        of which has anything to expand.
+  expand/collapse       The extension has a tree view to open and close. This
+  commands              has a float and the quickfix list, neither of which has
+                        anything to expand.
 
 Different:
 
   Findings pane         A float (|:DepwatchReport|) and the quickfix list
-                        (|:DepwatchFilter|) instead of a tree view.
+                        (|:DepwatchList|) instead of a tree view.
+
+  Scope                 The extension's tree toggles between the current file
+                        and the project. |:DepwatchGroupBy| is the same idea
+                        one step further: the report always covers the project,
+                        and the axis decides whether it reads by file, by
+                        severity or by ecosystem.
 
   Hover                 |:DepwatchHover| rather than an automatic hover
                         provider, so it never competes with your LSP.

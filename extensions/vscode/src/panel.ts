@@ -11,11 +11,20 @@ import { quadrantSVG } from '../../../src/quadrant.js'
 import type { TrendPoint } from '../../../src/trend.js'
 import type { Config } from './config.js'
 import { type ManifestView, reportHtml, type ReportView, trendHtml } from './html.js'
+import { Burst } from './schedule.js'
 import type { Results } from './state.js'
+
+// A scan publishes partial results several times a second. Rebuilding the page
+// that often is not just wasted work — N quadrant SVGs and N full tables per
+// rebuild — it also throws away the scroll position and the column sort every
+// time, which makes the report unreadable for as long as the scan runs. Leading
+// edge, so the first results still appear at once.
+const RENDER_MS = 1000
 
 export class ReportPanel implements vscode.Disposable {
   private panel: vscode.WebviewPanel | null = null
   private readonly disposables: vscode.Disposable[] = []
+  private readonly burst = new Burst(RENDER_MS, () => this.render())
 
   constructor(
     private readonly results: Results,
@@ -23,7 +32,7 @@ export class ReportPanel implements vscode.Disposable {
   ) {
     // A scan that lands while the report is open updates it in place; one that
     // lands while it is closed does nothing at all.
-    this.disposables.push(results.onDidChange(() => this.render()))
+    this.disposables.push(results.onDidChange(() => this.burst.hit()))
   }
 
   setConfig(cfg: Config): void {
@@ -40,14 +49,19 @@ export class ReportPanel implements vscode.Disposable {
       this.panel.onDidDispose(() => {
         this.panel = null
       })
+      // retainContextWhenHidden is off, so a hidden panel has no webview to
+      // update — whatever it missed is built once, when it comes back.
+      this.panel.onDidChangeViewState(() => this.render())
       this.panel.webview.onDidReceiveMessage((msg: { type: string; file?: string; dep?: string }) => {
         if (msg.type === 'reveal' && msg.file && msg.dep) {
           void vscode.commands.executeCommand('depwatch.reveal', msg.file, msg.dep)
         }
       })
     }
-    this.render()
+    // Revealed first: render is a no-op on a hidden panel, and this is the call
+    // that makes it visible.
     this.panel.reveal()
+    this.render()
   }
 
   /** The same page, as a standalone file: no script, no CSP, opens in a browser. */
@@ -56,7 +70,7 @@ export class ReportPanel implements vscode.Disposable {
   }
 
   private render(): void {
-    if (!this.panel) return
+    if (!this.panel?.visible) return
     const nonce = randomBytes(16).toString('base64')
     this.panel.webview.html = reportHtml(this.view(), { nonce, cspSource: this.panel.webview.cspSource })
   }
@@ -98,6 +112,7 @@ export class ReportPanel implements vscode.Disposable {
   }
 
   dispose(): void {
+    this.burst.dispose()
     this.panel?.dispose()
     for (const d of this.disposables) d.dispose()
   }

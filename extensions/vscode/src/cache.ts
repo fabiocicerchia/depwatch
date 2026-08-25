@@ -45,6 +45,12 @@ export interface TtlCacheOptions<T> {
   failureTtlMs?: number
   /** How many entries to keep parsed in memory. Beyond this, oldest out. */
   maxInMemory?: number
+  /**
+   * How many bytes of them to keep. A count cannot bound memory here: a version
+   * list runs from a few hundred bytes to a couple of hundred kilobytes, so 200
+   * entries is anywhere between 40 KB and 40 MB. This is the cap that holds.
+   */
+  maxBytesInMemory?: number
   now?: () => number
 }
 
@@ -55,9 +61,15 @@ interface Entry<T> {
 
 const DEFAULT_FAILURE_TTL = 10 * 60_000
 const DEFAULT_MAX_IN_MEMORY = 200
+const DEFAULT_MAX_BYTES_IN_MEMORY = 8 * 1024 * 1024
 
 export class TtlCache<T> {
   private readonly memory = new Map<string, Entry<T>>()
+  // Serialised size per held key, and the running total. Free to keep: every
+  // entry is already JSON on the way in, either as what was read from disk or
+  // as what is about to be written to it.
+  private readonly sizes = new Map<string, number>()
+  private heldBytes = 0
   // One in-flight load per key: fifty dependencies asking for the same
   // transitive package must produce one request, not fifty.
   private readonly inFlight = new Map<string, Promise<T>>()
@@ -114,23 +126,36 @@ export class TtlCache<T> {
     try {
       const entry = JSON.parse(raw) as Entry<T>
       if (typeof entry?.savedAt !== 'number') return undefined
-      this.hold(key, entry)
+      this.hold(key, entry, raw.length)
       return entry
     } catch {
       return undefined // a truncated file is a cache miss, not an error
     }
   }
 
-  /** Insert or touch, and evict the least recently used once over the cap. */
-  private hold(key: string, entry: Entry<T>): void {
-    this.memory.delete(key)
+  /** Insert or touch, and evict the least recently used once over either cap. */
+  private hold(key: string, entry: Entry<T>, bytes = this.sizes.get(key) ?? 0): void {
+    this.drop(key)
     this.memory.set(key, entry)
-    const cap = this.opts.maxInMemory ?? DEFAULT_MAX_IN_MEMORY
-    while (this.memory.size > cap) {
+    this.sizes.set(key, bytes)
+    this.heldBytes += bytes
+
+    const entryCap = this.opts.maxInMemory ?? DEFAULT_MAX_IN_MEMORY
+    const byteCap = this.opts.maxBytesInMemory ?? DEFAULT_MAX_BYTES_IN_MEMORY
+    // Never down to nothing: an entry big enough to breach the cap on its own is
+    // still the one just asked for, and evicting it would make the cache a
+    // no-op for exactly the packages it costs most to refetch.
+    while (this.memory.size > entryCap || (this.heldBytes > byteCap && this.memory.size > 1)) {
       const oldest = this.memory.keys().next().value
       if (oldest === undefined) break
-      this.memory.delete(oldest)
+      this.drop(oldest)
     }
+  }
+
+  private drop(key: string): void {
+    if (!this.memory.delete(key)) return
+    this.heldBytes -= this.sizes.get(key) ?? 0
+    this.sizes.delete(key)
   }
 
   /** How many entries are parsed in memory right now. */
@@ -138,11 +163,20 @@ export class TtlCache<T> {
     return this.memory.size
   }
 
+  /** How many bytes of them, by the size they serialise to. */
+  get heldSize(): number {
+    return this.heldBytes
+  }
+
   private remember(key: string, value: T): void {
     const entry: Entry<T> = { savedAt: this.now(), value }
-    this.hold(key, entry)
+    // Serialised here rather than inside the queued write: the size is what the
+    // memory cap is measured in, and doing it eagerly also stops the queue
+    // holding the whole parsed value alive until it drains.
+    const json = JSON.stringify(entry)
+    this.hold(key, entry, json.length)
     // Failures stay in memory: they expire in minutes and are not worth a write.
-    if (!this.failed(value)) this.writes.push(() => this.opts.store.write(id(key), JSON.stringify(entry)))
+    if (!this.failed(value)) this.writes.push(() => this.opts.store.write(id(key), json))
   }
 
   /** Wait for queued disk writes — for tests and for shutdown. */
@@ -151,8 +185,14 @@ export class TtlCache<T> {
   }
 
   async clear(): Promise<void> {
-    this.memory.clear()
+    this.forgetMemory()
     for (const { id: entryId } of await this.opts.store.entries()) await this.opts.store.remove(entryId)
+  }
+
+  private forgetMemory(): void {
+    this.memory.clear()
+    this.sizes.clear()
+    this.heldBytes = 0
   }
 
   /**
@@ -170,7 +210,7 @@ export class TtlCache<T> {
     doomed.push(...survivors.slice(maxEntries))
 
     for (const entry of doomed) await this.opts.store.remove(entry.id)
-    if (doomed.length > 0) this.memory.clear()
+    if (doomed.length > 0) this.forgetMemory()
     return doomed.length
   }
 }

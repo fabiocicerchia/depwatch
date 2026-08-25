@@ -5,6 +5,24 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.0](https://github.com/fabiocicerchia/depwatch/compare/v1.5.0...v1.6.0) (2026-08-25)
+
+
+### Features
+
+* **docs:** build the docs site in Actions and drop Read the Docs ([#44](https://github.com/fabiocicerchia/depwatch/issues/44)) ([aec7e57](https://github.com/fabiocicerchia/depwatch/commit/aec7e575edf741f266fc0a89383f28cd620990e0))
+* **nvim:** depwatch.nvim, a Neovim port of the editor integration ([#34](https://github.com/fabiocicerchia/depwatch/issues/34)) ([b9af2c5](https://github.com/fabiocicerchia/depwatch/commit/b9af2c551808f3d4714b7b929eec806ef5d08813))
+
+
+### Bug Fixes
+
+* **ci:** compute the next release PR after the draft is published ([#42](https://github.com/fabiocicerchia/depwatch/issues/42)) ([aa98520](https://github.com/fabiocicerchia/depwatch/commit/aa98520d1ff45811413d3c8246732c7bd29a3b3d))
+
+
+### Performance Improvements
+
+* make a scan cheaper in the editor, and cache the dates it was refetching ([#45](https://github.com/fabiocicerchia/depwatch/issues/45)) ([61f0d24](https://github.com/fabiocicerchia/depwatch/commit/61f0d24b6de788ea34c07f9e363ef13b3bfc4237))
+
 ## [1.5.0](https://github.com/fabiocicerchia/depwatch/compare/v1.4.0...v1.5.0) (2026-08-24)
 
 

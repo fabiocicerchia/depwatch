@@ -27,7 +27,14 @@ import { dirname, join } from 'node:path'
 import type { DeepMeta } from '../../../src/signals.js'
 import { type InputFs, loadManifest } from '../../../src/input.js'
 import { basename, detectEcosystem, LOCK_FOR, type Manifest } from '../../../src/manifest.js'
-import { analyse, type AnalyseCache, type CachedPackage, type DepReport, type Report } from '../../../src/report.js'
+import {
+  analyse,
+  type AnalyseCache,
+  type CachedDates,
+  type CachedPackage,
+  type DepReport,
+  type Report,
+} from '../../../src/report.js'
 import { TtlCache } from './cache.js'
 import { combine, isExcludedPath } from './exclude.js'
 import { Coalescer } from './schedule.js'
@@ -63,9 +70,15 @@ interface Remembered {
   stamps: string
 }
 
+// A release date is a fact about the past: unlike a version list, nothing can
+// invalidate it, so it is kept far longer than the registry TTL. The entry key
+// carries the versions it covers, so a moved pin misses rather than going stale.
+const DATES_TTL_MS = 30 * 24 * 3_600_000
+
 export class Scanner {
   private readonly packages: TtlCache<CachedPackage>
   private readonly deepMeta: TtlCache<DeepMeta>
+  private readonly dates: TtlCache<CachedDates>
   private readonly coalescer = new Coalescer<Scan>()
   private readonly previous = new Map<string, Remembered>()
 
@@ -79,6 +92,14 @@ export class Scanner {
     this.deepMeta = new TtlCache({
       store: new FileCacheStore(vscode.Uri.joinPath(storage, 'deep')),
       ttlMs: cfg.deepTtlMs,
+      maxInMemory: cfg.maxInMemory,
+    })
+    this.dates = new TtlCache({
+      store: new FileCacheStore(vscode.Uri.joinPath(storage, 'dates')),
+      ttlMs: DATES_TTL_MS,
+      // Nothing dated means every HEAD failed — offline, or rate-limited. That
+      // must not be written to disk and believed for a month.
+      isFailure: (dates) => Object.keys(dates).length === 0,
       maxInMemory: cfg.maxInMemory,
     })
   }
@@ -164,21 +185,26 @@ export class Scanner {
     return {
       packages: (key, load) => this.packages.wrap(key, load),
       deep: (key, load) => this.deepMeta.wrap(key, load),
+      dates: (key, load) => this.dates.wrap(key, load),
     }
   }
 
   /** Anything the caches queued, written out. Called on deactivate. */
   async flush(): Promise<void> {
-    await Promise.all([this.packages.flush(), this.deepMeta.flush()])
+    await Promise.all([this.packages.flush(), this.deepMeta.flush(), this.dates.flush()])
   }
 
   async prune(): Promise<void> {
-    await Promise.all([this.packages.prune(this.cfg.maxEntries), this.deepMeta.prune(this.cfg.maxEntries)])
+    await Promise.all([
+      this.packages.prune(this.cfg.maxEntries),
+      this.deepMeta.prune(this.cfg.maxEntries),
+      this.dates.prune(this.cfg.maxEntries),
+    ])
   }
 
   async clear(): Promise<void> {
     this.previous.clear()
-    await Promise.all([this.packages.clear(), this.deepMeta.clear()])
+    await Promise.all([this.packages.clear(), this.deepMeta.clear(), this.dates.clear()])
   }
 
   forget(path: string): void {

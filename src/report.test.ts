@@ -1,5 +1,6 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { analyse, type AnalyseCache, type CachedPackage, quadrant } from './report.js'
+import { byId } from './ecosystems/registry.js'
 import type { Manifest } from './manifest.js'
 
 const manifest = (deps: Manifest['deps']): Manifest => ({ ecosystem: 'npm', file: 'package.json', deps })
@@ -129,6 +130,98 @@ describe('progress', () => {
     )
     expect(seen).toHaveLength(3)
     expect(seen.map((s) => s.split(' ')[1])).toEqual(['1/3', '2/3', '3/3'])
+  })
+})
+
+// What a scan costs in requests, asserted as numbers rather than measured as
+// time. A wall-clock benchmark on a shared CI runner tells you about the runner;
+// the request count is deterministic, and it is the thing that actually decides
+// whether scanning on every save is affordable. CLAUDE.md's "don't add an
+// uncached fetch" is a rule with no teeth until something counts.
+describe('request budget', () => {
+  afterEach(() => vi.restoreAllMocks())
+
+  // A real TTL cache, standing in for the one the extension keeps on disk.
+  function countingCache(): { cache: AnalyseCache; loads: number } {
+    const held = new Map<string, CachedPackage>()
+    const counter = { loads: 0 }
+    return {
+      get loads() {
+        return counter.loads
+      },
+      cache: {
+        packages: async (key, load) => {
+          if (!held.has(key)) {
+            counter.loads++
+            held.set(key, await load())
+          }
+          return held.get(key)!
+        },
+      },
+    }
+  }
+
+  it('fetches a version list once, however many scans ask for it', async () => {
+    const npm = byId('npm')!
+    const fetchVersions = vi
+      .spyOn(npm, 'fetchVersions')
+      .mockResolvedValue([{ version: '1.0.0', released: '2025-01-01T00:00:00Z' }])
+
+    const counting = countingCache()
+    const m = manifest([{ name: 'left-pad', current: '1.0.0', resolved: true }])
+    for (let i = 0; i < 3; i++) await analyse(m, { cache: counting.cache })
+
+    expect(counting.loads).toBe(1)
+    expect(fetchVersions).toHaveBeenCalledTimes(1)
+  })
+
+  // The budget for the ecosystems that date versions one artifact at a time.
+  // Maven sends a HEAD per version, so this is the number that decides whether
+  // scanning a pom.xml on every save is affordable: 13 requests once, not 13
+  // per scan. A 60-dep pom.xml went from ~780 requests per scan to ~780 ever.
+  it('dates undated versions once, not once per scan', async () => {
+    const maven = byId('maven')!
+    vi.spyOn(maven, 'fetchVersions').mockResolvedValue(
+      Array.from({ length: 40 }, (_, i) => ({ version: `1.${i}.0`, released: null })),
+    )
+    const hydrate = vi
+      .spyOn(maven, 'hydrateDates')
+      .mockImplementation(async (_name, versions) => new Map(versions.map((v) => [v, '2024-01-01T00:00:00Z'])))
+
+    const counting = countingCache()
+    const m: Manifest = {
+      ecosystem: 'maven',
+      file: 'pom.xml',
+      deps: [{ name: 'com.google.guava:guava', current: '1.5.0', resolved: true }],
+    }
+    const reports = []
+    for (let i = 0; i < 3; i++) reports.push(await analyse(m, { cache: counting.cache }))
+
+    const requests = hydrate.mock.calls.reduce((n, [, versions]) => n + versions.length, 0)
+    expect(counting.loads).toBe(1) // the version list: fetched once
+    expect(requests).toBe(13) // the dates: the current pin plus the scored window, once
+    // And the cached dates are actually used — not merely fetched and dropped.
+    for (const r of reports) expect(r.deps[0].currentReleased).toBe('2024-01-01T00:00:00Z')
+  })
+
+  // Offline is not a fact about release dates. Caching an empty answer for the
+  // dates TTL would report every Maven dep as undatable until it expired.
+  it('does not let a failed hydration stand in for the dates', async () => {
+    const maven = byId('maven')!
+    vi.spyOn(maven, 'fetchVersions').mockResolvedValue([{ version: '1.0.0', released: null }])
+    const hydrate = vi.spyOn(maven, 'hydrateDates').mockResolvedValue(new Map())
+
+    const counting = countingCache()
+    const m: Manifest = {
+      ecosystem: 'maven',
+      file: 'pom.xml',
+      deps: [{ name: 'com.google.guava:guava', current: '1.0.0', resolved: true }],
+    }
+    const r = await analyse(m, { cache: counting.cache })
+
+    expect(hydrate).toHaveBeenCalled()
+    expect(r.deps[0].currentReleased).toBeNull() // unknown, not a guess
+    expect(r.deps[0].libyearsBehind).toBe(0)
   })
 })
 

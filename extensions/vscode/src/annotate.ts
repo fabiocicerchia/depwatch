@@ -60,14 +60,16 @@ export class Annotator implements vscode.Disposable {
   /** Republish what moved — or everything, when the change was wholesale. */
   private async apply(change: ResultsChange): Promise<void> {
     if (change === null) return this.refresh()
-    for (const path of change) await this.publish(path)
+    // In parallel: each publish may read its manifest off disk, and waiting for
+    // one file before asking for the next is latency with nothing to show for it.
+    await Promise.all([...change].map((path) => this.publish(path)))
   }
 
   async refresh(): Promise<void> {
     this.collection.clear()
     this.index.clear()
     if (!this.cfg.diagnostics) return
-    for (const scan of this.results.all()) await this.publish(scan.path, scan)
+    await Promise.all(this.results.all().map((scan) => this.publish(scan.path, scan)))
   }
 
   private async publish(path: string, known?: Scan): Promise<void> {

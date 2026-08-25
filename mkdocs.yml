@@ -130,3 +130,8 @@ nav:
   - Getting Started: getting-started.md
   - GitHub Action: github-action.md
   - VS Code extension: vscode.md
+  - Performance: performance.md
+
+markdown_extensions:
+  - admonition
+  - pymdownx.superfences

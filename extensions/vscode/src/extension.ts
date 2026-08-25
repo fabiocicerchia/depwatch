@@ -212,6 +212,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     watcher.onDidDelete((uri) => {
       results.remove(uri.fsPath)
       annotator.forget(uri.fsPath)
+      // Without this the scanner keeps the deleted manifest's parse — deps,
+      // notes and the whole previous report — for the life of the window.
+      scanner.forget(uri.fsPath)
     }),
     vscode.workspace.onDidSaveTextDocument((doc) => {
       if (doc.uri.scheme === 'file') touched(doc.uri.fsPath)

@@ -202,5 +202,26 @@ describe('TtlCache', () => {
       await c.wrap('b', async () => 'b')
       expect(store.reads).toBe(reads + 1)
     })
+
+    // The count cap cannot bound memory on its own: 200 version lists is 40 KB
+    // or 40 MB depending on which packages someone depends on.
+    it('drops entries once the held bytes exceed the cap, whatever the count', async () => {
+      const c = cache<string>({ maxInMemory: 100, maxBytesInMemory: 200 })
+      const big = 'x'.repeat(150)
+      for (const key of ['a', 'b', 'c']) await c.wrap(key, async () => big)
+
+      expect(c.held).toBe(1) // count says 100 is fine; bytes say only one fits
+      expect(c.heldSize).toBeLessThanOrEqual(200 + big.length)
+    })
+
+    it('keeps an entry that breaches the cap on its own', async () => {
+      const c = cache<string>({ maxBytesInMemory: 10 })
+      await c.wrap('a', async () => 'x'.repeat(1000))
+
+      expect(c.held).toBe(1)
+      const load = vi.fn(async () => 'refetched')
+      expect(await c.wrap('a', load)).toBe('x'.repeat(1000))
+      expect(load).not.toHaveBeenCalled()
+    })
   })
 })

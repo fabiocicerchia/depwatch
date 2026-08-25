@@ -168,5 +168,16 @@ const r2 = (n: number) => Math.round(n * 100) / 100
  * @returns Text safe to place in an XML text node or attribute.
  */
 export function escapeXml(s: string): string {
-  return s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' })[c]!)
+  return s.replace(/[&<>"']/g, (c) => XML_ESCAPES[c])
+}
+
+// Hoisted: this is called per SVG text node and per table cell of the HTML
+// report, and a fresh five-key object per escaped character was the allocation
+// cost of rendering a 200-dep manifest.
+const XML_ESCAPES: Record<string, string> = {
+  '&': '&amp;',
+  '<': '&lt;',
+  '>': '&gt;',
+  '"': '&quot;',
+  "'": '&apos;',
 }

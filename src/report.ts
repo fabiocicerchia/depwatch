@@ -139,7 +139,17 @@ export class ScanAborted extends Error {
 export interface AnalyseCache {
   packages: CacheLayer<CachedPackage>
   deep?: CacheLayer<DeepMeta>
+  /**
+   * Release dates for the versions a registry lists undated. Maven and the four
+   * others like it date one artifact at a time — a HEAD per version — so
+   * without this the version *list* is cached and the dates behind every number
+   * in the report are refetched on every scan.
+   */
+  dates?: CacheLayer<CachedDates>
 }
+
+/** Version → ISO release date. A plain object, because this is cached to disk. */
+export type CachedDates = Record<string, string>
 
 export type CacheLayer<T> = (key: string, load: () => Promise<T>) => Promise<T>
 
@@ -190,7 +200,7 @@ function memoise<T>(): CacheLayer<T> {
   }
 }
 
-const DEFAULT_CACHE: AnalyseCache = { packages: memoise(), deep: memoise() }
+const DEFAULT_CACHE: AnalyseCache = { packages: memoise(), deep: memoise(), dates: memoise() }
 
 async function mapPool<T, R>(items: T[], limit: number, fn: (item: T) => Promise<R>, signal?: AbortSignal): Promise<R[]> {
   const out = new Array<R>(items.length)
@@ -278,7 +288,7 @@ async function analyseDep(
     versions = [...versions, { version: dep.current, released: null }]
   }
   // Some registries list versions without dates; date only the ones we score.
-  if (def.hydrateDates) versions = await hydrateScored(def, dep, versions)
+  if (def.hydrateDates) versions = await hydrateScored(def, dep, versions, cache)
 
   const freshness = freshnessFor(def, dep, versions, opts.asOf)
   let signals = timelineSignals(versions, opts.asOf)
@@ -343,7 +353,12 @@ function freshnessFor(def: EcosystemDef, dep: Dep, versions: RegistryVersion[], 
 // The versions worth dating: the current one, and the most recent slice the
 // cadence/pulse signals look at. Bounds the per-version date requests to a
 // handful per package rather than the whole history.
-async function hydrateScored(def: EcosystemDef, dep: Dep, versions: RegistryVersion[]): Promise<RegistryVersion[]> {
+async function hydrateScored(
+  def: EcosystemDef,
+  dep: Dep,
+  versions: RegistryVersion[],
+  cache: AnalyseCache,
+): Promise<RegistryVersion[]> {
   const undated = versions.filter((v) => !v.released)
   if (undated.length === 0) return versions
   const wanted = new Set<string>()
@@ -351,8 +366,20 @@ async function hydrateScored(def: EcosystemDef, dep: Dep, versions: RegistryVers
   for (const v of versions.slice(-DATE_WINDOW)) wanted.add(v.version)
   const targets = undated.filter((v) => wanted.has(v.version)).map((v) => v.version)
   if (targets.length === 0) return versions
-  const dates = await def.hydrateDates!(dep.name, targets)
-  return versions.map((v) => (v.released ? v : { ...v, released: dates.get(v.version) ?? null }))
+
+  // Cached like the version list, because a release date is the same kind of
+  // thing: a historical fact that cannot change. Without this, Maven's HEAD
+  // per version ran on every scan — thirteen requests per dependency, forever,
+  // for numbers that were already known.
+  //
+  // The target set is part of the key rather than the package name alone: it
+  // shifts only when the pinned version moves or new releases push the window
+  // along, and those are exactly the times the dates must be asked for again.
+  const key = `${def.id}:${dep.name.toLowerCase()}:${targets.join(',')}`
+  const dates = await (cache.dates ?? DEFAULT_CACHE.dates!)(key, async () =>
+    Object.fromEntries(await def.hydrateDates!(dep.name, targets)),
+  )
+  return versions.map((v) => (v.released ? v : { ...v, released: dates[v.version] ?? null }))
 }
 
 // Release dates are historical facts, so "what did this manifest look like in

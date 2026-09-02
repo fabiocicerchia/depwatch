@@ -6,6 +6,7 @@
 
 import type { DepReport, Quadrant, Thresholds } from './report.js'
 import { DEFAULT_THRESHOLDS } from './report.js'
+import { round2 } from './round.js'
 
 // Exported because the chart is not the only thing that colours a quadrant —
 // the editor extension's report does too, and two palettes for one meaning is a
@@ -103,7 +104,7 @@ export function quadrantSVG(deps: DepReport[], opts: ChartOptions = {}): string 
     const cx = x(d.libyearsBehind)
     const cy = y(d.viability)
     const c = COLOR[d.quadrant]
-    parts.push(`<circle cx="${r2(cx)}" cy="${r2(cy)}" r="4.5" fill="${c}" fill-opacity="0.45" stroke="${c}" stroke-width="1"/>`)
+    parts.push(`<circle cx="${round2(cx)}" cy="${round2(cy)}" r="4.5" fill="${c}" fill-opacity="0.45" stroke="${c}" stroke-width="1"/>`)
     if (opts.labelAll || d.quadrant !== 'healthy') {
       // A label to the right of a point near the right edge runs off the
       // viewBox and gets clipped — which is exactly where the worst
@@ -126,11 +127,11 @@ export function quadrantSVG(deps: DepReport[], opts: ChartOptions = {}): string 
 }
 
 function band(bx: number, by: number, bw: number, bh: number, fill: string): string {
-  return `<rect x="${r2(bx)}" y="${r2(by)}" width="${r2(Math.max(0, bw))}" height="${r2(Math.max(0, bh))}" fill="${fill}" fill-opacity="0.06"/>`
+  return `<rect x="${round2(bx)}" y="${round2(by)}" width="${round2(Math.max(0, bw))}" height="${round2(Math.max(0, bh))}" fill="${fill}" fill-opacity="0.06"/>`
 }
 
 function line(x1: number, y1: number, x2: number, y2: number, stroke: string, dash?: string): string {
-  return `<line x1="${r2(x1)}" y1="${r2(y1)}" x2="${r2(x2)}" y2="${r2(y2)}" stroke="${stroke}" stroke-width="1"${dash ? ` stroke-dasharray="${dash}"` : ''}/>`
+  return `<line x1="${round2(x1)}" y1="${round2(y1)}" x2="${round2(x2)}" y2="${round2(y2)}" stroke="${stroke}" stroke-width="1"${dash ? ` stroke-dasharray="${dash}"` : ''}/>`
 }
 
 function quadLabel(lx: number, ly: number, label: string, fill: string): string {
@@ -145,18 +146,17 @@ function text(
 ): string {
   const anchor = o.anchor ?? 'middle'
   const opacity = o.opacity === undefined ? '' : ` opacity="${o.opacity}"`
-  return `<text x="${r2(tx)}" y="${r2(ty)}" font-size="${o.size}" fill="${o.fill}" text-anchor="${anchor}" font-family="ui-monospace, monospace"${opacity}>${escapeXml(content)}</text>`
+  return `<text x="${round2(tx)}" y="${round2(ty)}" font-size="${o.size}" fill="${o.fill}" text-anchor="${anchor}" font-family="ui-monospace, monospace"${opacity}>${escapeXml(content)}</text>`
 }
 
 function xTicks(max: number): number[] {
   const step = max <= 3 ? 0.5 : max <= 8 ? 1 : Math.ceil(max / 8)
   const ticks: number[] = []
-  for (let t = 0; t <= max + 1e-9; t += step) ticks.push(Math.round(t * 100) / 100)
+  for (let t = 0; t <= max + 1e-9; t += step) ticks.push(round2(t))
   return ticks
 }
 
 const fmt = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(1))
-const r2 = (n: number) => Math.round(n * 100) / 100
 
 /**
  * Escapes the five XML-significant characters.

@@ -7,6 +7,7 @@ import { byId } from './ecosystems/registry.js'
 import type { EcosystemDef, VersionOps } from './ecosystems/types.js'
 import { applyDeepMeta, type DeepMeta, fetchDeepMeta, timelineSignals } from './signals.js'
 import { NO_SIGNALS, viabilityScore, type ViabilitySignals } from './viability.js'
+import { round2 } from './round.js'
 
 export type Quadrant = 'healthy' | 'upgrade' | 'watch' | 'replace'
 
@@ -389,7 +390,6 @@ function versionsAsOf(versions: RegistryVersion[], asOf: number): RegistryVersio
   return versions.filter((v) => !v.released || Date.parse(v.released) <= asOf)
 }
 
-const round2 = (n: number) => Math.round(n * 100) / 100
 
 const MS_PER_YEAR = 365.25 * 86_400_000
 

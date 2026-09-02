@@ -55,14 +55,37 @@ function parseGoMod(text: string): Dep[] {
   return deps
 }
 
+// go.sum records a hash per module version, including every version ever seen
+// in the graph, so a module legitimately appears several times. It carries no
+// notion of "the selected version" and cannot answer "how far behind am I".
+const GO_SUM_LINE = /^\S+\s+v\S+(\/go\.mod)?\s+h1:/m
+
 export const go: EcosystemDef = {
   id: 'go',
   label: 'Go modules',
   purlTypes: ['golang', 'go'],
+  // Go has no lock file in this tool's sense: minimal version selection already
+  // makes the versions in go.mod exact, so go.mod is both the manifest and the
+  // resolved set. Declaring go.sum a lock made resolveInput read it instead of
+  // go.mod and parse checksum lines with the go.mod parser, which found nothing
+  // and reported every Go module as having no dependencies at all.
   manifests: ['go.mod'],
-  locks: ['go.sum'],
-  // go.sum is a checksum database, not a version list; parse go.mod either way.
-  parse: (text) => parseGoMod(text),
+  locks: [],
+  // Recognised so that pointing at it gets an explanation rather than "unknown
+  // ecosystem", but deliberately not in `manifests`: the editor extension globs
+  // what it can score, and go.sum is not scorable.
+  manifestPattern: /^go\.sum$/,
+  parse: (text) => {
+    if (GO_SUM_LINE.test(text)) {
+      throw new Error(
+        'go.sum is a checksum database, not a version list: it holds a hash per module ' +
+          'version and keeps versions no longer selected, so it cannot say how far behind ' +
+          'a dependency is. Point depwatch at go.mod, which minimal version selection ' +
+          'already resolves to exact versions.',
+      )
+    }
+    return parseGoMod(text)
+  },
   async fetchVersions(name) {
     const list = await getText(`${PROXY}/${escapeModule(name)}/@v/list`)
     return list

@@ -75,9 +75,12 @@ to agree on live in modules rather than in `cli.ts`:
 - `AnalyseOptions.cache` — where fetched data is remembered. The CLI defaults to
   a process-lifetime map; the extension hands in a TTL cache on disk.
 
-What the CLI does *not* share sits beside it: `src/render-text.ts` holds the
+What the CLI does *not* share sits beside it. `src/render-text.ts` holds the
 padded monospace table and the trend listing, because the report's shape
 (`REPORT_COLUMNS` in `src/report.ts`) and the report's appearance change for
 different reasons — the extension renders the same columns into a `<table>`.
+`src/flags.ts` holds the option tables, the `Flags` shape and `parseFlags`, so
+`cli.ts` is the commands and the help text; an option is added in one place and
+nothing that runs a command has to move.
 
 See [VS Code extension](vscode.md).

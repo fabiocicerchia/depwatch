@@ -344,20 +344,26 @@ export class FindingsTree implements vscode.TreeDataProvider<Node>, vscode.Dispo
 
 type GroupNode = Extract<Node, { kind: 'group' }>
 
+/** Worst drift first; a tie broken by viability, then by name. */
+const worstFirst = (a: DepReport, b: DepReport) =>
+  b.libyearsBehind - a.libyearsBehind || a.viability - b.viability || a.name.localeCompare(b.name)
+
+const shows = (filter: Set<Lens> | null, lens: Lens) => !filter || filter.has(lens)
+
+/**
+ * The quadrants, worst first, then the ones the registry would not answer for.
+ * A quadrant nobody is in gets no heading: an empty group is noise.
+ */
 function groupsOf(scan: Scan, filter: Set<Lens> | null): GroupNode[] {
-  const out: GroupNode[] = []
-  for (const quadrant of ORDER) {
-    if (filter && !filter.has(quadrant)) continue
-    const deps = scan.report.deps
-      .filter((d) => !d.degraded && d.quadrant === quadrant)
-      .sort((a, b) => b.libyearsBehind - a.libyearsBehind || a.viability - b.viability || a.name.localeCompare(b.name))
-    if (deps.length > 0) out.push({ kind: 'group', scan, lens: quadrant, deps })
-  }
-  if (!filter || filter.has('degraded')) {
-    const degraded = scan.report.deps.filter((d) => d.degraded)
-    if (degraded.length > 0) out.push({ kind: 'group', scan, lens: 'degraded', deps: degraded })
-  }
-  return out
+  const group = (lens: Lens, deps: DepReport[]): GroupNode[] =>
+    shows(filter, lens) && deps.length > 0 ? [{ kind: 'group', scan, lens, deps }] : []
+
+  const quadrants = ORDER.flatMap((quadrant) =>
+    // A degraded dependency still carries a quadrant, and counting it under
+    // that quadrant as well as under its own group would list it twice.
+    group(quadrant, scan.report.deps.filter((d) => !d.degraded && d.quadrant === quadrant).sort(worstFirst)),
+  )
+  return [...quadrants, ...group('degraded', scan.report.deps.filter((d) => d.degraded))]
 }
 
 function describe(d: DepReport): string {

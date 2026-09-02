@@ -158,6 +158,20 @@ function quotedNames(text: string): Map<string, Span> {
   return out
 }
 
+/** The string starting at the quote at `open`: its span, and what follows it. */
+function readString(text: string, open: number): { span: Span; after: number } {
+  let i = open + 1
+  while (i < text.length && text[i] !== '"') i += text[i] === '\\' ? 2 : 1
+  return { span: { start: open + 1, end: i }, after: i + 1 }
+}
+
+/** A key is a string followed by a colon; a value is not. */
+function isKeyAt(text: string, after: number): boolean {
+  let i = after
+  while (i < text.length && /\s/.test(text[i])) i++
+  return text[i] === ':'
+}
+
 /**
  * Keys of the object that starts at `open`, and only that object — a walk that
  * tracks depth and string state, so a brace inside a version string does not
@@ -171,17 +185,10 @@ function objectKeys(text: string, open: number): Map<string, Span> {
   while (i < text.length) {
     const c = text[i]
     if (c === '"') {
-      const start = i + 1
-      i++
-      while (i < text.length && text[i] !== '"') i += text[i] === '\\' ? 2 : 1
-      const name = text.slice(start, i)
-      i++
-      if (depth === 1) {
-        // A key is a string followed by a colon; a value is not.
-        let j = i
-        while (j < text.length && /\s/.test(text[j])) j++
-        if (text[j] === ':' && !out.has(name)) out.set(name, { start, end: start + name.length })
-      }
+      const { span, after } = readString(text, i)
+      const name = text.slice(span.start, span.end)
+      if (depth === 1 && isKeyAt(text, after) && !out.has(name)) out.set(name, span)
+      i = after
       continue
     }
     if (c === '{' || c === '[') depth++

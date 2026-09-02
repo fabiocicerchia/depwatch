@@ -8,13 +8,14 @@
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, relative, resolve } from 'node:path'
 import { acceptedIn, DEFAULT_BASELINE, parse as parseBaseline, serialise, withoutAccepted } from './baseline.js'
-import { analyse, compareDeps, DEFAULT_THRESHOLDS, REPORT_COLUMNS, type Report, type Thresholds } from './report.js'
+import { analyse, DEFAULT_THRESHOLDS, type Report, type Thresholds } from './report.js'
 import { assertEcosystem, type SupportedEcosystem } from './manifest.js'
 import { coverageLines, ecoIdList } from './ecosystems/registry.js'
-import { gateFailures, tally } from './gates.js'
+import { gateFailures } from './gates.js'
 import { loadManifest, resolveInput } from './input.js'
 import { quadrantSVG } from './quadrant.js'
-import { trend, type TrendPoint } from './trend.js'
+import { table, trendTable } from './render-text.js'
+import { trend } from './trend.js'
 
 const USAGE = `depwatch — dependency drift (libyears) × viability
 
@@ -182,51 +183,7 @@ function emit(text: string, out?: string) {
   else process.stdout.write(text.endsWith('\n') ? text : text + '\n')
 }
 
-// --- rendering ---
-
-// One row of the text table: each cell padded to its column's width, with the
-// trailing padding of the last cell trimmed so lines have no invisible tail.
-function padRow(cells: string[], widths: number[]): string {
-  return cells.map((c, i) => c.padEnd(widths[i])).join('  ').trimEnd()
-}
-
-function table(r: Report, t: Thresholds): string {
-  const rows = [...r.deps].sort(compareDeps)
-  const widths = REPORT_COLUMNS.map((c) => Math.max(c.header.length, ...rows.map((d) => c.of(d).length)))
-
-  const out = [
-    padRow(
-      REPORT_COLUMNS.map((c) => c.header),
-      widths,
-    ),
-    padRow(
-      widths.map((w) => '─'.repeat(w)),
-      widths,
-    ),
-    ...rows.map((d) => padRow(REPORT_COLUMNS.map((c) => c.of(d)), widths)),
-    '',
-    `total drift: ${r.totalLibyears.toFixed(2)} libyears across ${r.deps.length} deps  (${r.ecosystem}, ${r.file})`,
-  ]
-
-  const counts = tally(r)
-  out.push(`quadrants: replace ${counts.replace}  upgrade ${counts.upgrade}  watch ${counts.watch}  healthy ${counts.healthy}`)
-  out.push(`thresholds: behind > ${t.staleLibyears} libyears, fading < ${t.riskyViability} viability`)
-
-  const degraded = r.deps.filter((d) => d.degraded)
-  if (degraded.length > 0) out.push(`${degraded.length} dep(s) had no registry data and were not scored`)
-
-  const pulseOnly = r.deps.filter((d) => d.driftUnscored)
-  if (pulseOnly.length > 0)
-    out.push(`${pulseOnly.length} dep(s) scored on pulse and viability only — no comparable version series (drift shown as —)`)
-
-  const estimated = r.deps.filter((d) => !d.resolved && !d.degraded).length
-  if (estimated > 0) {
-    out.push(
-      `upper bound: ${estimated} of ${r.deps.length} versions came from a range, not a lock file — a range gives its floor, so the real drift is this or lower`,
-    )
-  }
-  return out.join('\n')
-}
+// --- the accepted baseline ---
 
 /**
  * The manifest as the baseline names it: relative to the baseline file, with
@@ -302,20 +259,6 @@ async function chartCommand(file: string, f: Flags): Promise<number> {
   })
   emit(svg, f.out)
   return 0
-}
-
-function trendTable(points: TrendPoint[]): string {
-  const lines = points.map(
-    (p) =>
-      `${p.date.slice(0, 10)}  ${p.commit}  ${p.totalLibyears.toFixed(2).padStart(8)} libyears  ${String(p.deps).padStart(4)} deps  ${p.replace} replace`,
-  )
-  const first = points[0]
-  const last = points[points.length - 1]
-  if (first && last && points.length > 1) {
-    const delta = last.totalLibyears - first.totalLibyears
-    lines.push('', `${delta >= 0 ? '+' : ''}${delta.toFixed(2)} libyears over ${points.length} sampled commits`)
-  }
-  return lines.join('\n')
 }
 
 async function trendCommand(file: string, f: Flags): Promise<number> {

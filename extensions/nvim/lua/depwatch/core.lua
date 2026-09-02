@@ -9,6 +9,8 @@
 --
 -- No `vim.` calls: the whole module is testable under plain Lua.
 
+local lens = require('depwatch.lens')
+
 local M = {}
 
 local function append(list, ...)
@@ -63,36 +65,14 @@ end
 
 -- --- reading the report ------------------------------------------------------
 
-local QUADRANTS = { 'replace', 'upgrade', 'watch', 'healthy' }
-M.QUADRANTS = QUADRANTS
-
---- Every quadrant, plus the pseudo-quadrant for deps the registry would not
---- answer for. A dep we could not reach is unknown, not unhealthy.
-M.LENSES = { 'replace', 'upgrade', 'watch', 'healthy', 'degraded' }
-
-M.LABEL = {
-  replace = 'Replace',
-  upgrade = 'Upgrade',
-  watch = 'Watch',
-  healthy = 'Healthy',
-  degraded = 'no data',
-}
-
-M.BLURB = {
-  replace = 'behind and unmaintained — the upgrade you need may never be written',
-  upgrade = 'behind but alive — the newer version exists, it is just work',
-  watch = 'current but fading — nothing to upgrade to yet, and nobody obviously shipping one',
-  healthy = 'current, and maintained',
-  degraded = 'the registry did not answer for these packages',
-}
-
---- Which lens a dependency belongs under.
-function M.lens_of(dep)
-  if dep.degraded then
-    return 'degraded'
-  end
-  return dep.quadrant
-end
+-- The vocabulary, from lens.lua, re-exported: core is what the rest of the
+-- plugin requires, and moving a name out of it would be an API change for the
+-- sake of a file boundary.
+M.QUADRANTS = lens.QUADRANTS
+M.LENSES = lens.LENSES
+M.LABEL = lens.LABEL
+M.BLURB = lens.BLURB
+M.lens_of = lens.lens_of
 
 --- Worst first. Every surface orders this way, so it lives here rather than
 --- being spelled out again in each of them.
@@ -143,11 +123,11 @@ local GROUP = {
   },
   severity = {
     key = function(_, dep)
-      return M.lens_of(dep)
+      return lens.lens_of(dep)
     end,
     title = function(_, dep)
-      local lens = M.lens_of(dep)
-      return string.format('%s — %s', M.LABEL[lens], M.BLURB[lens])
+      local at = lens.lens_of(dep)
+      return string.format('%s — %s', lens.LABEL[at], lens.BLURB[at])
     end,
     rank = function(key)
       return LENS_RANK[key] or 9
@@ -320,430 +300,24 @@ function M.gate_failures(report, gates)
   return fails
 end
 
--- --- saying why --------------------------------------------------------------
-
-local function years(n)
-  if n < 1 / 12 then
-    return 'less than a month'
-  end
-  if n < 1 then
-    return string.format('%d months', math.max(1, math.floor(n * 12 + 0.5)))
-  end
-  return string.format('%.1f years', n)
-end
-
-M.years = years
-
-local function days(n)
-  local whole = math.floor(n + 0.5)
-  if whole < 45 then
-    return string.format('%d days', whole)
-  end
-  if whole < 365 then
-    return string.format('%d months', math.floor(whole / 30 + 0.5))
-  end
-  return string.format('%.1f years', whole / 365.25)
-end
-
-local function threshold_note(t)
-  return string.format(
-    'Behind means over %s libyears; fading means viability under %s.',
-    tostring(t.stale_libyears),
-    tostring(t.risky_viability)
-  )
-end
-
---- The one-line message that goes on the diagnostic.
-function M.summarise(dep, thresholds)
-  if dep.degraded then
-    return string.format('%s: no registry data (%s) — not scored', dep.name, dep.degraded)
-  end
-  local bits = {
-    string.format('%.2f libyears behind', dep.libyearsBehind),
-    string.format('viability %.2f', dep.viability),
-  }
-  if dep.latest and dep.latest ~= dep.current then
-    table.insert(bits, string.format('%s → %s', dep.current, dep.latest))
-  end
-  return string.format(
-    '%s: %s — %s. %s. %s',
-    dep.name,
-    M.LABEL[dep.quadrant],
-    table.concat(bits, ', '),
-    M.BLURB[dep.quadrant],
-    threshold_note(thresholds)
-  )
-end
-
-local function bus_factor(count)
-  if count <= 0 then
-    return 'no maintainers listed'
-  end
-  if count == 1 then
-    return '**one maintainer** — one person is one bus'
-  end
-  return string.format('%d maintainers', count)
-end
-
---- One line each, in the order they appear in the hover: worst first, so the
---- reason someone should care is at the top rather than the bottom. Each
---- returns a line, or nil when the report has nothing to say on that point.
-local REASONS = {
-  function(dep, s)
-    return s.archived and 'the repository is **archived** — the maintainer has said the project is over' or nil
-  end,
-
-  function(dep)
-    if dep.libyearsBehind > 0 and dep.currentReleased and dep.latestReleased then
-      return string.format(
-        '**%.2f libyears behind**: %s shipped %s, %s shipped %s',
-        dep.libyearsBehind,
-        dep.current,
-        dep.currentReleased:sub(1, 10),
-        tostring(dep.latest),
-        dep.latestReleased:sub(1, 10)
-      )
-    end
-    if dep.latest == dep.current then
-      return string.format('on the latest release (%s)', tostring(dep.latest))
-    end
-    return nil
-  end,
-
-  function(dep)
-    return dep.pulseYears ~= nil and string.format('last release %s ago', years(dep.pulseYears)) or nil
-  end,
-
-  function(_, s)
-    return s.lastCommitAgeDays ~= nil and string.format('last commit %s ago', days(s.lastCommitAgeDays)) or nil
-  end,
-
-  function(_, s)
-    return s.releaseCadenceDays ~= nil and string.format('ships about every %s', days(s.releaseCadenceDays)) or nil
-  end,
-
-  function(_, s)
-    return s.maintainerCount ~= nil and bus_factor(s.maintainerCount) or nil
-  end,
-
-  function(_, s)
-    return s.hasFunding and 'has a funding channel' or nil
-  end,
-
-  function(dep)
-    return dep.resolved == false
-        and 'version read from a range, not a lock file — the real drift is this or lower'
-      or nil
-  end,
-
-  function(_, s)
-    if s.maintainerCount == nil and s.lastCommitAgeDays == nil and not s.archived then
-      return 'scored from the release timeline only — run a deep scan for maintainers, archived status and last commit'
-    end
-    return nil
-  end,
-}
-
---- Everything the report knows about one dependency, worst first.
-function M.reasons(dep)
-  if dep.degraded then
-    return { string.format('the registry did not answer for this package (%s)', dep.degraded) }
-  end
-  local out, signals = {}, dep.signals or {}
-  for _, reason in ipairs(REASONS) do
-    local line = reason(dep, signals)
-    if line then
-      out[#out + 1] = line
-    end
-  end
-  return out
-end
-
-local REGISTRY_URL = {
-  npm = 'https://www.npmjs.com/package/%s',
-  pep440 = 'https://pypi.org/project/%s/',
-  cargo = 'https://crates.io/crates/%s',
-  composer = 'https://packagist.org/packages/%s',
-  rubygems = 'https://rubygems.org/gems/%s',
-}
-
-function M.registry_url(ecosystem, name)
-  local pattern = REGISTRY_URL[ecosystem]
-  return pattern and pattern:format(name) or nil
-end
-
---- The hover, as markdown lines.
-function M.hover_lines(dep, thresholds, ecosystem)
-  local head
-  if dep.degraded then
-    head = string.format('**%s** — not scored', dep.name)
-  else
-    local arrow = ''
-    if dep.latest and dep.latest ~= dep.current then
-      arrow = string.format(' → **%s**', dep.latest)
-    end
-    head = string.format('**%s** %s%s', dep.name, dep.current, arrow)
-  end
-
-  local badge
-  if dep.degraded then
-    badge = '`no data`'
-  else
-    badge = string.format(
-      '`%s` drift **%.2f** ly · viability **%.2f**',
-      M.LABEL[dep.quadrant],
-      dep.libyearsBehind,
-      dep.viability
-    )
-  end
-
-  local lines = { head, '', badge .. ' · ' .. M.BLURB[M.lens_of(dep)], '' }
-  for _, reason in ipairs(M.reasons(dep)) do
-    table.insert(lines, '- ' .. reason)
-  end
-  table.insert(lines, '')
-  table.insert(lines, '_' .. threshold_note(thresholds) .. '_')
-
-  local url = M.registry_url(dep.ecosystem or ecosystem, dep.name)
-  if url then
-    table.insert(lines, '')
-    table.insert(lines, string.format('[%s on the registry](%s)', dep.name, url))
-  end
-  return lines
-end
-
--- --- where a dependency is written -------------------------------------------
+-- --- the facade --------------------------------------------------------------
 --
--- The CLI reports names, not positions: it reads lock files and SBOMs, where a
--- position would be meaningless. So the manifest is indexed once per scan and
--- the names are looked up in it -- one pass, whatever the file, because a
--- package-lock.json is measured in megabytes and a pattern search per
--- dependency over one of those is something the editor would feel.
+-- Explaining a finding and finding where it is written are two jobs of their
+-- own, and they live in their own files. They are re-exported here because
+-- `core` is the name the rest of the plugin -- and its specs -- already ask
+-- for, and a file boundary is not a reason to move a public name.
 
-local SECTIONS = {
-  ['package.json'] = { 'dependencies', 'devDependencies', 'optionalDependencies' },
-  ['composer.json'] = { 'require', 'require-dev' },
-}
+local explain = require('depwatch.explain')
+local locate = require('depwatch.locate')
 
-function M.basename(path)
-  return path:match('[^/\\]+$') or path
-end
+M.years = explain.years
+M.summarise = explain.summarise
+M.reasons = explain.reasons
+M.registry_url = explain.registry_url
+M.hover_lines = explain.hover_lines
 
---- Which indexing strategy a filename calls for.
-function M.shape_of(filename)
-  local base = M.basename(filename)
-  if SECTIONS[base] then
-    return 'json-sections'
-  elseif base == 'Cargo.toml' then
-    return 'cargo-toml'
-  elseif base == 'Cargo.lock' then
-    return 'cargo-lock'
-  elseif base == 'Gemfile.lock' then
-    return 'gemfile-lock'
-  elseif base:match('^requirements.*%.txt$') then
-    return 'requirements'
-  end
-  return 'generic'
-end
-
---- Every JSON key in the text, with its nesting depth and position.
----
---- A character walk rather than a pattern per line: a brace inside a version
---- string must not end an object early, and `"name"` as a *value* is not a key.
-local function json_keys(text)
-  local keys, depth, i, lnum, line_start = {}, 0, 1, 1, 1
-  local n = #text
-  while i <= n do
-    local c = text:sub(i, i)
-    if c == '\n' then
-      lnum, line_start, i = lnum + 1, i + 1, i + 1
-    elseif c == '"' then
-      local start = i + 1
-      local j = start
-      while j <= n do
-        local ch = text:sub(j, j)
-        if ch == '\\' then
-          j = j + 2
-        elseif ch == '"' then
-          break
-        else
-          j = j + 1
-        end
-      end
-      local name = text:sub(start, j - 1)
-      local k = j + 1
-      while k <= n and text:sub(k, k):match('%s') do
-        k = k + 1
-      end
-      if text:sub(k, k) == ':' then
-        keys[#keys + 1] = { name = name, depth = depth, lnum = lnum - 1, col = start - line_start }
-      end
-      i = j + 1
-    elseif c == '{' or c == '[' then
-      depth, i = depth + 1, i + 1
-    elseif c == '}' or c == ']' then
-      depth, i = depth - 1, i + 1
-    else
-      i = i + 1
-    end
-  end
-  return keys
-end
-
-local function span(name, lnum, col)
-  return { lnum = lnum, col = col, end_col = col + #name }
-end
-
---- Keys of the dependency objects. Section-aware, so a package called
---- "scripts" lands on the right line.
-local function index_json_sections(text, sections)
-  local want = {}
-  for _, section in ipairs(sections) do
-    want[section] = true
-  end
-  local out, inside = {}, false
-  for _, key in ipairs(json_keys(text)) do
-    if key.depth == 1 then
-      inside = want[key.name] == true
-    elseif key.depth == 2 and inside and not out[key.name] then
-      out[key.name] = span(key.name, key.lnum, key.col)
-    end
-  end
-  return out
-end
-
---- Nothing structural to parse (an SBOM): every JSON key, first one wins.
-local function index_json_any(text)
-  local out = {}
-  for _, key in ipairs(json_keys(text)) do
-    if not out[key.name] then
-      out[key.name] = span(key.name, key.lnum, key.col)
-    end
-  end
-  return out
-end
-
-local function each_line(text, visit)
-  local lnum = 0
-  for line in (text .. '\n'):gmatch('([^\n]*)\n') do
-    visit(line, lnum)
-    lnum = lnum + 1
-  end
-end
-
-local function index_by_line(text, pattern)
-  local out = {}
-  each_line(text, function(line, lnum)
-    local name = line:match(pattern)
-    if name and not out[name] then
-      local col = line:find(name, 1, true)
-      if col then
-        out[name] = span(name, lnum, col - 1)
-      end
-    end
-  end)
-  return out
-end
-
-local DEP_TABLES = {
-  dependencies = true,
-  ['dev-dependencies'] = true,
-  ['build-dependencies'] = true,
-}
-
---- Remember `name` at its position on this line, first mention winning.
-local function remember(out, name, line, lnum)
-  if out[name] then
-    return
-  end
-  local col = line:find(name, 1, true)
-  if col then
-    out[name] = span(name, lnum, col - 1)
-  end
-end
-
---- A `[table.header]` line: says whether what follows is a dependency table,
---- and files the crate named by the `[dependencies.foo]` form as it goes.
-local function cargo_header(out, trimmed, line, lnum)
-  local segments = {}
-  for segment in trimmed:gsub('^%[+', ''):gsub('%]+$', ''):gmatch('[^.]+') do
-    segments[#segments + 1] = segment
-  end
-  local last, prev = segments[#segments], segments[#segments - 1]
-  if DEP_TABLES[last] then
-    return true
-  end
-  if last and DEP_TABLES[prev] then
-    remember(out, last, line, lnum)
-  end
-  return false
-end
-
---- [dependencies] tables, plus the [dependencies.foo] form that names the
---- crate in the header itself.
-local function index_cargo_toml(text)
-  local out, in_deps = {}, false
-  each_line(text, function(line, lnum)
-    local trimmed = line:gsub('#.*$', ''):match('^%s*(.-)%s*$')
-    if trimmed:sub(1, 1) == '[' then
-      in_deps = cargo_header(out, trimmed, line, lnum)
-      return
-    end
-    local name = in_deps and trimmed:match('^([A-Za-z0-9._-]+)%s*=')
-    if name then
-      remember(out, name, line, lnum)
-    end
-  end)
-  return out
-end
-
-local function build_index(text, filename, shape)
-  if shape == 'json-sections' then
-    return index_json_sections(text, SECTIONS[M.basename(filename)] or {})
-  elseif shape == 'requirements' then
-    return index_by_line(text, '^%s*([A-Za-z0-9._-]+)')
-  elseif shape == 'cargo-toml' then
-    return index_cargo_toml(text)
-  elseif shape == 'cargo-lock' then
-    return index_by_line(text, '^%s*name%s*=%s*"([^"]+)"')
-  elseif shape == 'gemfile-lock' then
-    return index_by_line(text, '^    ([A-Za-z0-9._-]+) %(')
-  end
-  return index_json_any(text)
-end
-
--- PyPI treats "-", "_" and case as the same character; nothing else here does,
--- so this is only ever a last resort.
-local function normalise(name)
-  return name:lower():gsub('_', '-')
-end
-
---- Where each of `names` is written in `text`.
----
---- A name the index did not find is simply absent from the result rather than
---- guessed at: underlining some other line that happens to contain the string
---- is worse than underlining nothing.
----@return table<string, {lnum:integer, col:integer, end_col:integer}>
-function M.locate(text, filename, names)
-  local index = build_index(text, filename, M.shape_of(filename))
-  local out = {}
-  for _, name in ipairs(names) do
-    local hit = index[name] or index[name:lower()] or index[normalise(name)]
-    if not hit then
-      -- Only where there is no shape worth parsing: for a known shape, a name
-      -- the index missed is a name that is not in the file.
-      for key, value in pairs(index) do
-        if normalise(key) == normalise(name) then
-          hit = value
-          break
-        end
-      end
-    end
-    if hit then
-      out[name] = hit
-    end
-  end
-  return out
-end
+M.basename = locate.basename
+M.shape_of = locate.shape_of
+M.locate = locate.locate
 
 return M

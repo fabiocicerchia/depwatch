@@ -341,18 +341,20 @@ export const window = {
     return { show: () => undefined, sendText: (text: string) => terminal.sent.push(text) }
   },
 
-  async showInformationMessage(message: string, ..._items: string[]): Promise<string | undefined> {
+  // The button labels are dropped: what a test asserts on is the message, and
+  // which button came back is `harness.answers.message`.
+  async showInformationMessage(message: string): Promise<string | undefined> {
     harness.messages.info.push(message)
     return harness.answers.message
   },
 
-  async showWarningMessage(message: string, ..._items: string[]): Promise<string | undefined> {
+  async showWarningMessage(message: string): Promise<string | undefined> {
     harness.messages.warning.push(message)
     return harness.answers.message
   },
 
-  async showQuickPick(items: unknown, _opts?: unknown): Promise<unknown> {
-    return harness.answers.quickPick ?? (await items)
+  async showQuickPick(choices: unknown, _opts?: unknown): Promise<unknown> {
+    return harness.answers.quickPick ?? (await choices)
   },
 
   async showInputBox(_opts?: unknown): Promise<string | undefined> {

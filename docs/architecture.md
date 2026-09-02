@@ -69,7 +69,15 @@ to agree on live in modules rather than in `cli.ts`:
 - `src/input.ts` — which file gets read (the lock beside the manifest), which
   dependencies count, and the notes explaining both.
 - `src/gates.ts` — `--max-libyears` and `--max-replace`, evaluated once.
+- `src/round.ts` — the two decimals every surface reports. The ratchet compares
+  a stored total against a freshly computed one, so a second copy of this
+  rounding is a wrong verdict rather than a style question.
 - `AnalyseOptions.cache` — where fetched data is remembered. The CLI defaults to
   a process-lifetime map; the extension hands in a TTL cache on disk.
+
+What the CLI does *not* share sits beside it: `src/render-text.ts` holds the
+padded monospace table and the trend listing, because the report's shape
+(`REPORT_COLUMNS` in `src/report.ts`) and the report's appearance change for
+different reasons — the extension renders the same columns into a `<table>`.
 
 See [VS Code extension](vscode.md).

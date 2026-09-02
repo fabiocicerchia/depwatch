@@ -10,3 +10,5 @@ extend-ignore-re = ["\\[[0-9a-f]{7,40}\\]"]
 [default.extend-words]
 edn = "edn"          # Clojure's deps.edn — an extension, not "end"
 certifi = "certifi"  # the PyPI package, spelled that way on purpose
+enew = "enew"        # Neovim's :enew — open an empty buffer, not "new"
+noet = "noet"        # 'noexpandtab' in the vim help modeline, not "note"

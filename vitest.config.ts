@@ -9,8 +9,17 @@ import { fileURLToPath } from 'node:url'
 const shared = fileURLToPath(new URL('../infra-toolbox/src/lib', import.meta.url))
 const lib = existsSync(shared) ? shared : fileURLToPath(new URL('./src/lib', import.meta.url))
 
+// `vscode` is injected by the extension host and exists nowhere on disk, so
+// importing extension.ts under the runner fails at its first line — which is
+// why activation had no tests at all. esbuild keeps marking the real module
+// external; this alias only ever applies here.
+const vscodeStub = fileURLToPath(new URL('./extensions/vscode/src/testing/vscode.ts', import.meta.url))
+
 export default defineConfig({
   resolve: {
-    alias: [{ find: /^@lib\/(.*)/, replacement: `${lib}/$1` }],
+    alias: [
+      { find: /^@lib\/(.*)/, replacement: `${lib}/$1` },
+      { find: /^vscode$/, replacement: vscodeStub },
+    ],
   },
 })

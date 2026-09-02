@@ -26,6 +26,13 @@ function pseudoDate(version: string): string | null {
   return Number.isFinite(t) ? new Date(t).toISOString() : null
 }
 
+// A require is spelled two ways: a line inside a `require (…)` block, or a
+// one-line `require <module> <version>`. Anything else names no dependency.
+function requireBody(line: string, inBlock: boolean): string | null {
+  if (inBlock) return line
+  return line.startsWith('require ') ? line.slice('require '.length) : null
+}
+
 // go.mod require blocks and single-line requires. The version is the exact
 // minimal-version-selection pick, so it is resolved. "// indirect" is a comment.
 function parseGoMod(text: string): Dep[] {
@@ -43,7 +50,7 @@ function parseGoMod(text: string): Dep[] {
       inBlock = false
       continue
     }
-    const body = inBlock ? line : line.startsWith('require ') ? line.slice('require '.length) : null
+    const body = requireBody(line, inBlock)
     if (body === null) continue
     const m = body.match(/^(\S+)\s+(v\S+)/)
     if (!m) continue

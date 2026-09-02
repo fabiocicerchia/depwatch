@@ -13,7 +13,10 @@ import type { Scan } from './engine.js'
 export class WorkspaceBaseline {
   private accepted: Baseline | null = null
 
-  constructor(private cfg: Config) {}
+  constructor(
+    private cfg: Config,
+    private readonly log: vscode.LogOutputChannel,
+  ) {}
 
   setConfig(cfg: Config): void {
     this.cfg = cfg
@@ -25,17 +28,16 @@ export class WorkspaceBaseline {
     return folder && vscode.Uri.joinPath(folder.uri, this.cfg.baselinePath)
   }
 
-  /** Re-read it. Returns a line for the log, or null when there is none. */
-  async load(): Promise<string | null> {
+  /** Re-read it. No file at all is the normal case, not an error. */
+  async load(): Promise<void> {
     const uri = this.uri()
-    if (!uri) return null
+    if (!uri) return
     try {
       this.accepted = parse(new TextDecoder().decode(await vscode.workspace.fs.readFile(uri)))
       const manifests = this.accepted && Object.keys(this.accepted.manifests).length
-      return this.accepted ? `baseline: ${manifests} manifest(s)` : 'baseline: unreadable'
+      this.log.debug(this.accepted ? `baseline: ${manifests} manifest(s)` : 'baseline: unreadable')
     } catch {
-      this.accepted = null // no file is the normal case, not an error
-      return null
+      this.accepted = null
     }
   }
 

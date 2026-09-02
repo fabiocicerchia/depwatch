@@ -36,7 +36,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   const annotator = new Annotator(results, cfg)
   const status = new StatusBar(results, cfg)
   const panel = new ReportPanel(results, cfg)
-  const baseline = new WorkspaceBaseline(cfg)
+  const baseline = new WorkspaceBaseline(cfg, log)
   let debouncer = new Debouncer(cfg.debounceMs)
 
   const view = vscode.window.createTreeView<FindingNode>('depwatch.findings', {
@@ -50,11 +50,6 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   context.subscriptions.push(log, results, tree, annotator, status, panel, view, {
     dispose: () => debouncer.dispose(),
   })
-
-  async function loadBaseline(): Promise<void> {
-    const line = await baseline.load()
-    if (line) log.debug(line)
-  }
 
   // A token typed once, kept in the OS keychain rather than in settings.json
   // where a repo's secret scanner would eventually find it.
@@ -101,24 +96,16 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   }
 
   const watched = [...new Set([...manifestNames(cfg), ...LOCK_NAMES])].join(',')
-  const watcher = vscode.workspace.createFileSystemWatcher(`**/{${watched}}`)
-  context.subscriptions.push(
-    watcher,
-    // Saves inside the editor and changes made by a package manager both land
-    // here; the debouncer makes the overlap free.
-    watcher.onDidChange((uri) => touched(uri.fsPath)),
-    watcher.onDidCreate((uri) => touched(uri.fsPath)),
-    watcher.onDidDelete((uri) => {
-      results.remove(uri.fsPath)
-      annotator.forget(uri.fsPath)
+  watchManifests(context, `**/{${watched}}`, {
+    touched,
+    deleted: (path) => {
+      results.remove(path)
+      annotator.forget(path)
       // Without this the scanner keeps the deleted manifest's parse — deps,
       // notes and the whole previous report — for the life of the window.
-      scanner.forget(uri.fsPath)
-    }),
-    vscode.workspace.onDidSaveTextDocument((doc) => {
-      if (doc.uri.scheme === 'file') touched(doc.uri.fsPath)
-    }),
-  )
+      scanner.forget(path)
+    },
+  })
 
   // --- settings ---
 
@@ -163,19 +150,12 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
   // --- first run ---
 
-  await loadBaseline()
-  const baselineWatcher = vscode.workspace.createFileSystemWatcher(`**/${cfg.baselinePath}`)
-  const rereadBaseline = async () => {
-    await loadBaseline()
+  await baseline.load()
+  watchBaseline(context, `**/${cfg.baselinePath}`, async () => {
+    await baseline.load()
     // Re-filter what is already scanned; no registry is involved.
     for (const scan of results.all()) results.set(baseline.apply(await scanner.scan(scan.path, { deep: scan.deep })))
-  }
-  context.subscriptions.push(
-    baselineWatcher,
-    baselineWatcher.onDidChange(() => void rereadBaseline()),
-    baselineWatcher.onDidCreate(() => void rereadBaseline()),
-    baselineWatcher.onDidDelete(() => void rereadBaseline()),
-  )
+  })
 
   // Pruning is the only maintenance the cache needs, and once per session is
   // plenty. Deliberately not awaited: it must never delay the first scan.
@@ -200,6 +180,39 @@ function staleFor(path: string, cfg: Config, scans: Scan[]): string[] {
     return scans.filter((s) => dirname(s.path) === dirname(path)).map((s) => s.path)
   }
   return isScannable(path, cfg) ? [path] : []
+}
+
+/**
+ * Saves inside the editor and changes made by a package manager both land here;
+ * the debouncer makes the overlap free.
+ */
+function watchManifests(
+  context: vscode.ExtensionContext,
+  glob: string,
+  on: { touched: (path: string) => void; deleted: (path: string) => void },
+): void {
+  const watcher = vscode.workspace.createFileSystemWatcher(glob)
+  context.subscriptions.push(
+    watcher,
+    watcher.onDidChange((uri) => on.touched(uri.fsPath)),
+    watcher.onDidCreate((uri) => on.touched(uri.fsPath)),
+    watcher.onDidDelete((uri) => on.deleted(uri.fsPath)),
+    vscode.workspace.onDidSaveTextDocument((doc) => {
+      if (doc.uri.scheme === 'file') on.touched(doc.uri.fsPath)
+    }),
+  )
+}
+
+/** The baseline is a committed file: a `git pull` changes it as surely as an
+ * edit does, and either way what is on screen has to follow. */
+function watchBaseline(context: vscode.ExtensionContext, glob: string, reread: () => void): void {
+  const watcher = vscode.workspace.createFileSystemWatcher(glob)
+  context.subscriptions.push(
+    watcher,
+    watcher.onDidChange(reread),
+    watcher.onDidCreate(reread),
+    watcher.onDidDelete(reread),
+  )
 }
 
 function manifestNames(cfg: Config): string[] {

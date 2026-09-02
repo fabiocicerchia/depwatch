@@ -172,6 +172,17 @@ function isKeyAt(text: string, after: number): boolean {
   return text[i] === ':'
 }
 
+/** How each bracket moves the nesting depth. Anything else leaves it alone. */
+const DEPTH: Record<string, number> = { '{': 1, '[': 1, '}': -1, ']': -1 }
+
+/** Skip the string at `at`, recording it when it is a key of this object. */
+function takeKey(text: string, at: number, depth: number, out: Map<string, Span>): number {
+  const { span, after } = readString(text, at)
+  const name = text.slice(span.start, span.end)
+  if (depth === 1 && isKeyAt(text, after) && !out.has(name)) out.set(name, span)
+  return after
+}
+
 /**
  * Keys of the object that starts at `open`, and only that object — a walk that
  * tracks depth and string state, so a brace inside a version string does not
@@ -183,19 +194,14 @@ function objectKeys(text: string, open: number): Map<string, Span> {
   let depth = 0
   let i = open
   while (i < text.length) {
-    const c = text[i]
-    if (c === '"') {
-      const { span, after } = readString(text, i)
-      const name = text.slice(span.start, span.end)
-      if (depth === 1 && isKeyAt(text, after) && !out.has(name)) out.set(name, span)
-      i = after
+    if (text[i] === '"') {
+      i = takeKey(text, i, depth, out)
       continue
     }
-    if (c === '{' || c === '[') depth++
-    else if (c === '}' || c === ']') {
-      depth--
-      if (depth === 0) break
-    }
+    const move = DEPTH[text[i]] ?? 0
+    depth += move
+    // The closer that takes the depth back to zero is this object's own.
+    if (move === -1 && depth === 0) break
     i++
   }
   return out

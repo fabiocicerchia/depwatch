@@ -375,59 +375,86 @@ function M.summarise(dep, thresholds)
   )
 end
 
---- Everything the report knows about one dependency, worst first: the reason
---- someone should care goes at the top of the hover, not the bottom.
+local function bus_factor(count)
+  if count <= 0 then
+    return 'no maintainers listed'
+  end
+  if count == 1 then
+    return '**one maintainer** — one person is one bus'
+  end
+  return string.format('%d maintainers', count)
+end
+
+--- One line each, in the order they appear in the hover: worst first, so the
+--- reason someone should care is at the top rather than the bottom. Each
+--- returns a line, or nil when the report has nothing to say on that point.
+local REASONS = {
+  function(dep, s)
+    return s.archived and 'the repository is **archived** — the maintainer has said the project is over' or nil
+  end,
+
+  function(dep)
+    if dep.libyearsBehind > 0 and dep.currentReleased and dep.latestReleased then
+      return string.format(
+        '**%.2f libyears behind**: %s shipped %s, %s shipped %s',
+        dep.libyearsBehind,
+        dep.current,
+        dep.currentReleased:sub(1, 10),
+        tostring(dep.latest),
+        dep.latestReleased:sub(1, 10)
+      )
+    end
+    if dep.latest == dep.current then
+      return string.format('on the latest release (%s)', tostring(dep.latest))
+    end
+    return nil
+  end,
+
+  function(dep)
+    return dep.pulseYears ~= nil and string.format('last release %s ago', years(dep.pulseYears)) or nil
+  end,
+
+  function(_, s)
+    return s.lastCommitAgeDays ~= nil and string.format('last commit %s ago', days(s.lastCommitAgeDays)) or nil
+  end,
+
+  function(_, s)
+    return s.releaseCadenceDays ~= nil and string.format('ships about every %s', days(s.releaseCadenceDays)) or nil
+  end,
+
+  function(_, s)
+    return s.maintainerCount ~= nil and bus_factor(s.maintainerCount) or nil
+  end,
+
+  function(_, s)
+    return s.hasFunding and 'has a funding channel' or nil
+  end,
+
+  function(dep)
+    return dep.resolved == false
+        and 'version read from a range, not a lock file — the real drift is this or lower'
+      or nil
+  end,
+
+  function(_, s)
+    if s.maintainerCount == nil and s.lastCommitAgeDays == nil and not s.archived then
+      return 'scored from the release timeline only — run a deep scan for maintainers, archived status and last commit'
+    end
+    return nil
+  end,
+}
+
+--- Everything the report knows about one dependency, worst first.
 function M.reasons(dep)
   if dep.degraded then
     return { string.format('the registry did not answer for this package (%s)', dep.degraded) }
   end
-  local out = {}
-  local s = dep.signals or {}
-  local function add(line)
-    table.insert(out, line)
-  end
-
-  if s.archived then
-    add('the repository is **archived** — the maintainer has said the project is over')
-  end
-  if dep.libyearsBehind > 0 and dep.currentReleased and dep.latestReleased then
-    add(string.format(
-      '**%.2f libyears behind**: %s shipped %s, %s shipped %s',
-      dep.libyearsBehind,
-      dep.current,
-      dep.currentReleased:sub(1, 10),
-      tostring(dep.latest),
-      dep.latestReleased:sub(1, 10)
-    ))
-  elseif dep.latest == dep.current then
-    add(string.format('on the latest release (%s)', tostring(dep.latest)))
-  end
-  if dep.pulseYears ~= nil then
-    add(string.format('last release %s ago', years(dep.pulseYears)))
-  end
-  if s.lastCommitAgeDays ~= nil then
-    add(string.format('last commit %s ago', days(s.lastCommitAgeDays)))
-  end
-  if s.releaseCadenceDays ~= nil then
-    add(string.format('ships about every %s', days(s.releaseCadenceDays)))
-  end
-  if s.maintainerCount ~= nil then
-    if s.maintainerCount <= 0 then
-      add('no maintainers listed')
-    elseif s.maintainerCount == 1 then
-      add('**one maintainer** — one person is one bus')
-    else
-      add(string.format('%d maintainers', s.maintainerCount))
+  local out, signals = {}, dep.signals or {}
+  for _, reason in ipairs(REASONS) do
+    local line = reason(dep, signals)
+    if line then
+      out[#out + 1] = line
     end
-  end
-  if s.hasFunding then
-    add('has a funding channel')
-  end
-  if dep.resolved == false then
-    add('version read from a range, not a lock file — the real drift is this or lower')
-  end
-  if s.maintainerCount == nil and s.lastCommitAgeDays == nil and not s.archived then
-    add('scored from the release timeline only — run a deep scan for maintainers, archived status and last commit')
   end
   return out
 end
@@ -624,6 +651,34 @@ local DEP_TABLES = {
   ['build-dependencies'] = true,
 }
 
+--- Remember `name` at its position on this line, first mention winning.
+local function remember(out, name, line, lnum)
+  if out[name] then
+    return
+  end
+  local col = line:find(name, 1, true)
+  if col then
+    out[name] = span(name, lnum, col - 1)
+  end
+end
+
+--- A `[table.header]` line: says whether what follows is a dependency table,
+--- and files the crate named by the `[dependencies.foo]` form as it goes.
+local function cargo_header(out, trimmed, line, lnum)
+  local segments = {}
+  for segment in trimmed:gsub('^%[+', ''):gsub('%]+$', ''):gmatch('[^.]+') do
+    segments[#segments + 1] = segment
+  end
+  local last, prev = segments[#segments], segments[#segments - 1]
+  if DEP_TABLES[last] then
+    return true
+  end
+  if last and DEP_TABLES[prev] then
+    remember(out, last, line, lnum)
+  end
+  return false
+end
+
 --- [dependencies] tables, plus the [dependencies.foo] form that names the
 --- crate in the header itself.
 local function index_cargo_toml(text)
@@ -631,31 +686,12 @@ local function index_cargo_toml(text)
   each_line(text, function(line, lnum)
     local trimmed = line:gsub('#.*$', ''):match('^%s*(.-)%s*$')
     if trimmed:sub(1, 1) == '[' then
-      local body = trimmed:gsub('^%[+', ''):gsub('%]+$', '')
-      local segments = {}
-      for segment in body:gmatch('[^.]+') do
-        segments[#segments + 1] = segment
-      end
-      local last = segments[#segments]
-      local prev = segments[#segments - 1]
-      in_deps = DEP_TABLES[last] == true
-      if not in_deps and last and DEP_TABLES[prev] and not out[last] then
-        local col = line:find(last, 1, true)
-        if col then
-          out[last] = span(last, lnum, col - 1)
-        end
-      end
+      in_deps = cargo_header(out, trimmed, line, lnum)
       return
     end
-    if not in_deps then
-      return
-    end
-    local name = trimmed:match('^([A-Za-z0-9._-]+)%s*=')
-    if name and not out[name] then
-      local col = line:find(name, 1, true)
-      if col then
-        out[name] = span(name, lnum, col - 1)
-      end
+    local name = in_deps and trimmed:match('^([A-Za-z0-9._-]+)%s*=')
+    if name then
+      remember(out, name, line, lnum)
     end
   end)
   return out

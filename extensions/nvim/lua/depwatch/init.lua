@@ -160,6 +160,69 @@ local function decode(out)
   return value, nil
 end
 
+--- Argv for one manifest's scan.
+---
+--- `--accepted` is named only when the file is actually there: an explicit flag
+--- pointing at nothing is an error to the CLI, and "no baseline yet" is the
+--- normal case, not a failure.
+local function scan_argv(path, opts)
+  local baseline = vim.fs.joinpath(M.root(), cfg.baseline.path)
+  return core.check_argv(
+    cfg,
+    path,
+    vim.tbl_extend('force', opts, { baseline = vim.uv.fs_stat(baseline) and baseline or nil })
+  )
+end
+
+--- The CLI said nothing usable. A manifest with no dependencies is a normal
+--- thing to have -- a tooling package.json, an empty requirements.txt -- and
+--- listing every one of them as a problem would bury the manifests that
+--- genuinely could not be read.
+local function scan_failed(path, label, opts, out, err)
+  if ((out.stderr or '') .. (err or '')):match('no dependencies found') then
+    results[path] = nil
+    ui.clear(path)
+    log('%s: no dependencies', label)
+    return
+  end
+  log('%s: %s', label, (err or out.stderr or 'failed'):gsub('%s+$', ''))
+  if opts.notify then
+    notify(label .. ': ' .. vim.split(err or out.stderr or 'failed', '\n')[1], vim.log.levels.WARN)
+  end
+end
+
+--- A decoded report, kept and drawn.
+local function scan_succeeded(path, label, opts, report)
+  results[path] = {
+    path = path,
+    label = label,
+    report = report,
+    deep = opts.deep or cfg.deep,
+    scanned_at = os.time(),
+  }
+  log('%s: %.2f libyears, %d deps', label, report.totalLibyears, #report.deps)
+  ui.render(path, report, cfg)
+end
+
+--- Everything one finished subprocess means. Returns whether it produced a
+--- report, which is what `on_done` is told.
+local function scan_finished(path, label, opts, out)
+  local report, err = decode(out)
+  if not report then
+    scan_failed(path, label, opts, out, err)
+    return false
+  end
+  if not core.is_report(report) then
+    log('%s: not a depwatch report', label)
+    if opts.notify then
+      notify(label .. ': unexpected output — is `cmd` pointing at depwatch?', vim.log.levels.ERROR)
+    end
+    return false
+  end
+  scan_succeeded(path, label, opts, report)
+  return true
+end
+
 --- Scan one manifest.
 function M.scan(path, opts)
   opts = opts or {}
@@ -172,62 +235,12 @@ function M.scan(path, opts)
   end
 
   local label = vim.fs.relpath(M.root(), path) or path
-  -- Only when it is actually there: `--accepted` naming a missing file is an
-  -- error to the CLI, and "no baseline yet" is the normal case, not a failure.
-  local baseline = vim.fs.joinpath(M.root(), cfg.baseline.path)
-  local argv = core.check_argv(
-    cfg,
-    path,
-    vim.tbl_extend('force', opts, { baseline = vim.uv.fs_stat(baseline) and baseline or nil })
-  )
   running[path] = true
-  local handle = run(argv, function(out)
+  local handle = run(scan_argv(path, opts), function(out)
     running[path] = nil
-    local report, err = decode(out)
-
-    if not report then
-      -- A manifest with no dependencies is a normal thing to have -- a tooling
-      -- package.json, an empty requirements.txt -- and listing every one of
-      -- them as a problem would bury the ones that genuinely could not be read.
-      local text = (out.stderr or '') .. (err or '')
-      if text:match('no dependencies found') then
-        results[path] = nil
-        ui.clear(path)
-        log('%s: no dependencies', label)
-      else
-        log('%s: %s', label, (err or out.stderr or 'failed'):gsub('%s+$', ''))
-        if opts.notify then
-          notify(label .. ': ' .. vim.split(err or out.stderr or 'failed', '\n')[1], vim.log.levels.WARN)
-        end
-      end
-      if opts.on_done then
-        opts.on_done(false)
-      end
-      return
-    end
-
-    if not core.is_report(report) then
-      log('%s: not a depwatch report', label)
-      if opts.notify then
-        notify(label .. ': unexpected output — is `cmd` pointing at depwatch?', vim.log.levels.ERROR)
-      end
-      if opts.on_done then
-        opts.on_done(false)
-      end
-      return
-    end
-
-    results[path] = {
-      path = path,
-      label = label,
-      report = report,
-      deep = opts.deep or cfg.deep,
-      scanned_at = os.time(),
-    }
-    log('%s: %.2f libyears, %d deps', label, report.totalLibyears, #report.deps)
-    ui.render(path, report, cfg)
+    local ok = scan_finished(path, label, opts, out)
     if opts.on_done then
-      opts.on_done(true)
+      opts.on_done(ok)
     end
   end)
   if handle then
@@ -505,38 +518,44 @@ function M.gates()
   end)
 end
 
+--- One row per sampled commit, and the drift between the ends. Two commits are
+--- the fewest that have a "between", so a single point gets no delta line.
+local function trend_lines(label, points)
+  local lines = { '# ' .. label, '' }
+  for _, point in ipairs(points) do
+    lines[#lines + 1] = string.format(
+      '%s  %s  %8.2f libyears  %4d deps  %d replace',
+      point.date:sub(1, 10),
+      point.commit,
+      point.totalLibyears,
+      point.deps,
+      point.replace
+    )
+  end
+  if #points > 1 then
+    local delta = points[#points].totalLibyears - points[1].totalLibyears
+    lines[#lines + 1] = ''
+    lines[#lines + 1] = string.format(
+      '%s%.2f libyears over %d sampled commits',
+      delta >= 0 and '+' or '',
+      delta,
+      #points
+    )
+  end
+  return lines
+end
+
 --- Drift over the manifest's git history.
 function M.trend()
   pick_manifest(function(path)
-    notify('reading history of ' .. (vim.fs.relpath(M.root(), path) or path) .. '…')
+    local label = vim.fs.relpath(M.root(), path) or path
+    notify('reading history of ' .. label .. '…')
     run(core.trend_argv(cfg, path), function(out)
       local points, err = decode(out)
       if not points or type(points) ~= 'table' or #points == 0 then
         return notify(err or (out.stderr ~= '' and out.stderr) or 'no history for that manifest.', vim.log.levels.WARN)
       end
-      local lines = { '# ' .. (vim.fs.relpath(M.root(), path) or path), '' }
-      for _, point in ipairs(points) do
-        lines[#lines + 1] = string.format(
-          '%s  %s  %8.2f libyears  %4d deps  %d replace',
-          point.date:sub(1, 10),
-          point.commit,
-          point.totalLibyears,
-          point.deps,
-          point.replace
-        )
-      end
-      local first, last = points[1], points[#points]
-      if #points > 1 then
-        local delta = last.totalLibyears - first.totalLibyears
-        lines[#lines + 1] = ''
-        lines[#lines + 1] = string.format(
-          '%s%.2f libyears over %d sampled commits',
-          delta >= 0 and '+' or '',
-          delta,
-          #points
-        )
-      end
-      ui.float(lines, { title = ' depwatch trend ' })
+      ui.float(trend_lines(label, points), { title = ' depwatch trend ' })
     end)
   end)
 end
@@ -580,29 +599,38 @@ local QF_TYPE = { replace = 'E', upgrade = 'W', watch = 'I', healthy = 'I', degr
 --- on. The CLI reports names, not positions, so the manifest is indexed once
 --- per scan -- the same index the marks and the hover use, so jumping from the
 --- list lands where the underline is.
+--- Where this scan's dependencies are written, from the same index the marks
+--- and the hover use, so jumping from the list lands where the underline is.
+local function spans_of(scan)
+  local names = {}
+  for _, dep in ipairs(scan.report.deps or {}) do
+    names[#names + 1] = dep.name
+  end
+  local text = ui.text_of(scan.path)
+  return text and core.locate(text, scan.path, names) or {}
+end
+
+--- One row. Quickfix counts from one where the index counts from zero.
+---
+--- A transitive dep is written down nowhere in this manifest. It is still a
+--- finding, so it points at the file itself rather than being dropped.
+local function qf_item(scan, dep, span)
+  return {
+    filename = scan.path,
+    lnum = span and span.lnum + 1 or 1,
+    col = span and span.col + 1 or 1,
+    type = QF_TYPE[core.lens_of(dep)] or 'I',
+    text = core.summarise(dep, cfg.thresholds),
+  }
+end
+
 local function qf_items(scans, keep)
   local items = {}
   for _, scan in ipairs(scans) do
-    local names = {}
-    for _, dep in ipairs(scan.report.deps or {}) do
-      names[#names + 1] = dep.name
-    end
-    local text = ui.text_of(scan.path)
-    local spans = text and core.locate(text, scan.path, names) or {}
-
+    local spans = spans_of(scan)
     for _, dep in ipairs(core.sorted_deps(scan.report)) do
       if keep(dep) then
-        -- A transitive dep is written down nowhere in this manifest. It is
-        -- still a finding, so it goes in the list pointing at the file itself
-        -- rather than being dropped.
-        local span = spans[dep.name]
-        items[#items + 1] = {
-          filename = scan.path,
-          lnum = span and span.lnum + 1 or 1,
-          col = span and span.col + 1 or 1,
-          type = QF_TYPE[core.lens_of(dep)] or 'I',
-          text = core.summarise(dep, cfg.thresholds),
-        }
+        items[#items + 1] = qf_item(scan, dep, spans[dep.name])
       end
     end
   end

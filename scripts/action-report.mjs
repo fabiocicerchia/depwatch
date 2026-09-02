@@ -97,6 +97,40 @@ const worstFirst = (a, b) =>
 
 const ICON = { replace: '🔴', upgrade: '🟠', watch: '🟡', healthy: '🟢' }
 
+// The drift against the base branch, when the ratchet had one to compare to.
+// Absent is not zero: no ratchet configured and an unmeasurable base ref both
+// arrive here as null, and neither is "no change".
+function deltaLines() {
+  if (delta === null) return []
+  const arrow = delta > 0 ? '⬆️' : delta < 0 ? '⬇️' : '➡️'
+  return [
+    delta === 0
+      ? `${arrow} No change against the base branch (${baseline.toFixed(2)} libyears).`
+      : `${arrow} **${signed(delta)} libyears** against the base branch (${baseline.toFixed(2)} → ${report.totalLibyears.toFixed(2)}).`,
+    '',
+  ]
+}
+
+// One row. Every field but the icons is echoed from the measured manifest, so
+// it goes through cell(); a dep with no registry data has no numbers to show.
+function depRow(d) {
+  const icon = d.degraded ? '⚪' : ICON[d.quadrant]
+  const drift = d.degraded || d.driftUnscored ? '—' : num(d.libyearsBehind)
+  return `| ${icon} | \`${cell(d.name)}\` | ${cell(d.current)} | ${d.latest ? cell(d.latest) : '—'} | ${drift} | ${num(d.pulseYears)} | ${d.degraded ? '—' : num(d.viability)} |`
+}
+
+// Only the deps worth acting on. The full report is the JSON artifact; a
+// summary that lists 400 healthy dependencies is one nobody reads.
+function notableLines() {
+  const notable = report.deps.filter((d) => d.degraded || d.quadrant !== 'healthy').sort(worstFirst)
+  if (notable.length === 0) return []
+  const out = ['| | Dependency | Current | Latest | Drift | Pulse | Viability |', '| --- | --- | --- | --- | --: | --: | --: |']
+  for (const d of notable.slice(0, 30)) out.push(depRow(d))
+  if (notable.length > 30) out.push('', `…and ${notable.length - 30} more in the JSON report.`)
+  out.push('')
+  return out
+}
+
 function summary() {
   const out = []
   out.push('## depwatch — drift × viability', '')
@@ -107,15 +141,7 @@ function summary() {
     '',
   )
 
-  if (delta !== null) {
-    const arrow = delta > 0 ? '⬆️' : delta < 0 ? '⬇️' : '➡️'
-    out.push(
-      delta === 0
-        ? `${arrow} No change against the base branch (${baseline.toFixed(2)} libyears).`
-        : `${arrow} **${signed(delta)} libyears** against the base branch (${baseline.toFixed(2)} → ${report.totalLibyears.toFixed(2)}).`,
-      '',
-    )
-  }
+  out.push(...deltaLines())
 
   if (gateMessages.length > 0) {
     out.push('| | Gate |', '| --- | --- |')
@@ -129,21 +155,7 @@ function summary() {
     '',
   )
 
-  // Only the deps worth acting on. The full report is the JSON artifact; a
-  // summary that lists 400 healthy dependencies is one nobody reads.
-  const notable = report.deps.filter((d) => d.degraded || d.quadrant !== 'healthy').sort(worstFirst)
-  if (notable.length > 0) {
-    out.push('| | Dependency | Current | Latest | Drift | Pulse | Viability |', '| --- | --- | --- | --- | --: | --: | --: |')
-    for (const d of notable.slice(0, 30)) {
-      const icon = d.degraded ? '⚪' : ICON[d.quadrant]
-      const drift = d.degraded || d.driftUnscored ? '—' : num(d.libyearsBehind)
-      out.push(
-        `| ${icon} | \`${cell(d.name)}\` | ${cell(d.current)} | ${d.latest ? cell(d.latest) : '—'} | ${drift} | ${num(d.pulseYears)} | ${d.degraded ? '—' : num(d.viability)} |`,
-      )
-    }
-    if (notable.length > 30) out.push('', `…and ${notable.length - 30} more in the JSON report.`)
-    out.push('')
-  }
+  out.push(...notableLines())
 
   if (degraded > 0) {
     out.push(`${plural(degraded, 'dependency', 'dependencies')} had no registry data and ${degraded === 1 ? 'was' : 'were'} not scored.`, '')

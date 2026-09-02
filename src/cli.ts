@@ -159,15 +159,26 @@ function emit(text: string, out?: string) {
 
 // --- rendering ---
 
+// One row of the text table: each cell padded to its column's width, with the
+// trailing padding of the last cell trimmed so lines have no invisible tail.
+function padRow(cells: string[], widths: number[]): string {
+  return cells.map((c, i) => c.padEnd(widths[i])).join('  ').trimEnd()
+}
+
 function table(r: Report, t: Thresholds): string {
   const rows = [...r.deps].sort(compareDeps)
   const widths = REPORT_COLUMNS.map((c) => Math.max(c.header.length, ...rows.map((d) => c.of(d).length)))
-  const line = (cells: string[]) => cells.map((c, i) => c.padEnd(widths[i])).join('  ').trimEnd()
 
   const out = [
-    line(REPORT_COLUMNS.map((c) => c.header)),
-    line(widths.map((w) => '─'.repeat(w))),
-    ...rows.map((d) => line(REPORT_COLUMNS.map((c) => c.of(d)))),
+    padRow(
+      REPORT_COLUMNS.map((c) => c.header),
+      widths,
+    ),
+    padRow(
+      widths.map((w) => '─'.repeat(w)),
+      widths,
+    ),
+    ...rows.map((d) => padRow(REPORT_COLUMNS.map((c) => c.of(d)), widths)),
     '',
     `total drift: ${r.totalLibyears.toFixed(2)} libyears across ${r.deps.length} deps  (${r.ecosystem}, ${r.file})`,
   ]

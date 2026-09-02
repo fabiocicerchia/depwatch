@@ -92,3 +92,57 @@ version = "1.44.2"
     expect(parse('Gemfile.lock', 'GEM\n  specs:\n    rails (7.1.3)\n').deps[0].resolved).toBe(true)
   })
 })
+
+// Go has no lock file in this tool's sense. Minimal version selection already
+// makes the versions in go.mod exact, and go.sum is a checksum database: it
+// stores a hash per module version and keeps versions that are no longer
+// selected, so it cannot say which version is in use. Declaring it a lock made
+// resolveInput read it instead of go.mod and parse checksum lines with the
+// go.mod parser, so every Go module in the fleet reported no dependencies at
+// all — indistinguishable from a clean bill of health.
+describe('Go modules', () => {
+  const GO_MOD = [
+    'module github.com/fabiocicerchia/attic',
+    '',
+    'go 1.25.0',
+    '',
+    'require golang.org/x/tools v0.49.0',
+    '',
+    'require (',
+    '\tgolang.org/x/mod v0.39.0 // indirect',
+    '\tgolang.org/x/sync v0.22.0 // indirect',
+    ')',
+  ].join('\n')
+
+  const GO_SUM = [
+    'golang.org/x/mod v0.39.0 h1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa=',
+    'golang.org/x/mod v0.39.0/go.mod h1:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb=',
+    'golang.org/x/tools v0.48.0 h1:ccccccccccccccccccccccccccccccccccccccccccc=',
+    'golang.org/x/tools v0.49.0 h1:ddddddddddddddddddddddddddddddddddddddddddd=',
+  ].join('\n')
+
+  it('does not read go.sum in place of go.mod', () => {
+    const dir = project({ 'go.mod': GO_MOD, 'go.sum': GO_SUM })
+    expect(resolveInput(join(dir, 'go.mod'), flags())).toBe(join(dir, 'go.mod'))
+  })
+
+  it('finds the requires in go.mod even with a go.sum beside it', () => {
+    const deps = parse('go.mod', GO_MOD).deps
+    expect(deps.map((d) => d.name)).toEqual([
+      'golang.org/x/tools',
+      'golang.org/x/mod',
+      'golang.org/x/sync',
+    ])
+    // MVS picks one exact version, so nothing here is a floor to be widened.
+    expect(deps.every((d) => d.resolved)).toBe(true)
+  })
+
+  it('refuses go.sum with a reason instead of reporting zero dependencies', () => {
+    expect(() => parse('go.sum', GO_SUM)).toThrowError(/checksum database/)
+  })
+
+  it('still recognises both files as Go', () => {
+    expect(detectEcosystem('go.mod')).toBe('go')
+    expect(detectEcosystem('go.sum')).toBe('go')
+  })
+})

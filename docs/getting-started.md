@@ -26,7 +26,7 @@ cannot drift from what the code actually reads.
 | Input | Versions | Ecosystems |
 | --- | --- | --- |
 | **SBOM** — CycloneDX or SPDX JSON | resolved | all of them, in one file |
-| **lock file** — e.g. `package-lock.json`, `poetry.lock`, `Cargo.lock`, `go.sum`, `Gemfile.lock`, `pubspec.lock`, `mix.lock`, `packages.lock.json`, `Chart.lock`, `.terraform.lock.hcl` | resolved | one |
+| **lock file** — e.g. `package-lock.json`, `poetry.lock`, `Cargo.lock`, `Gemfile.lock`, `pubspec.lock`, `mix.lock`, `packages.lock.json`, `Chart.lock`, `.terraform.lock.hcl` | resolved | one |
 | **manifest** — e.g. `package.json`, `pyproject.toml`, `Cargo.toml`, `go.mod`, `pom.xml`, `*.csproj`, `*.tf`, a `Dockerfile` | range floors (or resolved, per file), so the total may be an **upper bound** | one |
 
 ```
@@ -76,11 +76,19 @@ generated from the code by `depwatch --help`, so it never drifts from reality.
 | Swift/ObjC (CocoaPods) | `Podfile.lock` |
 | conda | `environment.yml`, `conda-lock.yml` |
 | Helm | `Chart.yaml`, `Chart.lock` |
-| Go modules | `go.mod`, `go.sum` |
+| Go modules | `go.mod` (go.sum is checksums, not versions — see below) |
 | Java/Kotlin (Maven Central) | `pom.xml`, `build.gradle(.kts)`, `gradle.lockfile` |
 | Terraform/OpenTofu | `.terraform.lock.hcl`, `*.tf` |
 | GitHub Actions | `.github/workflows/*.yml`, `action.yml` |
 | Docker | `Dockerfile`, `Containerfile` (pulse & viability only — see below) |
+
+**Go has no lock file, and that is not a gap.** Minimal version selection means
+the version beside each `require` in `go.mod` *is* the one that builds, so the
+manifest is already resolved — there is no range to widen and nothing for a lock
+to pin down. `go.sum` is a checksum database: one hash per module version, and it
+keeps versions that are no longer selected, so it cannot say which version you
+are on. Point depwatch at `go.mod`; handing it `go.sum` explains this rather than
+guessing.
 
 **Docker is scored on one axis.** A container tag has an honest publish date but
 no orderable version series — `library/node` alone has thousands of tags, most

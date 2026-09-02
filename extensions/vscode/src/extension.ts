@@ -1,24 +1,25 @@
 // Activation and wiring.
 //
-// The scan policy lives here, and it is deliberately dull: on startup, on save,
-// on a slow timer, or when asked. Never on a keystroke. Everything expensive is
-// behind the caches in cache.ts, and everything that could pile up is behind
-// the debouncer in schedule.ts.
+// The scan policy is decided here and it is deliberately dull: on startup, on
+// save, on a slow timer, or when asked. Never on a keystroke. Everything
+// expensive is behind the caches in cache.ts, and everything that could pile up
+// is behind the debouncer in schedule.ts.
 //
-// What each command does is in commands.ts, and the baseline file is in
-// baseline-file.ts; this file only builds the pieces and connects them.
+// One scan run is scan-runner.ts, what each command does is commands.ts, and
+// the baseline file is baseline-file.ts; this builds the pieces and connects
+// them.
 
 import * as vscode from 'vscode'
 import { dirname } from 'node:path'
 import { basename, LOCK_FOR } from '../../../src/manifest.js'
-import { ScanAborted } from '../../../src/report.js'
 import { Annotator } from './annotate.js'
 import { WorkspaceBaseline } from './baseline-file.js'
 import { registerCommands } from './commands.js'
 import { affectsResults, type Config, readConfig } from './config.js'
-import { findManifests, isExcluded, isScannable, type Scan, Scanner } from './engine.js'
+import { isExcluded, isScannable, type Scan, Scanner } from './engine.js'
 import { ReportPanel } from './panel.js'
 import { Debouncer, Heartbeat } from './schedule.js'
+import { ScanRunner, type ScanOptions } from './scan-runner.js'
 import { Results } from './state.js'
 import { StatusBar } from './status.js'
 import { type Node as FindingNode, FindingsTree } from './tree.js'
@@ -62,87 +63,15 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
   // --- scanning ---
 
-  // One controller per scan run; the cancel command and the progress
-  // notification's own button both abort it.
-  let running: AbortController | null = null
-  let scanning = 0
-
-  async function scanOne(
-    path: string,
-    opts: { deep?: boolean; force?: boolean; report?: (message: string) => void } = {},
-  ): Promise<void> {
-    scanning++
-    status.scanning(true)
-    try {
-      const scan = await scanner.scan(path, {
-        deep: opts.deep ?? false,
-        force: opts.force,
-        signal: running?.signal,
-        // Findings appear as the registries answer, rather than the pane sitting
-        // empty until the slowest one does.
-        onPartial: (partial, done, total) => {
-          results.set(baseline.apply(partial))
-          opts.report?.(`${partial.label} — ${done}/${total}`)
-        },
-      })
-      results.set(baseline.apply(scan))
-      log.debug(`${scan.label}: ${scan.report.totalLibyears.toFixed(2)} libyears, ${scan.report.deps.length} deps`)
-    } catch (e: unknown) {
-      scanFailed(path, e)
-    } finally {
-      scanning--
-      if (scanning === 0) status.scanning(false)
-    }
-  }
-
-  function scanFailed(path: string, e: unknown): void {
-    const label = vscode.workspace.asRelativePath(path)
-    // Cancelling is a choice, not a failure: leave what was found in place.
-    if (e instanceof ScanAborted) {
-      log.debug(`${label}: cancelled`)
-      return
-    }
-    const message = e instanceof Error ? e.message : String(e)
-    log.debug(`${label}: ${message}`)
-    // A manifest with no dependencies is a normal thing to have — a tooling
-    // package.json, an empty requirements.txt — and listing every one of them
-    // as a problem would bury the manifests that genuinely could not be read.
-    if (/no dependencies found/.test(message)) results.remove(path)
-    else results.fail({ path, label, message })
-  }
-
-  async function scanAll(opts: { deep?: boolean; force?: boolean; quiet?: boolean } = {}): Promise<void> {
-    if (!cfg.enable) return
-    const manifests = await findManifests(cfg)
-    log.debug(`${manifests.length} manifest(s); excluding ${cfg.excludeGlobs.length} glob(s)`)
-    if (manifests.length === 0) {
-      if (!opts.quiet) vscode.window.showInformationMessage('depwatch: no dependency manifests found in this workspace.')
-      return
-    }
-    running?.abort()
-    const controller = new AbortController()
-    running = controller
-    // Background scans report into the pane's own progress bar; a scan you asked
-    // for gets a notification, because it is the one you are waiting on.
-    const options: vscode.ProgressOptions = opts.quiet
-      ? { location: { viewId: 'depwatch.findings' } }
-      : { location: vscode.ProgressLocation.Notification, title: 'depwatch', cancellable: true }
-    try {
-      await vscode.window.withProgress(options, async (progress, token) => {
-        token.onCancellationRequested(() => controller.abort())
-        // One manifest at a time: each already runs its own registry requests in
-        // parallel, and multiplying the two is how an editor extension ends up
-        // saturating someone's connection.
-        for (const [i, path] of manifests.entries()) {
-          if (controller.signal.aborted) break
-          progress.report({ message: `${vscode.workspace.asRelativePath(path)} (${i + 1}/${manifests.length})` })
-          await scanOne(path, { ...opts, report: (message) => progress.report({ message }) })
-        }
-      })
-    } finally {
-      if (running === controller) running = null
-    }
-  }
+  const runner = new ScanRunner({
+    log,
+    results,
+    status,
+    baseline,
+    cfg: () => cfg,
+    scanner: () => scanner,
+  })
+  const scanAll = (opts?: ScanOptions) => runner.all(opts)
 
   const heartbeat = new Heartbeat({
     intervalMs: cfg.refreshMs,
@@ -167,7 +96,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     if (!cfg.enable || !cfg.onSave || isExcluded(path, cfg)) return
     for (const target of staleFor(path, cfg, results.all())) {
       scanner.forget(target)
-      debouncer.schedule(target, () => void scanOne(target))
+      debouncer.schedule(target, () => void runner.one(target))
     }
   }
 
@@ -227,14 +156,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     secrets: context.secrets,
     cfg: () => cfg,
     scanner: () => scanner,
-    scanOne,
+    scanOne: (path, opts) => runner.one(path, opts),
     scanAll,
-    cancel: () => {
-      if (!running) return false
-      running.abort()
-      log.debug('cancelled by request')
-      return true
-    },
+    cancel: () => runner.cancel(),
   })
 
   // --- first run ---

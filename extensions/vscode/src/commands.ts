@@ -42,31 +42,41 @@ export interface CommandDeps {
   cancel: () => boolean
 }
 
+/** Register one command and hand its disposal to the extension's context. */
+type Register = (name: string, run: (...args: any[]) => unknown) => void
+
 export function registerCommands(context: vscode.ExtensionContext, deps: CommandDeps): void {
-  const { log, results, tree, panel, baseline, cfg, scanner, scanOne, scanAll } = deps
-
-  const register = (name: string, run: (...args: any[]) => unknown) =>
+  const register: Register = (name, run) => {
     context.subscriptions.push(vscode.commands.registerCommand(name, run))
-
-  async function activeManifest(): Promise<string | undefined> {
-    const active = vscode.window.activeTextEditor?.document
-    if (active?.uri.scheme === 'file' && isScannable(active.uri.fsPath, cfg())) return active.uri.fsPath
-
-    const candidates = results.size > 0 ? results.all().map((s) => s.path) : await findManifests(cfg())
-    if (candidates.length === 0) {
-      vscode.window.showWarningMessage('depwatch: no dependency manifest found.')
-      return undefined
-    }
-    if (candidates.length === 1) return candidates[0]
-    return vscode.window
-      .showQuickPick(
-        candidates.map((path) => ({ label: vscode.workspace.asRelativePath(path), path })),
-        { title: 'Which manifest?' },
-      )
-      .then((pick) => pick?.path)
   }
+  for (const group of [scanning, pane, report, exporting, baselineCommands, token]) group(register, deps)
+}
 
-  // --- scanning ---
+/**
+ * The manifest a command should act on: the open one when it is a manifest,
+ * otherwise the only one, otherwise ask.
+ */
+async function activeManifest(deps: CommandDeps): Promise<string | undefined> {
+  const { results, cfg } = deps
+  const active = vscode.window.activeTextEditor?.document
+  if (active?.uri.scheme === 'file' && isScannable(active.uri.fsPath, cfg())) return active.uri.fsPath
+
+  const candidates = results.size > 0 ? results.all().map((s) => s.path) : await findManifests(cfg())
+  if (candidates.length === 0) {
+    vscode.window.showWarningMessage('depwatch: no dependency manifest found.')
+    return undefined
+  }
+  if (candidates.length === 1) return candidates[0]
+  return vscode.window
+    .showQuickPick(
+      candidates.map((path) => ({ label: vscode.workspace.asRelativePath(path), path })),
+      { title: 'Which manifest?' },
+    )
+    .then((pick) => pick?.path)
+}
+
+function scanning(register: Register, deps: CommandDeps): void {
+  const { results, scanner, scanOne, scanAll } = deps
 
   register('depwatch.scanWorkspace', () => scanAll())
   register('depwatch.deepScan', () =>
@@ -76,7 +86,7 @@ export function registerCommands(context: vscode.ExtensionContext, deps: Command
     ),
   )
   register('depwatch.scanFile', async () => {
-    const path = await activeManifest()
+    const path = await activeManifest(deps)
     if (path) await scanOne(path, { force: true })
   })
 
@@ -90,7 +100,10 @@ export function registerCommands(context: vscode.ExtensionContext, deps: Command
     vscode.window.showInformationMessage('depwatch: registry cache cleared. The next scan will refetch.')
   })
 
-  // --- the pane ---
+}
+
+function pane(register: Register, deps: CommandDeps): void {
+  const { log, tree } = deps
 
   register('depwatch.setScopeFile', () => tree.setScope('file'))
   register('depwatch.setScopeProject', () => tree.setScope('project'))
@@ -130,7 +143,10 @@ export function registerCommands(context: vscode.ExtensionContext, deps: Command
     editor.revealRange(range, vscode.TextEditorRevealType.InCenterIfOutsideViewport)
   })
 
-  // --- the report ---
+}
+
+function report(register: Register, deps: CommandDeps): void {
+  const { results, panel, cfg, scanAll } = deps
 
   register('depwatch.showReport', async () => {
     if (results.size === 0) await scanAll({ quiet: true })
@@ -162,7 +178,7 @@ export function registerCommands(context: vscode.ExtensionContext, deps: Command
   })
 
   register('depwatch.showTrend', async () => {
-    const path = await activeManifest()
+    const path = await activeManifest(deps)
     if (!path) return
     const folder = vscode.workspace.getWorkspaceFolder(vscode.Uri.file(path))
     if (!folder) {
@@ -177,7 +193,10 @@ export function registerCommands(context: vscode.ExtensionContext, deps: Command
     )
   })
 
-  // --- exporting ---
+}
+
+function exporting(register: Register, deps: CommandDeps): void {
+  const { results, panel, cfg, scanner, scanAll } = deps
 
   register('depwatch.exportReport', async () => {
     if (results.size === 0) await scanAll({ quiet: true })
@@ -193,7 +212,7 @@ export function registerCommands(context: vscode.ExtensionContext, deps: Command
   })
 
   register('depwatch.exportChart', async () => {
-    const path = await activeManifest()
+    const path = await activeManifest(deps)
     if (!path) return
     let scan = results.get(path)
     if (!scan) {
@@ -218,7 +237,10 @@ export function registerCommands(context: vscode.ExtensionContext, deps: Command
     await vscode.workspace.fs.writeFile(uri, new TextEncoder().encode(svg))
   })
 
-  // --- the baseline ---
+}
+
+function baselineCommands(register: Register, deps: CommandDeps): void {
+  const { results, baseline, scanner, scanAll } = deps
 
   // Writing a baseline does not rescan: the reports are already in hand, and
   // accepting them is a filter over what they say.
@@ -257,7 +279,9 @@ export function registerCommands(context: vscode.ExtensionContext, deps: Command
     vscode.window.showInformationMessage('depwatch: baseline cleared. Every finding is shown again.')
   })
 
-  // --- the token ---
+}
+
+function token(register: Register, deps: CommandDeps): void {
 
   register('depwatch.setGitHubToken', async () => {
     const token = await vscode.window.showInputBox({

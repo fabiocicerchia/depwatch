@@ -83,4 +83,34 @@ different reasons — the extension renders the same columns into a `<table>`.
 `cli.ts` is the commands and the help text; an option is added in one place and
 nothing that runs a command has to move.
 
+## Inside the editors
+
+Both extensions are wiring plus one-job modules, for the same reason `cli.ts`
+is: activation, what a command does, and what a finding says change for
+different reasons.
+
+`extensions/vscode/src/` — `extension.ts` is activation and the scan policy
+(what triggers a scan, and the watchers and settings listener that decide);
+`scan-runner.ts` is one run of it, with its progress and its abort controller;
+`commands.ts` registers every id in `package.json`'s `contributes.commands`
+behind an explicit dependency bag; `baseline-file.ts` is the committed baseline.
+The pane, the squiggles, the status bar and the report panel each already had
+their own file.
+
+`extensions/nvim/lua/depwatch/` — `init.lua` is `setup()`, the session (its
+configuration and what the last scan found) and the scan policy, and it hands
+that session to the rest as an explicit context: `commands.lua` (the
+`:Depwatch*` commands), `triggers.lua` (the autocommands and the refresh timer),
+`quickfix.lua`, `discover.lua` (which files are worth scanning) and `cli.lua`
+(the subprocess). `core.lua` is the ported logic — the command line, the
+ordering, the grouping, the totals and the gates — and re-exports `explain.lua`
+(what a finding says) and `locate.lua` (where it is written), because `core` is
+the name the rest of the plugin already asks for.
+
+Both are covered without an editor: the Lua specs run under plenary-busted
+(`make -C extensions/nvim test`), and `activate()` is exercised against a small
+`vscode` module in `extensions/vscode/src/testing/vscode.ts`, aliased in by
+`vitest.config.ts`. esbuild still marks the real `vscode` external, so the
+shipped bundle is unaffected.
+
 See [VS Code extension](vscode.md).

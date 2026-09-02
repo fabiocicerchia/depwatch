@@ -199,8 +199,21 @@ Everything else has a documented equivalent; see `:help depwatch-configuration`.
 
 ```sh
 make test    # specs, headless, exactly as CI runs them
-make lint    # check every file parses
+make lint    # check every module parses against this checkout
 ```
+
+`lua/depwatch/` is one job per file. `init.lua` is `setup()`, the session — its
+configuration and what the last scan found — and the scan policy; it hands that
+session to `commands.lua` (the `:Depwatch*` commands), `triggers.lua` (the
+autocommands and the refresh timer), `quickfix.lua`, `discover.lua` (which files
+are worth scanning) and `cli.lua` (the subprocess) as an explicit context, so
+those read on their own and there is still one copy of the state.
+
+`core.lua` is the editor-free logic — the command line, the ordering, the
+grouping, the totals and the gates — and re-exports `explain.lua` (what a
+finding says), `locate.lua` (where it is written) and `lens.lua` (the five
+quadrants and their words), because `core` is the name the rest of the plugin
+already asks for.
 
 ## License
 

@@ -125,6 +125,22 @@ function numberAt(argv: string[], i: number, flag: string): number {
   return n
 }
 
+// `--write-accepted`'s value is optional: the next argument is its value only
+// when there is one and it is not itself a flag, so `--write-accepted --json`
+// does not consume `--json` as a filename.
+function isOptionalValue(next: string | undefined): boolean {
+  return next !== undefined && next !== '' && !next.startsWith('-')
+}
+
+// A ratchet with nothing to ratchet against is a gate that silently never
+// fires — the failure mode worth catching here rather than in a green build.
+// The loop above reads one option at a time; this is the rule spanning two.
+function assertConsistent(f: Flags): void {
+  if (f.maxLibyearsIncrease !== undefined && f.baseline === undefined) {
+    throw new Error('--max-libyears-increase needs --baseline <file> to compare against')
+  }
+}
+
 function parseFlags(argv: string[]): Flags {
   const f: Flags = { json: false, deep: false, ci: false, labelAll: false, noLock: false, transitive: false, thresholds: { ...DEFAULT_THRESHOLDS } }
   for (let i = 0; i < argv.length; i++) {
@@ -138,18 +154,10 @@ function parseFlags(argv: string[]): Flags {
     else if (number) f[number] = numberAt(argv, ++i, a)
     else if (threshold) f.thresholds[threshold] = numberAt(argv, ++i, a)
     else if (a === '--eco') f.eco = assertEcosystem(valueAt(argv, ++i, a))
-    // The value is optional, so only take the next argument when there is one
-    // that is not itself a flag — `--write-accepted --json` must not consume
-    // `--json` as a filename.
-    else if (a === '--write-accepted') {
-      f.writeAccepted = argv[i + 1] && !argv[i + 1].startsWith('-') ? valueAt(argv, ++i, a) : DEFAULT_BASELINE
-    } else throw new Error(`unknown option ${a}`)
+    else if (a === '--write-accepted') f.writeAccepted = isOptionalValue(argv[i + 1]) ? valueAt(argv, ++i, a) : DEFAULT_BASELINE
+    else throw new Error(`unknown option ${a}`)
   }
-  // A ratchet with nothing to ratchet against is a gate that silently never
-  // fires — the failure mode worth catching here rather than in a green build.
-  if (f.maxLibyearsIncrease !== undefined && f.baseline === undefined) {
-    throw new Error('--max-libyears-increase needs --baseline <file> to compare against')
-  }
+  assertConsistent(f)
   return f
 }
 

@@ -46,75 +46,91 @@ function M.text_of(path)
   return text_of(path, buffers_for(path)[1])
 end
 
---- Publish one manifest's findings.
-function M.render(path, report, cfg)
-  local bufs = buffers_for(path)
-  if #bufs == 0 then
-    -- Nothing open to draw on. vim.diagnostic wants a buffer, so this manifest
-    -- is simply not annotated until it is opened; the report still has it.
+--- Where every dependency in the report is written in `text`.
+local function spans_of(text, path, report)
+  local names = {}
+  for _, dep in ipairs(report.deps or {}) do
+    names[#names + 1] = dep.name
+  end
+  return core.locate(text, path, names)
+end
+
+--- The diagnostic for one dependency, or nil when this quadrant is configured
+--- to publish nothing.
+local function diagnostic_for(dep, lens, span, cfg)
+  local severity = cfg.diagnostics.severity[lens]
+  if not cfg.diagnostics.enabled or not severity then
+    return nil
+  end
+  return {
+    lnum = span.lnum,
+    col = span.col,
+    end_lnum = span.lnum,
+    end_col = span.end_col,
+    severity = severity,
+    source = 'depwatch',
+    code = lens,
+    message = core.summarise(dep, cfg.thresholds),
+  }
+end
+
+--- Drift at the end of the line. Degraded deps have no numbers to show, and
+--- annotating every healthy dependency is noise, so both are left alone.
+local function annotate(buf, dep, lens, span, cfg, wanted)
+  if not cfg.virtual_text.enabled or not wanted[lens] or dep.degraded then
+    return
+  end
+  local text = string.format('%s%.2f ly · %s', cfg.virtual_text.prefix, dep.libyearsBehind, core.LABEL[lens])
+  vim.api.nvim_buf_set_extmark(buf, VIRT_NS, span.lnum, 0, {
+    virt_text = { { text, HL[lens] } },
+    virt_text_pos = 'eol',
+    hl_mode = 'combine',
+  })
+end
+
+--- One buffer's marks, drawn from scratch.
+local function draw(buf, path, report, cfg)
+  vim.api.nvim_buf_clear_namespace(buf, VIRT_NS, 0, -1)
+  if not cfg.diagnostics.enabled and not cfg.virtual_text.enabled then
+    vim.diagnostic.reset(NS, buf)
     return
   end
 
-  for _, buf in ipairs(bufs) do
-    vim.api.nvim_buf_clear_namespace(buf, VIRT_NS, 0, -1)
-    if not cfg.diagnostics.enabled and not cfg.virtual_text.enabled then
-      vim.diagnostic.reset(NS, buf)
-      return
-    end
+  local text = text_of(path, buf)
+  if not text then
+    return
+  end
 
-    local text = text_of(path, buf)
-    if not text then
-      return
-    end
+  local spans = spans_of(text, path, report)
+  local line_count = vim.api.nvim_buf_line_count(buf)
+  local wanted = {}
+  for _, lens in ipairs(cfg.virtual_text.lenses) do
+    wanted[lens] = true
+  end
 
-    local names = {}
-    for _, dep in ipairs(report.deps or {}) do
-      names[#names + 1] = dep.name
+  local diagnostics = {}
+  for _, dep in ipairs(core.sorted_deps(report)) do
+    local span = spans[dep.name]
+    -- A dependency the index did not find is one that is not written in this
+    -- file -- a transitive dep from the lock file, say. It stays in the report
+    -- and simply gets no mark.
+    if span and span.lnum < line_count then
+      local lens = core.lens_of(dep)
+      diagnostics[#diagnostics + 1] = diagnostic_for(dep, lens, span, cfg)
+      annotate(buf, dep, lens, span, cfg, wanted)
     end
-    local spans = core.locate(text, path, names)
-    local line_count = vim.api.nvim_buf_line_count(buf)
+  end
+  vim.diagnostic.set(NS, buf, diagnostics)
+end
 
-    local wanted = {}
-    for _, lens in ipairs(cfg.virtual_text.lenses) do
-      wanted[lens] = true
-    end
-
-    local diagnostics = {}
-    for _, dep in ipairs(core.sorted_deps(report)) do
-      local span = spans[dep.name]
-      -- A dependency the index did not find is one that is not written in this
-      -- file -- a transitive dep from the lock file, say. It stays in the
-      -- report and simply gets no mark.
-      if span and span.lnum < line_count then
-        local lens = core.lens_of(dep)
-        local severity = cfg.diagnostics.severity[lens]
-        if cfg.diagnostics.enabled and severity then
-          diagnostics[#diagnostics + 1] = {
-            lnum = span.lnum,
-            col = span.col,
-            end_lnum = span.lnum,
-            end_col = span.end_col,
-            severity = severity,
-            source = 'depwatch',
-            code = lens,
-            message = core.summarise(dep, cfg.thresholds),
-          }
-        end
-        if cfg.virtual_text.enabled and wanted[lens] and not dep.degraded then
-          vim.api.nvim_buf_set_extmark(buf, VIRT_NS, span.lnum, 0, {
-            virt_text = {
-              {
-                string.format('%s%.2f ly · %s', cfg.virtual_text.prefix, dep.libyearsBehind, core.LABEL[lens]),
-                HL[lens],
-              },
-            },
-            virt_text_pos = 'eol',
-            hl_mode = 'combine',
-          })
-        end
-      end
-    end
-    vim.diagnostic.set(NS, buf, diagnostics)
+--- Publish one manifest's findings.
+---
+--- Nothing open to draw on is not an error: vim.diagnostic wants a buffer, so
+--- the manifest is simply not annotated until it is opened, and the report
+--- still has it.
+function M.render(path, report, cfg)
+  for _, buf in ipairs(buffers_for(path)) do
+    draw(buf, path, report, cfg)
   end
 end
 

@@ -7,6 +7,25 @@ import { repoUrlOf } from './meta.js'
 const isDepTable = (segment: string | undefined) =>
   segment === 'dependencies' || segment === 'dev-dependencies' || segment === 'build-dependencies'
 
+// Cargo states a version two ways — `serde = "1.0"` and
+// `tokio = { version = "1.38", features = [...] }` — and both give the floor.
+function cargoVersion(rhs: string): string | null {
+  const version = rhs.startsWith('"') ? rhs.match(/^"([^"]+)"/)?.[1] : rhs.match(/version\s*=\s*"([^"]+)"/)?.[1]
+  return version ? baseVersion(version) : null
+}
+
+// A `[dependencies]` header opens a section of `name = version` lines. A
+// `[dependencies.serde]` header instead names one dependency on its own, whose
+// version arrives on a later `version = "…"` line — so a blank placeholder goes
+// in now, in manifest order, and the trailing filter drops it if none does.
+function openTable(header: string, deps: Dep[]): boolean {
+  const segments = header.replace(/^\[+|\]+$/g, '').split('.')
+  const last = segments[segments.length - 1]
+  if (isDepTable(last)) return true
+  if (isDepTable(segments[segments.length - 2])) deps.push({ name: last, current: '', resolved: false })
+  return false
+}
+
 // Enough TOML to read dependency tables. A full TOML parser would be a
 // dependency for three line shapes; if Cargo manifests get exotic here, swap in
 // the shared toml reader rather than growing this.
@@ -17,24 +36,18 @@ function parseCargoToml(text: string): Dep[] {
     const line = raw.replace(/#.*$/, '').trim()
     if (!line) continue
     if (line.startsWith('[')) {
-      const segments = line.replace(/^\[+|\]+$/g, '').split('.')
-      const last = segments[segments.length - 1]
-      const prev = segments[segments.length - 2]
-      inDeps = isDepTable(last)
-      if (!inDeps && isDepTable(prev)) deps.push({ name: last, current: '', resolved: false })
+      inDeps = openTable(line, deps)
       continue
     }
     if (!inDeps) {
-      const last = deps[deps.length - 1]
-      const v = last && last.current === '' ? line.match(/^version\s*=\s*"([^"]+)"/) : null
-      if (v) last.current = baseVersion(v[1]) ?? ''
+      const pending = deps[deps.length - 1]
+      const v = pending && pending.current === '' ? line.match(/^version\s*=\s*"([^"]+)"/) : null
+      if (v) pending.current = baseVersion(v[1]) ?? ''
       continue
     }
     const m = line.match(/^([A-Za-z0-9._-]+)\s*=\s*(.+)$/)
     if (!m) continue
-    const rhs = m[2]
-    const version = rhs.startsWith('"') ? rhs.match(/^"([^"]+)"/)?.[1] : rhs.match(/version\s*=\s*"([^"]+)"/)?.[1]
-    const current = version ? baseVersion(version) : null
+    const current = cargoVersion(m[2])
     if (current) deps.push({ name: m[1], current, resolved: false })
   }
   return deps.filter((d) => d.current !== '')

@@ -14,6 +14,7 @@
 // lets the CLI and the editor share one answer to "what do we already accept".
 
 import { compareDeps, type DepReport, QUADRANT_ORDER, type Quadrant, type Report } from './report.js'
+import { round2 } from './round.js'
 
 export const BASELINE_VERSION = 1
 
@@ -98,7 +99,7 @@ export function withoutAccepted(report: Report, accepted: Set<string>): Report {
   return {
     ...report,
     deps,
-    totalLibyears: Math.round(deps.reduce((sum, d) => sum + d.libyearsBehind, 0) * 100) / 100,
+    totalLibyears: round2(deps.reduce((sum, d) => sum + d.libyearsBehind, 0)),
     worst: report.worst.filter((d) => !accepted.has(d.name)),
   }
 }

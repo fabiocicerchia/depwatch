@@ -7,6 +7,7 @@ import { byId } from './ecosystems/registry.js'
 import type { EcosystemDef, VersionOps } from './ecosystems/types.js'
 import { applyDeepMeta, type DeepMeta, fetchDeepMeta, timelineSignals } from './signals.js'
 import { NO_SIGNALS, viabilityScore, type ViabilitySignals } from './viability.js'
+import { round2 } from './round.js'
 
 export type Quadrant = 'healthy' | 'upgrade' | 'watch' | 'replace'
 
@@ -389,23 +390,27 @@ function versionsAsOf(versions: RegistryVersion[], asOf: number): RegistryVersio
   return versions.filter((v) => !v.released || Date.parse(v.released) <= asOf)
 }
 
-const round2 = (n: number) => Math.round(n * 100) / 100
 
 const MS_PER_YEAR = 365.25 * 86_400_000
+
+// Highest version by the ecosystem's own ordering, or null for an empty list.
+function newestBy(versions: RegistryVersion[], ops: VersionOps): RegistryVersion | null {
+  return versions.reduce<RegistryVersion | null>(
+    (best, v) => (!best || ops.compare(v.version, best.version) > 0 ? v : best),
+    null,
+  )
+}
 
 // A faithful port of @lib/libyear/engine's libyearsForDep, parameterised by the
 // version comparator so ecosystems with a non-standard grammar (Maven, conda)
 // order their versions correctly. The drift *maths* are identical to the shared
 // engine; only the ordering is pluggable.
 function libyearsWithOps(dep: Dep, versions: RegistryVersion[], asOf: number, ops: VersionOps): DepFreshness {
-  const newest = (vs: RegistryVersion[]): RegistryVersion | null =>
-    vs.reduce<RegistryVersion | null>((best, v) => (!best || ops.compare(v.version, best.version) > 0 ? v : best), null)
-
   const stable = versions.filter((v) => !ops.isPrerelease(v.version))
-  const latest = newest(stable.length > 0 ? stable : versions)
+  const latest = newestBy(stable.length > 0 ? stable : versions, ops)
 
   const exact = versions.find((v) => v.version === dep.current)
-  const current = exact ?? newest(versions.filter((v) => ops.compare(v.version, dep.current) <= 0))
+  const current = exact ?? newestBy(versions.filter((v) => ops.compare(v.version, dep.current) <= 0), ops)
 
   const currentReleased = current?.released ?? null
   const latestReleased = latest?.released ?? null

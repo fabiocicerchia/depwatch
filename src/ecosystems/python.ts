@@ -6,6 +6,15 @@ import { type Dep, baseVersion, parsePep508 } from './parse-util.js'
 
 const isPythonPlatformReq = (name: string) => name.toLowerCase() === 'python'
 
+// Poetry states a version two ways — `requests = "^2.31"` and
+// `django = { version = ">=4,<5", extras = [...] }` — and both give the floor.
+function poetryVersion(rhs: string): string | null {
+  const version = rhs.startsWith('{')
+    ? rhs.match(/version\s*=\s*["']([^"']+)["']/)?.[1]
+    : rhs.match(/^["']([^"']+)["']/)?.[1]
+  return version ? baseVersion(version) : null
+}
+
 // [tool.poetry.dependencies] and [tool.poetry.group.<g>.dependencies]:
 //   requests = "^2.31"
 //   django = { version = ">=4,<5", extras = ["bcrypt"] }
@@ -26,10 +35,7 @@ function parsePoetryPyproject(text: string): Dep[] {
     if (!m) continue
     const [, name, rhs] = m
     if (isPythonPlatformReq(name) || seen.has(name)) continue
-    const version = rhs.startsWith('{')
-      ? rhs.match(/version\s*=\s*["']([^"']+)["']/)?.[1]
-      : rhs.match(/^["']([^"']+)["']/)?.[1]
-    const current = version ? baseVersion(version) : null
+    const current = poetryVersion(rhs)
     if (current) {
       seen.add(name)
       deps.push({ name, current, resolved: false })

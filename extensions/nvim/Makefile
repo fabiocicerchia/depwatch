@@ -21,11 +21,16 @@ test: deps ## Run the specs headless
 		-u tests/minimal_init.lua \
 		-c "PlenaryBustedDirectory tests { minimal_init = 'tests/minimal_init.lua', sequential = true }"
 
+# Loaded through tests/minimal_init.lua so `require('depwatch.…')` resolves to
+# this checkout. Without it every module that requires a sibling "failed" here,
+# whatever the code said. tests/ is left out: a spec is only loadable inside
+# busted, which `make test` is for.
 lint: ## Check the Lua parses
-	@for f in $$(find lua plugin tests -name '*.lua'); do \
-		$(NVIM) --headless -c "luafile $$f" -c qa 2>&1 | grep -q . && echo "FAIL $$f" || true; \
-	done
-	@echo "ok"
+	@fail=0; for f in $$(find lua plugin -name '*.lua'); do \
+		$(NVIM) --headless --noplugin -u tests/minimal_init.lua -c "luafile $$f" -c qa 2>&1 | grep -q . \
+			&& { echo "FAIL $$f"; fail=1; } || true; \
+	done; \
+	[ $$fail -eq 0 ] && echo "ok" || exit 1
 
 clean: ## Remove fetched test dependencies
 	rm -rf .deps

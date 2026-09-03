@@ -8,12 +8,13 @@
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, relative, resolve } from 'node:path'
 import { acceptedIn, DEFAULT_BASELINE, parse as parseBaseline, serialise, withoutAccepted } from './baseline.js'
-import { analyse, compareDeps, DEFAULT_THRESHOLDS, REPORT_COLUMNS, type Report, type Thresholds } from './report.js'
-import { assertEcosystem, type SupportedEcosystem } from './manifest.js'
+import { analyse, type Report } from './report.js'
+import { type Flags, parseFlags } from './flags.js'
 import { coverageLines, ecoIdList } from './ecosystems/registry.js'
-import { gateFailures, tally } from './gates.js'
+import { gateFailures } from './gates.js'
 import { loadManifest, resolveInput } from './input.js'
 import { quadrantSVG } from './quadrant.js'
+import { table, trendTable } from './render-text.js'
 import { trend } from './trend.js'
 
 const USAGE = `depwatch — dependency drift (libyears) × viability
@@ -59,74 +60,6 @@ Inputs, in order of accuracy:
 Ecosystems (files recognised)
   ${coverageLines().join('\n  ')}`
 
-interface Flags {
-  json: boolean
-  accepted?: string
-  writeAccepted?: string
-  deep: boolean
-  ci: boolean
-  labelAll: boolean
-  eco?: SupportedEcosystem
-  out?: string
-  maxLibyears?: number
-  maxReplace?: number
-  maxLibyearsIncrease?: number
-  baseline?: string
-  maxPoints?: number
-  noLock: boolean
-  transitive: boolean
-  thresholds: Thresholds
-}
-
-function parseFlags(argv: string[]): Flags {
-  const f: Flags = { json: false, deep: false, ci: false, labelAll: false, noLock: false, transitive: false, thresholds: { ...DEFAULT_THRESHOLDS } }
-  for (let i = 0; i < argv.length; i++) {
-    const a = argv[i]
-    const value = () => {
-      const v = argv[++i]
-      if (v === undefined) throw new Error(`${a} needs a value`)
-      return v
-    }
-    const num = () => {
-      const v = Number(value())
-      if (!Number.isFinite(v)) throw new Error(`${a} needs a number`)
-      return v
-    }
-    switch (a) {
-      case '--json': f.json = true; break
-      case '--deep': f.deep = true; break
-      case '--ci': f.ci = true; break
-      case '--label-all': f.labelAll = true; break
-      case '--no-lock': f.noLock = true; break
-      case '--transitive': f.transitive = true; break
-      case '--eco': f.eco = assertEcosystem(value()); break
-      case '--out': f.out = value(); break
-      case '--max-libyears': f.maxLibyears = num(); break
-      case '--max-replace': f.maxReplace = num(); break
-      case '--max-libyears-increase': f.maxLibyearsIncrease = num(); break
-      case '--baseline': f.baseline = value(); break
-      case '--max-points': f.maxPoints = num(); break
-      case '--accepted': f.accepted = value(); break
-      // The value is optional, so only take the next argument when there is one
-      // that is not itself a flag — `--write-accepted --json` must not consume
-      // `--json` as a filename.
-      case '--write-accepted':
-        f.writeAccepted = argv[i + 1] && !argv[i + 1].startsWith('-') ? value() : DEFAULT_BASELINE
-        break
-      case '--stale': f.thresholds.staleLibyears = num(); break
-      case '--risky': f.thresholds.riskyViability = num(); break
-      default:
-        throw new Error(`unknown option ${a}`)
-    }
-  }
-  // A ratchet with nothing to ratchet against is a gate that silently never
-  // fires — the failure mode worth catching here rather than in a green build.
-  if (f.maxLibyearsIncrease !== undefined && f.baseline === undefined) {
-    throw new Error('--max-libyears-increase needs --baseline <file> to compare against')
-  }
-  return f
-}
-
 // Where the input file gets resolved and read: src/input.ts, shared with every
 // other surface so they cannot disagree about which file was measured.
 export { resolveInput }
@@ -157,40 +90,7 @@ function emit(text: string, out?: string) {
   else process.stdout.write(text.endsWith('\n') ? text : text + '\n')
 }
 
-// --- rendering ---
-
-function table(r: Report, t: Thresholds): string {
-  const rows = [...r.deps].sort(compareDeps)
-  const widths = REPORT_COLUMNS.map((c) => Math.max(c.header.length, ...rows.map((d) => c.of(d).length)))
-  const line = (cells: string[]) => cells.map((c, i) => c.padEnd(widths[i])).join('  ').trimEnd()
-
-  const out = [
-    line(REPORT_COLUMNS.map((c) => c.header)),
-    line(widths.map((w) => '─'.repeat(w))),
-    ...rows.map((d) => line(REPORT_COLUMNS.map((c) => c.of(d)))),
-    '',
-    `total drift: ${r.totalLibyears.toFixed(2)} libyears across ${r.deps.length} deps  (${r.ecosystem}, ${r.file})`,
-  ]
-
-  const counts = tally(r)
-  out.push(`quadrants: replace ${counts.replace}  upgrade ${counts.upgrade}  watch ${counts.watch}  healthy ${counts.healthy}`)
-  out.push(`thresholds: behind > ${t.staleLibyears} libyears, fading < ${t.riskyViability} viability`)
-
-  const degraded = r.deps.filter((d) => d.degraded)
-  if (degraded.length > 0) out.push(`${degraded.length} dep(s) had no registry data and were not scored`)
-
-  const pulseOnly = r.deps.filter((d) => d.driftUnscored)
-  if (pulseOnly.length > 0)
-    out.push(`${pulseOnly.length} dep(s) scored on pulse and viability only — no comparable version series (drift shown as —)`)
-
-  const estimated = r.deps.filter((d) => !d.resolved && !d.degraded).length
-  if (estimated > 0) {
-    out.push(
-      `upper bound: ${estimated} of ${r.deps.length} versions came from a range, not a lock file — a range gives its floor, so the real drift is this or lower`,
-    )
-  }
-  return out.join('\n')
-}
+// --- the accepted baseline ---
 
 /**
  * The manifest as the baseline names it: relative to the baseline file, with
@@ -224,6 +124,62 @@ function applyBaseline(report: Report, file: string, f: Flags): { report: Report
   return { report: withoutAccepted(report, accepted), accepted: accepted.size, from: path }
 }
 
+// --- commands ---
+
+// `--write-accepted`: record today as the accepted set and stop. The count on
+// stderr is what got accepted, not what is wrong, so it stays off stdout.
+function writeAccepted(full: Report, file: string, path: string): number {
+  const accepted = full.deps.filter((d) => !d.degraded && d.quadrant !== 'healthy').length
+  writeFileSync(path, serialise([{ label: labelFor(file, path), report: full }], new Date().toISOString()))
+  console.error(`depwatch: ${accepted} finding(s) accepted in ${path}`)
+  return 0
+}
+
+function runGates(r: Report, f: Flags): number {
+  const fails = gateFailures(r, {
+    maxLibyears: f.maxLibyears,
+    maxReplace: f.maxReplace,
+    maxLibyearsIncrease: f.maxLibyearsIncrease,
+    baselineLibyears: f.baseline === undefined ? undefined : readBaseline(f.baseline),
+  })
+  for (const { message } of fails) console.error(`depwatch: ${message}`)
+  return fails.length > 0 ? 1 : 0
+}
+
+async function checkCommand(file: string, f: Flags): Promise<number> {
+  const full = await loadReport(file, f)
+  if (f.writeAccepted !== undefined) return writeAccepted(full, file, f.writeAccepted)
+
+  const { report: r, accepted, from } = applyBaseline(full, file, f)
+  emit(f.json ? JSON.stringify(r, null, 2) : table(r, f.thresholds), f.out)
+  // stderr, so --json stays a clean pipe.
+  if (accepted > 0) console.error(`depwatch: ${accepted} finding(s) accepted by ${from}`)
+  return f.ci ? runGates(r, f) : 0
+}
+
+async function chartCommand(file: string, f: Flags): Promise<number> {
+  const r = await loadReport(file, f)
+  const svg = quadrantSVG(r.deps, {
+    title: `${r.file} — drift × viability (${r.totalLibyears.toFixed(2)} libyears)`,
+    thresholds: f.thresholds,
+    labelAll: f.labelAll,
+  })
+  emit(svg, f.out)
+  return 0
+}
+
+async function trendCommand(file: string, f: Flags): Promise<number> {
+  const points = await trend(file, f.eco, { deep: f.deep, thresholds: f.thresholds, maxPoints: f.maxPoints })
+  emit(f.json ? JSON.stringify(points, null, 2) : trendTable(points), f.out)
+  return 0
+}
+
+const COMMANDS: Record<string, (file: string, f: Flags) => Promise<number>> = {
+  check: checkCommand,
+  chart: chartCommand,
+  trend: trendCommand,
+}
+
 async function main(argv: string[]): Promise<number> {
   const [cmd, file, ...rest] = argv
   if (!cmd || cmd === '--help' || cmd === '-h') {
@@ -234,69 +190,15 @@ async function main(argv: string[]): Promise<number> {
     console.error(USAGE)
     return 2
   }
+  // Flags are parsed before the command is looked up, so an unknown option
+  // reports itself even when the command is also wrong.
   const f = parseFlags(rest)
-
-  switch (cmd) {
-    case 'check': {
-      const full = await loadReport(file, f)
-
-      if (f.writeAccepted !== undefined) {
-        const path = f.writeAccepted
-        const accepted = full.deps.filter((d) => !d.degraded && d.quadrant !== 'healthy').length
-        writeFileSync(path, serialise([{ label: labelFor(file, path), report: full }], new Date().toISOString()))
-        console.error(`depwatch: ${accepted} finding(s) accepted in ${path}`)
-        return 0
-      }
-
-      const { report: r, accepted, from } = applyBaseline(full, file, f)
-      emit(f.json ? JSON.stringify(r, null, 2) : table(r, f.thresholds), f.out)
-      // stderr, so --json stays a clean pipe.
-      if (accepted > 0) console.error(`depwatch: ${accepted} finding(s) accepted by ${from}`)
-      if (f.ci) {
-        const fails = gateFailures(r, {
-          maxLibyears: f.maxLibyears,
-          maxReplace: f.maxReplace,
-          maxLibyearsIncrease: f.maxLibyearsIncrease,
-          baselineLibyears: f.baseline === undefined ? undefined : readBaseline(f.baseline),
-        })
-        for (const { message } of fails) console.error(`depwatch: ${message}`)
-        return fails.length > 0 ? 1 : 0
-      }
-      return 0
-    }
-    case 'chart': {
-      const r = await loadReport(file, f)
-      const svg = quadrantSVG(r.deps, {
-        title: `${r.file} — drift × viability (${r.totalLibyears.toFixed(2)} libyears)`,
-        thresholds: f.thresholds,
-        labelAll: f.labelAll,
-      })
-      emit(svg, f.out)
-      return 0
-    }
-    case 'trend': {
-      const points = await trend(file, f.eco, { deep: f.deep, thresholds: f.thresholds, maxPoints: f.maxPoints })
-      if (f.json) {
-        emit(JSON.stringify(points, null, 2), f.out)
-      } else {
-        const lines = points.map(
-          (p) =>
-            `${p.date.slice(0, 10)}  ${p.commit}  ${p.totalLibyears.toFixed(2).padStart(8)} libyears  ${String(p.deps).padStart(4)} deps  ${p.replace} replace`,
-        )
-        const first = points[0]
-        const last = points[points.length - 1]
-        if (first && last && points.length > 1) {
-          const delta = last.totalLibyears - first.totalLibyears
-          lines.push('', `${delta >= 0 ? '+' : ''}${delta.toFixed(2)} libyears over ${points.length} sampled commits`)
-        }
-        emit(lines.join('\n'), f.out)
-      }
-      return 0
-    }
-    default:
-      console.error(USAGE)
-      return 2
+  const run = COMMANDS[cmd]
+  if (!run) {
+    console.error(USAGE)
+    return 2
   }
+  return run(file, f)
 }
 
 // Only run when executed, not when imported — otherwise a test that wants
@@ -314,4 +216,4 @@ if (process.argv[1] && /(^|[/\\])(depwatch|cli\.js)$/.test(process.argv[1])) {
     })
 }
 
-export { applyBaseline, labelFor, main, parseFlags }
+export { applyBaseline, labelFor, main }

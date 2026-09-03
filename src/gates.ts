@@ -6,6 +6,7 @@
 // implementation and one verdict, and both surfaces read it.
 
 import type { DepReport, Report } from './report.js'
+import { round2 } from './round.js'
 
 export interface Gates {
   maxLibyears?: number
@@ -76,7 +77,6 @@ export function gateFailures(r: Report, g: Gates): GateFailure[] {
   // Compared at the two decimals every surface reports, not at full float
   // precision: 3.10 -> 3.52 is a growth of 0.42000000000000004, and a ratchet
   // set to 0 must not fail a manifest that did not change because of it.
-  const round2 = (n: number) => Math.round(n * 100) / 100
   if (g.maxLibyearsIncrease !== undefined && g.baselineLibyears !== undefined) {
     const grew = round2(round2(r.totalLibyears) - round2(g.baselineLibyears))
     if (grew > g.maxLibyearsIncrease) {

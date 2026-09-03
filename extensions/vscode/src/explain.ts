@@ -51,36 +51,41 @@ const thresholdNote = (t: Thresholds) =>
   `Behind means over ${t.staleLibyears} libyears; fading means viability under ${t.riskyViability}.`
 
 /**
+ * One line each, in the order they appear in the tooltip: worst first, so the
+ * reason someone should care is at the top rather than the bottom. Each returns
+ * a line, or null when the report has nothing to say on that point.
+ */
+const REASONS: ((dep: DepReport, s: ViabilitySignals) => string | null)[] = [
+  (_dep, s) => (s.archived ? 'the repository is **archived** — the maintainer has said the project is over' : null),
+
+  (dep) => {
+    if (dep.libyearsBehind > 0 && dep.currentReleased && dep.latestReleased) {
+      return `**${dep.libyearsBehind.toFixed(2)} libyears behind**: ${dep.current} shipped ${date(dep.currentReleased)}, ${dep.latest} shipped ${date(dep.latestReleased)}`
+    }
+    return dep.latest === dep.current ? `on the latest release (${dep.latest})` : null
+  },
+
+  (dep) => (dep.pulseYears !== null ? `last release ${years(dep.pulseYears)} ago` : null),
+  (_dep, s) => (s.lastCommitAgeDays !== null ? `last commit ${days(s.lastCommitAgeDays)} ago` : null),
+  (_dep, s) => (s.releaseCadenceDays !== null ? `ships about every ${days(s.releaseCadenceDays)}` : null),
+  (_dep, s) => (s.maintainerCount !== null ? bus(s.maintainerCount) : null),
+  (_dep, s) => (s.hasFunding ? 'has a funding channel' : null),
+
+  (dep) => (dep.resolved ? null : 'version read from a range, not a lock file — the real drift is this or lower'),
+
+  (_dep, s) =>
+    isCheapTierOnly(s)
+      ? 'scored from the release timeline only — run a deep scan for maintainers, archived status and last commit'
+      : null,
+]
+
+/**
  * Everything the report knows about one dependency, as the facts behind its
- * two numbers. Ordered worst-first: the reason someone should care goes at the
- * top of the tooltip, not the bottom.
+ * two numbers.
  */
 export function reasons(dep: DepReport): string[] {
   if (dep.degraded) return [`the registry did not answer for this package (${dep.degraded})`]
-
-  const out: string[] = []
-  const s = dep.signals
-
-  if (s.archived) out.push('the repository is **archived** — the maintainer has said the project is over')
-  if (dep.libyearsBehind > 0 && dep.currentReleased && dep.latestReleased) {
-    out.push(
-      `**${dep.libyearsBehind.toFixed(2)} libyears behind**: ${dep.current} shipped ${date(dep.currentReleased)}, ${dep.latest} shipped ${date(dep.latestReleased)}`,
-    )
-  } else if (dep.latest === dep.current) {
-    out.push(`on the latest release (${dep.latest})`)
-  }
-  if (dep.pulseYears !== null) out.push(`last release ${years(dep.pulseYears)} ago`)
-  if (s.lastCommitAgeDays !== null) out.push(`last commit ${days(s.lastCommitAgeDays)} ago`)
-  if (s.releaseCadenceDays !== null) out.push(`ships about every ${days(s.releaseCadenceDays)}`)
-  if (s.maintainerCount !== null) out.push(bus(s.maintainerCount))
-  if (s.hasFunding) out.push('has a funding channel')
-  if (!dep.resolved) {
-    out.push('version read from a range, not a lock file — the real drift is this or lower')
-  }
-  if (isCheapTierOnly(s)) {
-    out.push('scored from the release timeline only — run a deep scan for maintainers, archived status and last commit')
-  }
-  return out
+  return REASONS.map((reason) => reason(dep, dep.signals)).filter((line): line is string => line !== null)
 }
 
 const isCheapTierOnly = (s: ViabilitySignals) =>

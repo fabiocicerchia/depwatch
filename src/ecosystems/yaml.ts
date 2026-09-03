@@ -32,13 +32,17 @@ function scan(text: string): Line[] {
 }
 
 function commentStart(line: string): number {
-  let inSingle = false
-  let inDouble = false
+  // One quote character rather than a pair of booleans: the two can never both
+  // be true, and holding the open quote says which one has to close it.
+  let quote: string | null = null
   for (let i = 0; i < line.length; i++) {
     const c = line[i]
-    if (c === "'" && !inDouble) inSingle = !inSingle
-    else if (c === '"' && !inSingle) inDouble = !inDouble
-    else if (c === '#' && !inSingle && !inDouble && (i === 0 || line[i - 1] === ' ')) return i
+    if (quote) {
+      if (c === quote) quote = null
+      continue
+    }
+    if (c === '"' || c === "'") quote = c
+    else if (c === '#' && (i === 0 || line[i - 1] === ' ')) return i
   }
   return -1
 }

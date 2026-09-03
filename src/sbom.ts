@@ -155,22 +155,21 @@ function parseCycloneDx(doc: any): SbomParse {
   return collect(entries, 'cyclonedx', direct, rootRef)
 }
 
-function parseSpdx(doc: any): SbomParse {
-  const rootRef: string | undefined = doc?.documentDescribes?.[0]
-  const rootName: string | undefined = (doc?.packages ?? []).find((p: any) => p?.SPDXID === rootRef)?.name ?? doc?.name
-
-  // SPDX states the same graph in reverse as often as forwards, so both
-  // directions are read: DEPENDS_ON from the root, and DEPENDENCY_OF onto it.
-  let direct: Set<string> | null = null
-  if (Array.isArray(doc?.relationships) && rootRef) {
-    const refs = new Set<string>()
-    for (const rel of doc.relationships) {
-      if (rel?.relationshipType === 'DEPENDS_ON' && rel.spdxElementId === rootRef) refs.add(rel.relatedSpdxElement)
-      if (rel?.relationshipType === 'DEPENDENCY_OF' && rel.relatedSpdxElement === rootRef) refs.add(rel.spdxElementId)
-    }
-    if (refs.size > 0) direct = refs
+// The root's direct dependencies, from the relationship list. SPDX states the
+// same graph in reverse as often as forwards, so both directions are read:
+// DEPENDS_ON from the root, and DEPENDENCY_OF onto it.
+function spdxDirectRefs(doc: any, rootRef: string | undefined): Set<string> | null {
+  if (!Array.isArray(doc?.relationships) || !rootRef) return null
+  const refs = new Set<string>()
+  for (const rel of doc.relationships) {
+    if (rel?.relationshipType === 'DEPENDS_ON' && rel.spdxElementId === rootRef) refs.add(rel.relatedSpdxElement)
+    if (rel?.relationshipType === 'DEPENDENCY_OF' && rel.relatedSpdxElement === rootRef) refs.add(rel.spdxElementId)
   }
+  return refs.size > 0 ? refs : null
+}
 
+// Every package that carries a purl and is not the document's own root.
+function spdxEntries(doc: any, rootRef: string | undefined, rootName: string | undefined) {
   const entries: { purl: string; ref?: string }[] = []
   for (const pkg of doc?.packages ?? []) {
     if (pkg?.SPDXID === rootRef) continue
@@ -178,7 +177,13 @@ function parseSpdx(doc: any): SbomParse {
     const purl = (pkg?.externalRefs ?? []).find((r: any) => r?.referenceType === 'purl')?.referenceLocator
     if (purl) entries.push({ purl, ref: pkg.SPDXID })
   }
-  return collect(entries, 'spdx', direct, rootRef)
+  return entries
+}
+
+function parseSpdx(doc: any): SbomParse {
+  const rootRef: string | undefined = doc?.documentDescribes?.[0]
+  const rootName: string | undefined = (doc?.packages ?? []).find((p: any) => p?.SPDXID === rootRef)?.name ?? doc?.name
+  return collect(spdxEntries(doc, rootRef, rootName), 'spdx', spdxDirectRefs(doc, rootRef), rootRef)
 }
 
 /**

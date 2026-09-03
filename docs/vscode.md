@@ -173,9 +173,9 @@ has fallen to a worse quadrant at the same drift. The second case is the one
 that justifies a depwatch-specific baseline rather than a version ignore-list:
 it is how "the maintainer walked away since you signed off" surfaces.
 
-The filter is applied in `extension.ts`, not in the scanner, so the cache keeps
-full reports and writing a baseline re-filters what is already in hand instead
-of costing a rescan.
+The filter is applied in `baseline-file.ts`, not in the scanner, so the cache
+keeps full reports and writing a baseline re-filters what is already in hand
+instead of costing a rescan.
 
 ## Where a finding is drawn
 

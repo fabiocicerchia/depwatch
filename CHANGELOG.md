@@ -5,6 +5,13 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.2](https://github.com/fabiocicerchia/depwatch/compare/v1.6.1...v1.6.2) (2026-09-03)
+
+
+### Bug Fixes
+
+* **go:** read go.mod, not go.sum, so Go modules are scored at all ([#54](https://github.com/fabiocicerchia/depwatch/issues/54)) ([d9201f1](https://github.com/fabiocicerchia/depwatch/commit/d9201f1d73d16a4e5ec00b7268b0bc1acbe00f6a))
+
 ## [1.6.1](https://github.com/fabiocicerchia/depwatch/compare/v1.6.0...v1.6.1) (2026-08-29)
 
 

@@ -10,9 +10,10 @@
 # bundle and no toolchain: esbuild produces a single file, so there is nothing
 # else to copy.
 
-ARG NODE_VERSION=22
+# Digest-pinned: the tag alone would let the base image change under a rebuild.
+ARG NODE_IMAGE=node:22-alpine@sha256:c610fcdfb1d5b4740dd70c284ed3cb16bb857e0f7166196e36a5501df7a3aa32
 
-FROM node:${NODE_VERSION}-alpine AS build
+FROM ${NODE_IMAGE} AS build
 ARG DEPWATCH_REF=main
 RUN apk add --no-cache git
 WORKDIR /build
@@ -21,7 +22,7 @@ RUN git clone --depth 1 --branch "${DEPWATCH_REF}" \
  && npm ci --ignore-scripts \
  && npm run build
 
-FROM node:${NODE_VERSION}-alpine
+FROM ${NODE_IMAGE}
 # git, because the ratchet measures the base ref out of a worktree.
 RUN apk add --no-cache git
 COPY --from=build /build/dist/cli.js /opt/depwatch/dist/cli.js

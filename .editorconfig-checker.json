@@ -1,0 +1,9 @@
+{
+  "Exclude": [
+    "^LICENSE$",
+    "^src/ecosystems/phase4\\.test\\.ts$"
+  ],
+  "Disable": {
+    "IndentSize": true
+  }
+}

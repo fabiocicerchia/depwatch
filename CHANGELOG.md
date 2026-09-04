@@ -5,6 +5,13 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.3](https://github.com/fabiocicerchia/depwatch/compare/v1.6.2...v1.6.3) (2026-09-04)
+
+
+### Bug Fixes
+
+* **ci:** pin the editorconfig-checker binary version ([#57](https://github.com/fabiocicerchia/depwatch/issues/57)) ([80e1c6d](https://github.com/fabiocicerchia/depwatch/commit/80e1c6d5e2f34cffd216a5e9e7cd90b10d2a8cc3))
+
 ## [1.6.2](https://github.com/fabiocicerchia/depwatch/compare/v1.6.1...v1.6.2) (2026-09-03)
 
 

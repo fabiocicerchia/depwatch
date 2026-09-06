@@ -72,7 +72,8 @@ repos:
 
   # Biome rather than eslint: one binary, no plugin matrix, and pre-commit
   # installs it in its own environment so the repo takes no new dependency.
-  # Rules live in biome.json; the formatter is off, this is a linter only.
+  # Rules live in biome.json. biome-ci checks the formatting as well as the
+  # rules, which is what holds the 120-column limit in place.
   - repo: https://github.com/biomejs/pre-commit
     rev: 94dfd97e59f6fcc5abec3bf328ed6108a82fa760  # v2.5.7
     hooks:

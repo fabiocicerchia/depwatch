@@ -12,4 +12,4 @@
  * @param n Any finite number.
  * @returns `n` rounded to two decimals.
  */
-export const round2 = (n: number): number => Math.round(n * 100) / 100
+export const round2 = (n: number): number => Math.round(n * 100) / 100;

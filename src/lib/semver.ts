@@ -6,11 +6,11 @@
 // prerelease. A per-ecosystem parser would be five times the code for a
 // distinction this metric never makes.
 
-export type Ecosystem = 'npm' | 'pep440' | 'cargo' | 'composer' | 'rubygems'
+export type Ecosystem = "npm" | "pep440" | "cargo" | "composer" | "rubygems";
 
-export const ECOSYSTEMS: Ecosystem[] = ['npm', 'pep440', 'cargo', 'composer', 'rubygems']
+export const ECOSYSTEMS: Ecosystem[] = ["npm", "pep440", "cargo", "composer", "rubygems"];
 
-const strip = (v: string) => v.trim().replace(/^[v=]+/, '')
+const strip = (v: string) => v.trim().replace(/^[v=]+/, "");
 
 /**
  * The leading dot-separated integers of a version.
@@ -22,8 +22,8 @@ const strip = (v: string) => v.trim().replace(/^[v=]+/, '')
  * @returns The numeric segments, or an empty array when there are none.
  */
 export function versionCore(v: string): number[] {
-  const m = strip(v).match(/^\d+(?:\.\d+)*/)
-  return m ? m[0].split('.').map(Number) : []
+  const m = strip(v).match(/^\d+(?:\.\d+)*/);
+  return m ? m[0].split(".").map(Number) : [];
 }
 
 /**
@@ -37,9 +37,9 @@ export function versionCore(v: string): number[] {
  * @returns True when the version is a prerelease.
  */
 export function isPrerelease(v: string): boolean {
-  const rest = strip(v).replace(/^\d+(?:\.\d+)*/, '')
-  if (!rest || rest.startsWith('+')) return false
-  return !/^[.\-_]?(post|rev|r)\d*$/i.test(rest)
+  const rest = strip(v).replace(/^\d+(?:\.\d+)*/, "");
+  if (!rest || rest.startsWith("+")) return false;
+  return !/^[.\-_]?(post|rev|r)\d*$/i.test(rest);
 }
 
 /**
@@ -55,11 +55,11 @@ export function isPrerelease(v: string): boolean {
  * @returns -1, 0 or 1, for use as an Array#sort comparator.
  */
 export function compareVersions(a: string, b: string): number {
-  const [x, y] = [versionCore(a), versionCore(b)]
+  const [x, y] = [versionCore(a), versionCore(b)];
   for (let i = 0; i < Math.max(x.length, y.length); i++) {
-    const d = (x[i] ?? 0) - (y[i] ?? 0)
-    if (d !== 0) return d < 0 ? -1 : 1
+    const d = (x[i] ?? 0) - (y[i] ?? 0);
+    if (d !== 0) return d < 0 ? -1 : 1;
   }
   // Same numbers: the stable one is the later release (1.0.0 > 1.0.0-rc.1).
-  return Number(!isPrerelease(a)) - Number(!isPrerelease(b))
+  return Number(!isPrerelease(a)) - Number(!isPrerelease(b));
 }

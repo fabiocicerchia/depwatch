@@ -81,7 +81,8 @@ end)
 
 describe('composer.json', function()
   it('reads require and require-dev', function()
-    local text = '{\n  "require": {\n    "monolog/monolog": "^2.0"\n  },\n  "require-dev": {\n    "phpunit/phpunit": "^9"\n  }\n}'
+    local text = '{\n  "require": {\n    "monolog/monolog": "^2.0"\n  },\n'
+      .. '  "require-dev": {\n    "phpunit/phpunit": "^9"\n  }\n}'
     assert.equals(2, at(text, 'composer.json', 'monolog/monolog').lnum)
     assert.equals(5, at(text, 'composer.json', 'phpunit/phpunit').lnum)
   end)

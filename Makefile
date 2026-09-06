@@ -1,9 +1,16 @@
 # depwatch — drift and viability, plotted against each other.
 #
 # Every verb this repo exposes lives here; `make` on its own prints them,
-# grouped, straight out of the `##` comments below.
+# grouped, straight out of the `##` comments below. FC-GEN-057: the same eight
+# verbs in every repo, each either wired or a declared no-op that says why.
+# None of them exit 0 quietly.
 
 EXT := extensions/vscode
+# Arguments for `make run`, e.g. make run ARGS="check package-lock.json"
+ARGS ?= --help
+# The version the biome-ci hook checks with, so `make format` and the gate
+# cannot disagree about what formatted looks like.
+BIOME_VERSION := 2.5.7
 # Read rather than hard-coded: vsce names the VSIX after the version in the
 # manifest, so a release bump must not turn ext-install into "file not found".
 EXT_VERSION := $(shell node -p "require('./$(EXT)/package.json').version" 2>/dev/null)
@@ -26,11 +33,21 @@ help: ## Show this help
 setup: ## Install the pre-commit hook
 	pre-commit install
 
+# npm ci, not npm install: it installs exactly package-lock.json and fails if
+# the lockfile and package.json disagree, which is what CI does.
+.PHONY: install
+install: ## Install the dependencies from the lockfile
+	npm ci
+
 ##@ Build
 
 .PHONY: build
 build: ## Build the project
 	npm run build
+
+.PHONY: run
+run: build ## Run the CLI from the build (make run ARGS="check <manifest>")
+	node dist/cli.js $(ARGS)
 
 .PHONY: clean
 clean: ## Remove build artifacts
@@ -49,6 +66,19 @@ typecheck: ## Type-check without emitting (catches a half-added ecosystem)
 .PHONY: test
 test: ## Run the tests
 	npm test
+
+# biome-ci in the gate checks the formatting; this is the same binary, same
+# version, writing instead of complaining.
+.PHONY: format
+format: ## Format the tree with biome, the formatter the gate checks
+	npx --yes @biomejs/biome@$(BIOME_VERSION) format --write .
+
+.PHONY: analyze
+analyze: ## Scan the tree the way CI does — vulnerabilities, misconfig, secrets
+	@command -v trivy >/dev/null 2>&1 || { \
+		echo "analyze needs trivy: https://trivy.dev/latest/getting-started/installation/" >&2; \
+		exit 69; }
+	trivy fs --scanners vuln,misconfig,secret --severity CRITICAL,HIGH .
 
 # Not part of `make lint` or CI on purpose: a wall-clock number from a shared
 # runner measures the runner. The checks that guard performance are the counting

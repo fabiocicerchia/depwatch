@@ -14,10 +14,14 @@ cadence, archived status, funding, last commit). TypeScript in `src/`, built to
 
 ```sh
 make help         # every verb this repo exposes
-make setup        # Install git hooks and dev tooling
-make lint         # Run all pre-commit checks on the whole tree
-make build        # Build the project
-make test         # Run the tests
+make setup        # Install the pre-commit hook
+make install      # npm ci — the lockfile, exactly
+make build        # esbuild bundle into dist/cli.js
+make run          # node dist/cli.js, ARGS="check <manifest>"
+make test         # vitest run
+make lint         # pre-commit run --all-files — the whole gate
+make format       # biome format --write, at the version the gate checks
+make analyze      # trivy fs
 make clean        # Remove build artifacts
 
 make ext-build    # Compile the VS Code extension (extensions/vscode)

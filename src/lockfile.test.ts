@@ -1,59 +1,68 @@
-import { describe, expect, it } from 'vitest'
-import { mkdtempSync, writeFileSync } from 'node:fs'
-import { tmpdir } from 'node:os'
-import { join } from 'node:path'
-import { resolveInput } from './cli.js'
-import { detectEcosystem, parse } from './manifest.js'
+import { describe, expect, it } from "vitest";
+import { mkdtempSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { resolveInput } from "./cli.js";
+import { detectEcosystem, parse } from "./manifest.js";
 
 const flags = (over = {}) =>
-  ({ json: false, deep: false, ci: false, labelAll: false, noLock: false, transitive: false, thresholds: { staleLibyears: 1, riskyViability: 0.5 }, ...over }) as any
+  ({
+    json: false,
+    deep: false,
+    ci: false,
+    labelAll: false,
+    noLock: false,
+    transitive: false,
+    thresholds: { staleLibyears: 1, riskyViability: 0.5 },
+    ...over,
+  }) as any;
 
 function project(files: Record<string, string>): string {
-  const dir = mkdtempSync(join(tmpdir(), 'depwatch-'))
-  for (const [name, body] of Object.entries(files)) writeFileSync(join(dir, name), body)
-  return dir
+  const dir = mkdtempSync(join(tmpdir(), "depwatch-"));
+  for (const [name, body] of Object.entries(files)) writeFileSync(join(dir, name), body);
+  return dir;
 }
 
-describe('resolveInput', () => {
+describe("resolveInput", () => {
   // Reading a range's floor as the installed version overstates drift, so the
   // lock file beside the manifest wins by default.
-  it('prefers the lock file sitting next to the manifest', () => {
-    const dir = project({ 'package.json': '{"dependencies":{}}', 'package-lock.json': '{"lockfileVersion":3}' })
-    expect(resolveInput(join(dir, 'package.json'), flags())).toBe(join(dir, 'package-lock.json'))
-  })
+  it("prefers the lock file sitting next to the manifest", () => {
+    const dir = project({ "package.json": '{"dependencies":{}}', "package-lock.json": '{"lockfileVersion":3}' });
+    expect(resolveInput(join(dir, "package.json"), flags())).toBe(join(dir, "package-lock.json"));
+  });
 
-  it('honours the yarn and pnpm lock files too', () => {
-    const yarn = project({ 'package.json': '{}', 'yarn.lock': '# yarn lockfile v1' })
-    expect(resolveInput(join(yarn, 'package.json'), flags())).toBe(join(yarn, 'yarn.lock'))
-    const pnpm = project({ 'package.json': '{}', 'pnpm-lock.yaml': "lockfileVersion: '6.0'" })
-    expect(resolveInput(join(pnpm, 'package.json'), flags())).toBe(join(pnpm, 'pnpm-lock.yaml'))
-  })
+  it("honours the yarn and pnpm lock files too", () => {
+    const yarn = project({ "package.json": "{}", "yarn.lock": "# yarn lockfile v1" });
+    expect(resolveInput(join(yarn, "package.json"), flags())).toBe(join(yarn, "yarn.lock"));
+    const pnpm = project({ "package.json": "{}", "pnpm-lock.yaml": "lockfileVersion: '6.0'" });
+    expect(resolveInput(join(pnpm, "package.json"), flags())).toBe(join(pnpm, "pnpm-lock.yaml"));
+  });
 
-  it('leaves the manifest alone when there is no lock file', () => {
-    const dir = project({ 'package.json': '{}' })
-    expect(resolveInput(join(dir, 'package.json'), flags())).toBe(join(dir, 'package.json'))
-  })
+  it("leaves the manifest alone when there is no lock file", () => {
+    const dir = project({ "package.json": "{}" });
+    expect(resolveInput(join(dir, "package.json"), flags())).toBe(join(dir, "package.json"));
+  });
 
-  it('respects --no-lock', () => {
-    const dir = project({ 'package.json': '{}', 'package-lock.json': '{}' })
-    expect(resolveInput(join(dir, 'package.json'), flags({ noLock: true }))).toBe(join(dir, 'package.json'))
-  })
+  it("respects --no-lock", () => {
+    const dir = project({ "package.json": "{}", "package-lock.json": "{}" });
+    expect(resolveInput(join(dir, "package.json"), flags({ noLock: true }))).toBe(join(dir, "package.json"));
+  });
 
-  it('does not redirect a lock file to itself', () => {
-    const dir = project({ 'package-lock.json': '{}' })
-    expect(resolveInput(join(dir, 'package-lock.json'), flags())).toBe(join(dir, 'package-lock.json'))
-  })
+  it("does not redirect a lock file to itself", () => {
+    const dir = project({ "package-lock.json": "{}" });
+    expect(resolveInput(join(dir, "package-lock.json"), flags())).toBe(join(dir, "package-lock.json"));
+  });
 
-  it('finds Cargo.lock and composer.lock', () => {
-    const cargo = project({ 'Cargo.toml': '[dependencies]', 'Cargo.lock': '' })
-    expect(resolveInput(join(cargo, 'Cargo.toml'), flags())).toBe(join(cargo, 'Cargo.lock'))
-    const composer = project({ 'composer.json': '{}', 'composer.lock': '{}' })
-    expect(resolveInput(join(composer, 'composer.json'), flags())).toBe(join(composer, 'composer.lock'))
-  })
-})
+  it("finds Cargo.lock and composer.lock", () => {
+    const cargo = project({ "Cargo.toml": "[dependencies]", "Cargo.lock": "" });
+    expect(resolveInput(join(cargo, "Cargo.toml"), flags())).toBe(join(cargo, "Cargo.lock"));
+    const composer = project({ "composer.json": "{}", "composer.lock": "{}" });
+    expect(resolveInput(join(composer, "composer.json"), flags())).toBe(join(composer, "composer.lock"));
+  });
+});
 
-describe('lock file parsing', () => {
-  it('reads exact versions from Cargo.lock', () => {
+describe("lock file parsing", () => {
+  it("reads exact versions from Cargo.lock", () => {
     const lock = `[[package]]
 name = "serde"
 version = "1.0.219"
@@ -61,37 +70,37 @@ version = "1.0.219"
 [[package]]
 name = "tokio"
 version = "1.44.2"
-`
-    const m = parse('Cargo.lock', lock)
+`;
+    const m = parse("Cargo.lock", lock);
     expect(m.deps).toEqual([
-      { name: 'serde', current: '1.0.219', resolved: true },
-      { name: 'tokio', current: '1.44.2', resolved: true },
-    ])
-  })
+      { name: "serde", current: "1.0.219", resolved: true },
+      { name: "tokio", current: "1.44.2", resolved: true },
+    ]);
+  });
 
-  it('reads exact versions from composer.lock, including dev', () => {
+  it("reads exact versions from composer.lock, including dev", () => {
     const lock = JSON.stringify({
-      packages: [{ name: 'monolog/monolog', version: '3.5.2' }],
-      'packages-dev': [{ name: 'phpunit/phpunit', version: 'v10.5.1' }],
-    })
-    const m = parse('composer.lock', lock)
-    expect(m.deps).toContainEqual({ name: 'monolog/monolog', current: '3.5.2', resolved: true })
-    expect(m.deps).toContainEqual({ name: 'phpunit/phpunit', current: '10.5.1', resolved: true })
-  })
+      packages: [{ name: "monolog/monolog", version: "3.5.2" }],
+      "packages-dev": [{ name: "phpunit/phpunit", version: "v10.5.1" }],
+    });
+    const m = parse("composer.lock", lock);
+    expect(m.deps).toContainEqual({ name: "monolog/monolog", current: "3.5.2", resolved: true });
+    expect(m.deps).toContainEqual({ name: "phpunit/phpunit", current: "10.5.1", resolved: true });
+  });
 
-  it('recognises lock files as their ecosystem', () => {
-    expect(detectEcosystem('Cargo.lock')).toBe('cargo')
-    expect(detectEcosystem('composer.lock')).toBe('composer')
-    expect(detectEcosystem('a/b/package-lock.json')).toBe('npm')
-    expect(detectEcosystem('yarn.lock')).toBe('npm')
-  })
+  it("recognises lock files as their ecosystem", () => {
+    expect(detectEcosystem("Cargo.lock")).toBe("cargo");
+    expect(detectEcosystem("composer.lock")).toBe("composer");
+    expect(detectEcosystem("a/b/package-lock.json")).toBe("npm");
+    expect(detectEcosystem("yarn.lock")).toBe("npm");
+  });
 
   // The versions a manifest yields are floors; the lock's are exact.
-  it('marks manifest versions unresolved and lock versions resolved', () => {
-    expect(parse('package.json', '{"dependencies":{"react":"^18.0.0"}}').deps[0].resolved).toBe(false)
-    expect(parse('Gemfile.lock', 'GEM\n  specs:\n    rails (7.1.3)\n').deps[0].resolved).toBe(true)
-  })
-})
+  it("marks manifest versions unresolved and lock versions resolved", () => {
+    expect(parse("package.json", '{"dependencies":{"react":"^18.0.0"}}').deps[0].resolved).toBe(false);
+    expect(parse("Gemfile.lock", "GEM\n  specs:\n    rails (7.1.3)\n").deps[0].resolved).toBe(true);
+  });
+});
 
 // Go has no lock file in this tool's sense. Minimal version selection already
 // makes the versions in go.mod exact, and go.sum is a checksum database: it
@@ -100,49 +109,45 @@ version = "1.44.2"
 // resolveInput read it instead of go.mod and parse checksum lines with the
 // go.mod parser, so every Go module in the fleet reported no dependencies at
 // all — indistinguishable from a clean bill of health.
-describe('Go modules', () => {
+describe("Go modules", () => {
   const GO_MOD = [
-    'module github.com/fabiocicerchia/attic',
-    '',
-    'go 1.25.0',
-    '',
-    'require golang.org/x/tools v0.49.0',
-    '',
-    'require (',
-    '\tgolang.org/x/mod v0.39.0 // indirect',
-    '\tgolang.org/x/sync v0.22.0 // indirect',
-    ')',
-  ].join('\n')
+    "module github.com/fabiocicerchia/attic",
+    "",
+    "go 1.25.0",
+    "",
+    "require golang.org/x/tools v0.49.0",
+    "",
+    "require (",
+    "\tgolang.org/x/mod v0.39.0 // indirect",
+    "\tgolang.org/x/sync v0.22.0 // indirect",
+    ")",
+  ].join("\n");
 
   const GO_SUM = [
-    'golang.org/x/mod v0.39.0 h1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa=',
-    'golang.org/x/mod v0.39.0/go.mod h1:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb=',
-    'golang.org/x/tools v0.48.0 h1:ccccccccccccccccccccccccccccccccccccccccccc=',
-    'golang.org/x/tools v0.49.0 h1:ddddddddddddddddddddddddddddddddddddddddddd=',
-  ].join('\n')
+    "golang.org/x/mod v0.39.0 h1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa=",
+    "golang.org/x/mod v0.39.0/go.mod h1:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb=",
+    "golang.org/x/tools v0.48.0 h1:ccccccccccccccccccccccccccccccccccccccccccc=",
+    "golang.org/x/tools v0.49.0 h1:ddddddddddddddddddddddddddddddddddddddddddd=",
+  ].join("\n");
 
-  it('does not read go.sum in place of go.mod', () => {
-    const dir = project({ 'go.mod': GO_MOD, 'go.sum': GO_SUM })
-    expect(resolveInput(join(dir, 'go.mod'), flags())).toBe(join(dir, 'go.mod'))
-  })
+  it("does not read go.sum in place of go.mod", () => {
+    const dir = project({ "go.mod": GO_MOD, "go.sum": GO_SUM });
+    expect(resolveInput(join(dir, "go.mod"), flags())).toBe(join(dir, "go.mod"));
+  });
 
-  it('finds the requires in go.mod even with a go.sum beside it', () => {
-    const deps = parse('go.mod', GO_MOD).deps
-    expect(deps.map((d) => d.name)).toEqual([
-      'golang.org/x/tools',
-      'golang.org/x/mod',
-      'golang.org/x/sync',
-    ])
+  it("finds the requires in go.mod even with a go.sum beside it", () => {
+    const deps = parse("go.mod", GO_MOD).deps;
+    expect(deps.map((d) => d.name)).toEqual(["golang.org/x/tools", "golang.org/x/mod", "golang.org/x/sync"]);
     // MVS picks one exact version, so nothing here is a floor to be widened.
-    expect(deps.every((d) => d.resolved)).toBe(true)
-  })
+    expect(deps.every((d) => d.resolved)).toBe(true);
+  });
 
-  it('refuses go.sum with a reason instead of reporting zero dependencies', () => {
-    expect(() => parse('go.sum', GO_SUM)).toThrowError(/checksum database/)
-  })
+  it("refuses go.sum with a reason instead of reporting zero dependencies", () => {
+    expect(() => parse("go.sum", GO_SUM)).toThrowError(/checksum database/);
+  });
 
-  it('still recognises both files as Go', () => {
-    expect(detectEcosystem('go.mod')).toBe('go')
-    expect(detectEcosystem('go.sum')).toBe('go')
-  })
-})
+  it("still recognises both files as Go", () => {
+    expect(detectEcosystem("go.mod")).toBe("go");
+    expect(detectEcosystem("go.sum")).toBe("go");
+  });
+});

@@ -5,7 +5,7 @@
 // The shared @lib/registry-client keeps its own copy of this for the five it
 // owns; this is the same contract for the rest.
 
-const HEADERS = { Accept: 'application/json', 'User-Agent': 'depwatch' }
+const HEADERS = { Accept: "application/json", "User-Agent": "depwatch" };
 
 /**
  * GETs a URL and parses the response as JSON.
@@ -17,9 +17,9 @@ const HEADERS = { Accept: 'application/json', 'User-Agent': 'depwatch' }
  *         dependency rather than aborting the manifest.
  */
 export async function getJson(url: string, headers: Record<string, string> = {}): Promise<any> {
-  const res = await fetch(url, { headers: { ...HEADERS, ...headers } })
-  if (!res.ok) throw new Error(res.status === 404 ? 'not found in registry' : `registry HTTP ${res.status}`)
-  return res.json()
+  const res = await fetch(url, { headers: { ...HEADERS, ...headers } });
+  if (!res.ok) throw new Error(res.status === 404 ? "not found in registry" : `registry HTTP ${res.status}`);
+  return res.json();
 }
 
 /**
@@ -33,9 +33,9 @@ export async function getJson(url: string, headers: Record<string, string> = {})
  * @throws On any non-2xx response.
  */
 export async function getText(url: string, headers: Record<string, string> = {}): Promise<string> {
-  const res = await fetch(url, { headers: { 'User-Agent': 'depwatch', ...headers } })
-  if (!res.ok) throw new Error(res.status === 404 ? 'not found in registry' : `registry HTTP ${res.status}`)
-  return res.text()
+  const res = await fetch(url, { headers: { "User-Agent": "depwatch", ...headers } });
+  if (!res.ok) throw new Error(res.status === 404 ? "not found in registry" : `registry HTTP ${res.status}`);
+  return res.text();
 }
 
 /**
@@ -48,8 +48,8 @@ export async function getText(url: string, headers: Record<string, string> = {})
  * @returns The date, or null when the response failed or carried no header.
  */
 export async function headLastModified(url: string): Promise<string | null> {
-  const res = await fetch(url, { method: 'HEAD', headers: { 'User-Agent': 'depwatch' } })
-  if (!res.ok) return null
-  const lm = res.headers.get('last-modified')
-  return lm ? new Date(lm).toISOString() : null
+  const res = await fetch(url, { method: "HEAD", headers: { "User-Agent": "depwatch" } });
+  if (!res.ok) return null;
+  const lm = res.headers.get("last-modified");
+  return lm ? new Date(lm).toISOString() : null;
 }

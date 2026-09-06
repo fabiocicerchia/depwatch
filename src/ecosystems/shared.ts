@@ -2,9 +2,9 @@
 // already reaches. One factory instead of the same five-line function copied
 // into each def.
 
-import { fetchPackage } from '@lib/registry-client'
-import type { Ecosystem } from '@lib/semver'
-import type { RegistryVersion } from './types.js'
+import { fetchPackage } from "@lib/registry-client";
+import type { Ecosystem } from "@lib/semver";
+import type { RegistryVersion } from "./types.js";
 
 /**
  * Builds the version fetcher for one of the five ecosystems the shared
@@ -18,8 +18,8 @@ import type { RegistryVersion } from './types.js'
  */
 export function sharedVersions(eco: Ecosystem): (name: string) => Promise<RegistryVersion[]> {
   return async (name) => {
-    const info = await fetchPackage(eco, name)
-    if ('error' in info) throw new Error(info.error)
-    return info.versions
-  }
+    const info = await fetchPackage(eco, name);
+    if ("error" in info) throw new Error(info.error);
+    return info.versions;
+  };
 }

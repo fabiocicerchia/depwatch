@@ -14,43 +14,43 @@
 // clock.
 
 export class Debouncer {
-  private timers = new Map<string, ReturnType<typeof setTimeout>>()
+  private timers = new Map<string, ReturnType<typeof setTimeout>>();
 
   constructor(private readonly delayMs: number) {}
 
   schedule(key: string, run: () => void): void {
-    this.cancel(key)
+    this.cancel(key);
     if (this.delayMs <= 0) {
-      run()
-      return
+      run();
+      return;
     }
     this.timers.set(
       key,
       setTimeout(() => {
-        this.timers.delete(key)
-        run()
+        this.timers.delete(key);
+        run();
       }, this.delayMs),
-    )
+    );
   }
 
   cancel(key: string): void {
-    const timer = this.timers.get(key)
+    const timer = this.timers.get(key);
     if (timer) {
-      clearTimeout(timer)
-      this.timers.delete(key)
+      clearTimeout(timer);
+      this.timers.delete(key);
     }
   }
 
   dispose(): void {
-    for (const timer of this.timers.values()) clearTimeout(timer)
-    this.timers.clear()
+    for (const timer of this.timers.values()) clearTimeout(timer);
+    this.timers.clear();
   }
 }
 
 export interface HeartbeatOptions {
-  intervalMs: number
-  isFocused: () => boolean
-  run: () => void
+  intervalMs: number;
+  isFocused: () => boolean;
+  run: () => void;
 }
 
 /**
@@ -60,52 +60,52 @@ export interface HeartbeatOptions {
  * to a queue of scans.
  */
 export class Heartbeat {
-  private timer: ReturnType<typeof setInterval> | null = null
-  private due = false
-  private intervalMs: number
+  private timer: ReturnType<typeof setInterval> | null = null;
+  private due = false;
+  private intervalMs: number;
 
   constructor(private readonly opts: HeartbeatOptions) {
-    this.intervalMs = opts.intervalMs
+    this.intervalMs = opts.intervalMs;
   }
 
   /** Change the interval — the setting is live, like every other one here. */
   setIntervalMs(ms: number): void {
-    if (ms === this.intervalMs) return
-    this.intervalMs = ms
-    this.start()
+    if (ms === this.intervalMs) return;
+    this.intervalMs = ms;
+    this.start();
   }
 
   start(): void {
-    this.stop()
-    if (this.intervalMs <= 0) return
-    this.timer = setInterval(() => this.tick(), this.intervalMs)
+    this.stop();
+    if (this.intervalMs <= 0) return;
+    this.timer = setInterval(() => this.tick(), this.intervalMs);
     // Node keeps the process alive for pending timers; an editor extension has
     // no business doing that.
-    this.timer.unref?.()
+    this.timer.unref?.();
   }
 
   stop(): void {
-    if (this.timer) clearInterval(this.timer)
-    this.timer = null
+    if (this.timer) clearInterval(this.timer);
+    this.timer = null;
   }
 
   /** Call when the window regains focus. */
   resumed(): void {
-    if (!this.due) return
-    this.due = false
-    this.opts.run()
+    if (!this.due) return;
+    this.due = false;
+    this.opts.run();
   }
 
   dispose(): void {
-    this.stop()
+    this.stop();
   }
 
   private tick(): void {
     if (!this.opts.isFocused()) {
-      this.due = true
-      return
+      this.due = true;
+      return;
     }
-    this.opts.run()
+    this.opts.run();
   }
 }
 
@@ -118,8 +118,8 @@ export class Heartbeat {
  * redoes its whole job per manifest turns 25 manifests into 25 rebuilds.
  */
 export class Burst {
-  private timer: ReturnType<typeof setTimeout> | null = null
-  private pending = false
+  private timer: ReturnType<typeof setTimeout> | null = null;
+  private pending = false;
 
   constructor(
     private readonly windowMs: number,
@@ -127,24 +127,24 @@ export class Burst {
   ) {}
 
   hit(): void {
-    this.pending = true
-    if (this.timer) return // inside the window; the trailing edge will cover it
-    this.fire()
+    this.pending = true;
+    if (this.timer) return; // inside the window; the trailing edge will cover it
+    this.fire();
     this.timer = setTimeout(() => {
-      this.timer = null
-      if (this.pending) this.fire()
-    }, this.windowMs)
-    this.timer.unref?.()
+      this.timer = null;
+      if (this.pending) this.fire();
+    }, this.windowMs);
+    this.timer.unref?.();
   }
 
   private fire(): void {
-    this.pending = false
-    this.emit()
+    this.pending = false;
+    this.emit();
   }
 
   dispose(): void {
-    if (this.timer) clearTimeout(this.timer)
-    this.timer = null
+    if (this.timer) clearTimeout(this.timer);
+    this.timer = null;
   }
 }
 
@@ -153,13 +153,13 @@ export class Burst {
  * manifest is in flight joins it rather than starting a second one.
  */
 export class Coalescer<T> {
-  private readonly running = new Map<string, Promise<T>>()
+  private readonly running = new Map<string, Promise<T>>();
 
   run(key: string, task: () => Promise<T>): Promise<T> {
-    const existing = this.running.get(key)
-    if (existing) return existing
-    const started = task().finally(() => this.running.delete(key))
-    this.running.set(key, started)
-    return started
+    const existing = this.running.get(key);
+    if (existing) return existing;
+    const started = task().finally(() => this.running.delete(key));
+    this.running.set(key, started);
+    return started;
   }
 }

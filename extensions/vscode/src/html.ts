@@ -9,11 +9,18 @@
 // export, where there is no theme to inherit, no script, and the docs/ palette
 // is what a browser gets.
 
-import type { GateFailure, QuadrantCounts } from '../../../src/gates.js'
-import { escapeXml as esc, QUADRANT_COLOR } from '../../../src/quadrant.js'
-import { compareDeps, type DepReport, type Quadrant, REPORT_COLUMNS, type Report, type Thresholds } from '../../../src/report.js'
-import type { TrendPoint } from '../../../src/trend.js'
-import { ORDER, QUADRANT, reasons } from './explain.js'
+import type { GateFailure, QuadrantCounts } from "../../../src/gates.js";
+import { escapeXml as esc, QUADRANT_COLOR } from "../../../src/quadrant.js";
+import {
+  compareDeps,
+  type DepReport,
+  type Quadrant,
+  REPORT_COLUMNS,
+  type Report,
+  type Thresholds,
+} from "../../../src/report.js";
+import type { TrendPoint } from "../../../src/trend.js";
+import { ORDER, QUADRANT, reasons } from "./explain.js";
 
 // The editor publishes its theme's chart colours to webviews; the depwatch
 // palette is the fallback, which is what the exported file gets.
@@ -22,106 +29,106 @@ const QUADRANT_CSS: Record<Quadrant, string> = {
   upgrade: `var(--vscode-charts-yellow,${QUADRANT_COLOR.upgrade})`,
   watch: `var(--vscode-charts-blue,${QUADRANT_COLOR.watch})`,
   healthy: `var(--vscode-charts-green,${QUADRANT_COLOR.healthy})`,
-}
+};
 
 export interface ManifestView {
   /** Workspace-relative path, for display. */
-  label: string
+  label: string;
   /** Absolute path, for the click-to-reveal message. */
-  path: string
-  report: Report
-  svg: string
-  notes: string[]
-  counts: QuadrantCounts
+  path: string;
+  report: Report;
+  svg: string;
+  notes: string[];
+  counts: QuadrantCounts;
 }
 
 export interface ReportView {
-  manifests: ManifestView[]
-  failures: { label: string; message: string }[]
-  gates: GateFailure[]
-  gatesConfigured: boolean
-  thresholds: Thresholds
-  deep: boolean
-  generatedAt: string
+  manifests: ManifestView[];
+  failures: { label: string; message: string }[];
+  gates: GateFailure[];
+  gatesConfigured: boolean;
+  thresholds: Thresholds;
+  deep: boolean;
+  generatedAt: string;
 }
 
 export interface PageOptions {
   /** Set for a webview: enables the CSP meta tag and the click-to-reveal script. */
-  nonce?: string
-  cspSource?: string
+  nonce?: string;
+  cspSource?: string;
 }
 
 export function reportHtml(view: ReportView, opts: PageOptions = {}): string {
   const totals = view.manifests.reduce(
     (acc, m) => {
-      acc.libyears += m.report.totalLibyears
-      acc.deps += m.report.deps.length
-      for (const q of ORDER) acc.counts[q] += m.counts[q]
-      return acc
+      acc.libyears += m.report.totalLibyears;
+      acc.deps += m.report.deps.length;
+      for (const q of ORDER) acc.counts[q] += m.counts[q];
+      return acc;
     },
     { libyears: 0, deps: 0, counts: { healthy: 0, upgrade: 0, watch: 0, replace: 0 } as QuadrantCounts },
-  )
+  );
 
-  const body: string[] = []
-  body.push(`<h1>📉 depwatch</h1>`)
-  body.push(`<p class="tagline">Dependency drift (libyears) × viability, plotted as a quadrant.</p>`)
+  const body: string[] = [];
+  body.push(`<h1>📉 depwatch</h1>`);
+  body.push(`<p class="tagline">Dependency drift (libyears) × viability, plotted as a quadrant.</p>`);
 
   if (view.manifests.length === 0 && view.failures.length === 0) {
     body.push(
       `<p class="desc">Nothing scanned yet. Run <code>depwatch: Scan the workspace</code> from the command palette.</p>`,
-    )
-    return page('depwatch report', body.join(''), opts)
+    );
+    return page("depwatch report", body.join(""), opts);
   }
 
   body.push(`<div class="stats">
-    ${stat(totals.libyears.toFixed(2), 'libyears of drift')}
-    ${stat(String(totals.deps), totals.deps === 1 ? 'dependency' : 'dependencies')}
-    ${stat(String(view.manifests.length), view.manifests.length === 1 ? 'manifest' : 'manifests')}
+    ${stat(totals.libyears.toFixed(2), "libyears of drift")}
+    ${stat(String(totals.deps), totals.deps === 1 ? "dependency" : "dependencies")}
+    ${stat(String(view.manifests.length), view.manifests.length === 1 ? "manifest" : "manifests")}
     ${quadStat(totals.counts)}
-  </div>`)
+  </div>`);
 
-  body.push(gateBanner(view))
+  body.push(gateBanner(view));
 
-  for (const m of view.manifests) body.push(manifestSection(m, view))
+  for (const m of view.manifests) body.push(manifestSection(m, view));
 
   if (view.failures.length > 0) {
-    body.push(`<h2>Not scanned</h2><ul class="failures">`)
-    for (const f of view.failures) body.push(`<li><code>${esc(f.label)}</code> — ${esc(f.message)}</li>`)
-    body.push(`</ul>`)
+    body.push(`<h2>Not scanned</h2><ul class="failures">`);
+    for (const f of view.failures) body.push(`<li><code>${esc(f.label)}</code> — ${esc(f.message)}</li>`);
+    body.push(`</ul>`);
   }
 
-  body.push(footer(view))
-  return page('depwatch report', body.join(''), opts)
+  body.push(footer(view));
+  return page("depwatch report", body.join(""), opts);
 }
 
 function manifestSection(m: ManifestView, view: ReportView): string {
-  const out: string[] = []
-  out.push(`<h2>${esc(m.label)}</h2>`)
+  const out: string[] = [];
+  out.push(`<h2>${esc(m.label)}</h2>`);
   out.push(
     `<p class="desc">${esc(m.report.totalLibyears.toFixed(2))} libyears across ${m.report.deps.length} deps · ${esc(m.report.ecosystem)} · ${esc(m.report.file)}</p>`,
-  )
-  for (const note of m.notes) out.push(`<p class="alt">${esc(note)}</p>`)
-  out.push(`<div class="chart">${m.svg}</div>`)
-  out.push(table(m, view))
+  );
+  for (const note of m.notes) out.push(`<p class="alt">${esc(note)}</p>`);
+  out.push(`<div class="chart">${m.svg}</div>`);
+  out.push(table(m, view));
 
-  const degraded = m.report.deps.filter((d) => d.degraded).length
-  if (degraded > 0) out.push(`<p class="alt">${degraded} dep(s) had no registry data and were not scored.</p>`)
-  const estimated = m.report.deps.filter((d) => !d.resolved && !d.degraded).length
+  const degraded = m.report.deps.filter((d) => d.degraded).length;
+  if (degraded > 0) out.push(`<p class="alt">${degraded} dep(s) had no registry data and were not scored.</p>`);
+  const estimated = m.report.deps.filter((d) => !d.resolved && !d.degraded).length;
   if (estimated > 0) {
     out.push(
       `<p class="alt">Upper bound: ${estimated} of ${m.report.deps.length} versions came from a range, not a lock file — a range gives its floor, so the real drift is this or lower.</p>`,
-    )
+    );
   }
-  return out.join('')
+  return out.join("");
 }
 
 function table(m: ManifestView, view: ReportView): string {
-  const rows = [...m.report.deps].sort(compareDeps)
+  const rows = [...m.report.deps].sort(compareDeps);
   const head = REPORT_COLUMNS.map(
-    (c, i) => `<th data-col="${i}"${c.numeric ? ' class="num"' : ''}>${c.header}</th>`,
-  ).join('')
-  const cells = rows.map((d) => row(d, m, view)).join('')
-  return `<table><thead><tr>${head}</tr></thead><tbody>${cells}</tbody></table>`
+    (c, i) => `<th data-col="${i}"${c.numeric ? ' class="num"' : ""}>${c.header}</th>`,
+  ).join("");
+  const cells = rows.map((d) => row(d, m, view)).join("");
+  return `<table><thead><tr>${head}</tr></thead><tbody>${cells}</tbody></table>`;
 }
 
 // The columns and their text come from the shared spec; only two of them get a
@@ -129,72 +136,72 @@ function table(m: ManifestView, view: ReportView): string {
 // quadrant in its colour.
 function row(d: DepReport, m: ManifestView, view: ReportView): string {
   const why = reasons(d)
-    .map((r) => r.replace(/\*\*/g, ''))
-    .join(' · ')
+    .map((r) => r.replace(/\*\*/g, ""))
+    .join(" · ");
   const cells = REPORT_COLUMNS.map((c) => {
-    const text = c.of(d)
-    if (c.header === 'viability' && !d.degraded) return `<td class="num">${bar(d.viability, view.thresholds)}</td>`
-    if (c.header === 'quadrant') {
-      const colour = d.degraded ? 'var(--dim)' : QUADRANT_CSS[d.quadrant]
-      const label = d.degraded ? text : QUADRANT[d.quadrant].label
-      return `<td><span class="q" style="color:${colour}">${esc(label)}</span></td>`
+    const text = c.of(d);
+    if (c.header === "viability" && !d.degraded) return `<td class="num">${bar(d.viability, view.thresholds)}</td>`;
+    if (c.header === "quadrant") {
+      const colour = d.degraded ? "var(--dim)" : QUADRANT_CSS[d.quadrant];
+      const label = d.degraded ? text : QUADRANT[d.quadrant].label;
+      return `<td><span class="q" style="color:${colour}">${esc(label)}</span></td>`;
     }
-    const kind = c.numeric ? 'num' : c.header === 'dep' ? 'dep' : 'ver'
-    return `<td class="${kind}">${esc(text)}</td>`
-  }).join('')
-  return `<tr data-dep="${esc(d.name)}" data-file="${esc(m.path)}" title="${esc(why)}">${cells}</tr>`
+    const kind = c.numeric ? "num" : c.header === "dep" ? "dep" : "ver";
+    return `<td class="${kind}">${esc(text)}</td>`;
+  }).join("");
+  return `<tr data-dep="${esc(d.name)}" data-file="${esc(m.path)}" title="${esc(why)}">${cells}</tr>`;
 }
 
 // The viability number with the score drawn behind it: the table is where you
 // compare deps to each other, and a bar does that faster than two decimals.
 function bar(viability: number, t: Thresholds): string {
-  const pct = Math.round(viability * 100)
-  const colour = viability < t.riskyViability ? QUADRANT_CSS.replace : QUADRANT_CSS.healthy
-  return `<span class="bar"><span class="fill" style="width:${pct}%;background:${colour}"></span><span class="val">${viability.toFixed(2)}</span></span>`
+  const pct = Math.round(viability * 100);
+  const colour = viability < t.riskyViability ? QUADRANT_CSS.replace : QUADRANT_CSS.healthy;
+  return `<span class="bar"><span class="fill" style="width:${pct}%;background:${colour}"></span><span class="val">${viability.toFixed(2)}</span></span>`;
 }
 
 function stat(value: string, label: string): string {
-  return `<div class="stat"><div class="value">${esc(value)}</div><div class="label">${esc(label)}</div></div>`
+  return `<div class="stat"><div class="value">${esc(value)}</div><div class="label">${esc(label)}</div></div>`;
 }
 
 function quadStat(counts: QuadrantCounts): string {
   const dots = ORDER.map(
     (q) =>
       `<span class="dot" style="--c:${QUADRANT_CSS[q]}" title="${esc(QUADRANT[q].blurb)}">${counts[q]} ${esc(QUADRANT[q].label.toLowerCase())}</span>`,
-  ).join('')
-  return `<div class="stat wide"><div class="dots">${dots}</div><div class="label">quadrants</div></div>`
+  ).join("");
+  return `<div class="stat wide"><div class="dots">${dots}</div><div class="label">quadrants</div></div>`;
 }
 
 function gateBanner(view: ReportView): string {
-  if (!view.gatesConfigured) return ''
+  if (!view.gatesConfigured) return "";
   if (view.gates.length === 0) {
-    return `<div class="gate pass">Gates pass — the same checks <code>depwatch check --ci</code> runs.</div>`
+    return `<div class="gate pass">Gates pass — the same checks <code>depwatch check --ci</code> runs.</div>`;
   }
-  const items = view.gates.map((g) => `<li>${esc(g.message)}</li>`).join('')
-  return `<div class="gate fail"><strong>${view.gates.length} gate(s) failing</strong><ul>${items}</ul></div>`
+  const items = view.gates.map((g) => `<li>${esc(g.message)}</li>`).join("");
+  return `<div class="gate fail"><strong>${view.gates.length} gate(s) failing</strong><ul>${items}</ul></div>`;
 }
 
 function footer(view: ReportView): string {
   const tier = view.deep
-    ? 'deep scan: maintainers, funding, archived status and last commit'
-    : 'default scan: release timeline only — run a deep scan for maintainers and archived status'
+    ? "deep scan: maintainers, funding, archived status and last commit"
+    : "default scan: release timeline only — run a deep scan for maintainers and archived status";
   return `<footer>
     Thresholds: behind &gt; ${view.thresholds.staleLibyears} libyears, fading &lt; ${view.thresholds.riskyViability} viability · ${esc(tier)}<br>
     Generated ${esc(view.generatedAt)} · libyear is Cox, Bouwers, van Eekelen &amp; Visser, ICSE 2015 · Apache 2.0<br>
     <a href="https://github.com/fabiocicerchia/depwatch">github.com/fabiocicerchia/depwatch</a> · © 2026 Fabio Cicerchia
-  </footer>`
+  </footer>`;
 }
 
 // --- trend ---
 
 export function trendHtml(file: string, points: TrendPoint[], opts: PageOptions = {}): string {
-  const body: string[] = []
-  body.push(`<h1>📉 depwatch</h1>`)
-  body.push(`<p class="tagline">Drift over the history of ${esc(file)}.</p>`)
+  const body: string[] = [];
+  body.push(`<h1>📉 depwatch</h1>`);
+  body.push(`<p class="tagline">Drift over the history of ${esc(file)}.</p>`);
 
   if (points.length === 0) {
-    body.push(`<p class="desc">No commits touched this file.</p>`)
-    return page('depwatch trend', body.join(''), opts)
+    body.push(`<p class="desc">No commits touched this file.</p>`);
+    return page("depwatch trend", body.join(""), opts);
   }
 
   const rows = points
@@ -203,20 +210,20 @@ export function trendHtml(file: string, points: TrendPoint[], opts: PageOptions 
         `<tr><td class="ver">${esc(p.date.slice(0, 10))}</td><td class="dep">${esc(p.commit)}</td>` +
         `<td class="num">${p.totalLibyears.toFixed(2)}</td><td class="num">${p.deps}</td><td class="num">${p.replace}</td></tr>`,
     )
-    .join('')
+    .join("");
   body.push(
     `<table><thead><tr><th>date</th><th>commit</th><th class="num">libyears</th><th class="num">deps</th><th class="num">replace</th></tr></thead><tbody>${rows}</tbody></table>`,
-  )
+  );
 
-  const first = points[0]
-  const last = points[points.length - 1]
+  const first = points[0];
+  const last = points[points.length - 1];
   if (points.length > 1) {
-    const delta = last.totalLibyears - first.totalLibyears
+    const delta = last.totalLibyears - first.totalLibyears;
     body.push(
-      `<p class="desc">${delta >= 0 ? '+' : ''}${delta.toFixed(2)} libyears over ${points.length} sampled commits — ${delta > 0 ? 'drifting further behind' : 'catching up'}.</p>`,
-    )
+      `<p class="desc">${delta >= 0 ? "+" : ""}${delta.toFixed(2)} libyears over ${points.length} sampled commits — ${delta > 0 ? "drifting further behind" : "catching up"}.</p>`,
+    );
   }
-  return page('depwatch trend', body.join(''), opts)
+  return page("depwatch trend", body.join(""), opts);
 }
 
 // --- the shell ---
@@ -226,11 +233,11 @@ function page(title: string, body: string, opts: PageOptions): string {
   // colour and font comes from the running theme rather than from a palette of
   // our own. Exported, there is no theme to inherit, so the depwatch page
   // colours from docs/index.html are used instead.
-  const native = Boolean(opts.nonce)
+  const native = Boolean(opts.nonce);
   const csp = opts.nonce
-    ? `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src ${opts.cspSource ?? ''} data:; style-src 'unsafe-inline'; script-src 'nonce-${opts.nonce}';">`
-    : ''
-  const script = opts.nonce ? `<script nonce="${opts.nonce}">${CLICK_SCRIPT}</script>` : ''
+    ? `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src ${opts.cspSource ?? ""} data:; style-src 'unsafe-inline'; script-src 'nonce-${opts.nonce}';">`
+    : "";
+  const script = opts.nonce ? `<script nonce="${opts.nonce}">${CLICK_SCRIPT}</script>` : "";
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -244,7 +251,7 @@ ${csp}
 <div class="card">${body}</div>
 ${script}
 </body>
-</html>`
+</html>`;
 }
 
 // Every value here is a colour VS Code publishes to webviews, so the report is
@@ -272,7 +279,7 @@ const NATIVE_PALETTE = `
 }
 body{background:var(--page)}
 h1{font-size:1.6rem}
-`
+`;
 
 // docs/index.html, so the exported file and the project page read as one
 // product. Light mode follows the reader's system preference.
@@ -298,7 +305,7 @@ h1{font-size:2.1rem;background:linear-gradient(90deg,var(--accent),var(--accent2
   }
   body{background:linear-gradient(160deg,#f6f8ff,#eef1fb 60%,#e9edfc)}
 }
-`
+`;
 
 // Shared by both: the palette decides the colours, this decides the shape.
 const LAYOUT = `
@@ -342,7 +349,7 @@ td.num,th.num{text-align:right}
 footer{margin-top:1.8rem;padding-top:.9rem;border-top:1px solid var(--line);color:var(--dim);font-size:.85em;line-height:1.6}
 body.clickable tbody tr{cursor:pointer}
 body.clickable thead th{cursor:pointer}
-`
+`;
 
 // Clicking a row jumps to that dependency in the manifest. Sorting is by column
 // header. Nothing else — a report that needs a framework is a report that
@@ -375,4 +382,4 @@ function key(cell) {
   const n = Number(text);
   return text !== '' && text !== '—' && !Number.isNaN(n) ? n : text;
 }
-`
+`;

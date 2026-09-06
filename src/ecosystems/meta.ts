@@ -10,8 +10,8 @@
  * @returns The URL, or null when there is none.
  */
 export function repoUrlOf(repo: unknown): string | null {
-  const raw = typeof repo === 'string' ? repo : (repo as { url?: string } | null)?.url
-  return raw ? String(raw) : null
+  const raw = typeof repo === "string" ? repo : (repo as { url?: string } | null)?.url;
+  return raw ? String(raw) : null;
 }
 
 /**
@@ -23,7 +23,7 @@ export function repoUrlOf(repo: unknown): string | null {
  *          while it stays objectively computable.
  */
 export function toIso(value: unknown): string | null {
-  if (value == null) return null
-  const t = Date.parse(String(value))
-  return Number.isFinite(t) ? new Date(t).toISOString() : null
+  if (value == null) return null;
+  const t = Date.parse(String(value));
+  return Number.isFinite(t) ? new Date(t).toISOString() : null;
 }

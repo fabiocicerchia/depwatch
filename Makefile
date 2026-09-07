@@ -18,9 +18,9 @@ VSIX := $(EXT)/depwatch-vscode-$(EXT_VERSION).vsix
 .PHONY: help
 help: ## Show this help
 	awk 'BEGIN {FS = ":.*## "} \
-	  /^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) } \
-	  /^[a-zA-Z_0-9-]+:.*## / { printf "  \033[36m%-12s\033[0m %s\n", $$1, $$2 }' \
-	  $(MAKEFILE_LIST)
+		/^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) } \
+		/^[a-zA-Z_0-9-]+:.*## / { printf "  \033[36m%-12s\033[0m %s\n", $$1, $$2 }' \
+		$(MAKEFILE_LIST)
 
 .PHONY: setup
 setup: ## Install the pre-commit hook
@@ -64,9 +64,9 @@ bench: ## Run the performance benchmarks
 .PHONY: bench-chart
 bench-chart: ## Re-run the benchmarks and redraw docs/performance.svg
 	tmp=$$(mktemp -t depwatch-bench-XXXXXX.json); \
-	  trap 'rm -f "$$tmp"' EXIT; \
-	  npx vitest bench --run --outputJson="$$tmp" && \
-	  node scripts/bench-chart.mjs "$$tmp" docs/performance.svg
+		trap 'rm -f "$$tmp"' EXIT; \
+		npx vitest bench --run --outputJson="$$tmp" && \
+		node scripts/bench-chart.mjs "$$tmp" docs/performance.svg
 
 ##@ VS Code extension
 

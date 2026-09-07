@@ -94,7 +94,9 @@ if [ -n "${MAX_LIBYEARS_INCREASE}" ]; then
         # maintainer and archived signals do not feed into.
         if $DEPWATCH check "${WORK}/${PREFIX}${MANIFEST}" --json --out "${BASELINE}" $FLAGS; then
           GATES="${GATES} --max-libyears-increase ${MAX_LIBYEARS_INCREASE} --baseline ${BASELINE}"
-          log "${BASE_REF} measures $(node -e 'process.stdout.write(String(JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).totalLibyears.toFixed(2)))' "${BASELINE}") libyears"
+          READ_TOTAL='process.stdout.write(String(JSON.parse(
+            require("fs").readFileSync(process.argv[1],"utf8")).totalLibyears.toFixed(2)))'
+          log "${BASE_REF} measures $(node -e "$READ_TOTAL" "${BASELINE}") libyears"
         else
           log "could not measure ${BASE_REF} — the ratchet is skipped"
         fi

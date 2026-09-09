@@ -63,9 +63,9 @@ Two axes, computed independently, then crossed:
       ▼
   quadrant ───────────────►  viability
                              ▲
-                      watch  │  healthy      behind?  → drift > --stale
+                     healthy │  upgrade      behind?  → drift > --stale
                     ────────-┼────────►      fading?  → viability < --risky
-                     replace │  upgrade      drift
+                      watch  │  replace      drift
 ```
 
 `replace` is the quadrant that matters: far behind *and* nobody left to catch

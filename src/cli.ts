@@ -87,7 +87,7 @@ function readBaseline(file: string): number {
 
 function emit(text: string, out?: string) {
   if (out) writeFileSync(out, text);
-  else process.stdout.write(text.endsWith("\n") ? text : text + "\n");
+  else process.stdout.write(text.endsWith("\n") ? text : `${text}\n`);
 }
 
 // --- the accepted baseline ---

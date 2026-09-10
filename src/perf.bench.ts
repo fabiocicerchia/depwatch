@@ -10,7 +10,14 @@
 // `make bench` runs it; `make bench-chart` turns the same numbers into the
 // figure in docs/performance.md. Nothing here touches the network.
 
-import { bench, describe } from "vitest";
+// Driven by tinybench directly rather than `vitest bench`: vitest 5 removed
+// the benchmark API — no `bench` export, no `vitest bench` command — so the
+// old form stopped type-checking and stopped running. tinybench is the engine
+// vitest wrapped, so the numbers are the same measurement, and the JSON below
+// keeps the shape scripts/bench-chart.mjs already reads.
+import { writeFile } from "node:fs/promises";
+
+import { Bench } from "tinybench";
 import { analyse, type AnalyseCache, type CachedPackage, type DepReport } from "./report.js";
 import type { Manifest } from "./manifest.js";
 import { quadrantSVG } from "./quadrant.js";
@@ -95,30 +102,82 @@ const lockNames = report.deps.map((d: DepReport) => d.name);
 
 // --- benches ---
 
-describe("scan", () => {
-  // Scoring 200 dependencies with every registry answer already in hand: the
-  // drift maths, the timeline signals and the viability score, and nothing else.
-  bench("analyse 200 deps, all cached", async () => {
-    await analyse(manifest, { now: NOW, cache });
-  });
-});
+type Case = { name: string; fn: () => unknown | Promise<unknown> };
 
-describe("render", () => {
-  // Once per manifest, every time the report is rebuilt.
-  bench("quadrantSVG, 200 deps", () => {
-    quadrantSVG(report.deps);
-  });
+const groups: { name: string; cases: Case[] }[] = [
+  {
+    name: "scan",
+    cases: [
+      // Scoring 200 dependencies with every registry answer already in hand: the
+      // drift maths, the timeline signals and the viability score, and nothing else.
+      {
+        name: "analyse 200 deps, all cached",
+        fn: async () => {
+          await analyse(manifest, { now: NOW, cache });
+        },
+      },
+    ],
+  },
+  {
+    name: "render",
+    cases: [
+      // Once per manifest, every time the report is rebuilt.
+      { name: "quadrantSVG, 200 deps", fn: () => quadrantSVG(report.deps) },
 
-  // The whole webview page. This is what used to run six times a second while a
-  // scan was in flight, before the render throttle in panel.ts.
-  bench("reportHtml, 5 manifests", () => {
-    reportHtml(page);
-  });
-});
+      // The whole webview page. This is what used to run six times a second while
+      // a scan was in flight, before the render throttle in panel.ts.
+      { name: "reportHtml, 5 manifests", fn: () => reportHtml(page) },
+    ],
+  },
+  {
+    name: "annotate",
+    cases: [
+      // Per save of a manifest, to place the squiggles.
+      {
+        name: "locateDeps in a 2000-entry package-lock",
+        fn: () => locateDeps(lockfile, "package-lock.json", lockNames),
+      },
+    ],
+  },
+];
 
-describe("annotate", () => {
-  // Per save of a manifest, to place the squiggles.
-  bench("locateDeps in a 2000-entry package-lock", () => {
-    locateDeps(lockfile, "package-lock.json", lockNames);
+// One Bench per group so the groups stay separable in the output, which is what
+// the chart draws its rows from.
+const rendered = [];
+for (const group of groups) {
+  const suite = new Bench();
+  for (const item of group.cases) suite.add(item.name, item.fn);
+  await suite.run();
+  rendered.push({
+    name: group.name,
+    fullName: group.name,
+    benchmarks: suite.tasks.map((task) => {
+      // The result is a union — an aborted task carries no statistics. Narrow on
+      // the field rather than on `state`, so a task that aborted *with*
+      // statistics still reports the numbers it did collect.
+      const stats = task.result && "latency" in task.result ? task.result.latency : undefined;
+      return {
+        name: task.name,
+        // tinybench reports latency in milliseconds, which is the unit the
+        // chart labels already assume.
+        mean: stats?.mean ?? 0,
+        min: stats?.min ?? 0,
+        p99: stats?.p99 ?? 0,
+      };
+    }),
   });
-});
+}
+
+const output = process.argv[2];
+const json = JSON.stringify({ files: [{ groups: rendered }] }, null, 2);
+if (output) {
+  await writeFile(output, json);
+  console.error(`${output}: ${rendered.reduce((n, g) => n + g.benchmarks.length, 0)} benchmarks`);
+} else {
+  for (const group of rendered) {
+    console.log(group.name);
+    for (const b of group.benchmarks) {
+      console.log(`  ${b.name.padEnd(44)} ${b.mean.toFixed(3)} ms  (p99 ${b.p99.toFixed(3)})`);
+    }
+  }
+}

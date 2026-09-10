@@ -5,6 +5,13 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.5](https://github.com/fabiocicerchia/depwatch/compare/v1.6.4...v1.6.5) (2026-09-10)
+
+
+### Bug Fixes
+
+* **bench:** drive tinybench directly, vitest 5 removed the bench API ([#71](https://github.com/fabiocicerchia/depwatch/issues/71)) ([ffad95b](https://github.com/fabiocicerchia/depwatch/commit/ffad95b3c988c9d1414bfdab7928c9072f508386))
+
 ## [1.6.4](https://github.com/fabiocicerchia/depwatch/compare/v1.6.3...v1.6.4) (2026-09-10)
 
 

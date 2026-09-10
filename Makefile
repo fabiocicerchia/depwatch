@@ -84,9 +84,14 @@ analyze: ## Scan the tree the way CI does — vulnerabilities, misconfig, secret
 # runner measures the runner. The checks that guard performance are the counting
 # ones in the test suite (the request budget, the cache caps); this is the tool
 # for when one of those moves and you want to know where the time went.
+# vitest 5 dropped `vitest bench`, so the benchmark is bundled and run
+# directly. Built into dist/, which is already gitignored.
+BENCH_JS := dist/perf.bench.mjs
+
 .PHONY: bench
 bench: ## Run the performance benchmarks
-	npx vitest bench --run
+	npx esbuild src/perf.bench.ts --bundle --platform=node --target=node20 --format=esm --outfile=$(BENCH_JS) --tsconfig=tsconfig.json
+	node $(BENCH_JS)
 
 # The chart is the artefact worth committing, not the raw timings — so the JSON
 # is a shell-local temp file. Made inside the recipe, not in a `:=` variable:
@@ -95,7 +100,8 @@ bench: ## Run the performance benchmarks
 bench-chart: ## Re-run the benchmarks and redraw docs/performance.svg
 	tmp=$$(mktemp -t depwatch-bench-XXXXXX.json); \
 		trap 'rm -f "$$tmp"' EXIT; \
-		npx vitest bench --run --outputJson="$$tmp" && \
+	npx esbuild src/perf.bench.ts --bundle --platform=node --target=node20 --format=esm --outfile=$(BENCH_JS) --tsconfig=tsconfig.json && \
+		node $(BENCH_JS) "$$tmp" && \
 		node scripts/bench-chart.mjs "$$tmp" docs/performance.svg
 
 ##@ VS Code extension

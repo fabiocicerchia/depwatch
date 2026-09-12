@@ -34,6 +34,29 @@ jdanil/libyear, libyear-maven-plugin, `libyear` on PyPI. jdanil's split of
 *drift* (version age) from *pulse* (time since the dep's latest release) is worth
 stealing — pulse is the viability axis, nearly free from the same API responses.
 
+## Features
+
+- Measures dependencies on **two axes and crosses them**: drift (how far
+  behind, in libyears) against viability (whether anyone is left to catch up
+  with).
+- The **quadrant chart** is the output that matters — `replace` is the corner
+  where a package is both far behind and unmaintained.
+- Drift is arithmetic on published release dates, following Cox et al.'s
+  libyear metric; a version undatable at either end scores 0 rather than a
+  guess.
+- Viability reads maintainer signals — pulse, release cadence, and with
+  `--deep`, maintainers, archived status, last commit and funding.
+- **Missing signals are dropped and the remaining weights renormalised**, so a
+  package with only a release history still scores honestly.
+- Prefers a lockfile beside the manifest; read from a range instead, drift is
+  reported as an upper bound rather than passed off as a measurement.
+- One parser per ecosystem chosen by filename, and an SBOM covers every
+  ecosystem at once.
+- A dependency whose registry could not be reached is marked **degraded and
+  left out of the counts** — unknown is not unhealthy.
+- `--json` for CI, `chart` for the SVG, with `--stale` and `--risky` setting
+  the quadrant boundaries.
+
 ## How it works
 
 Two axes, computed independently, then crossed:

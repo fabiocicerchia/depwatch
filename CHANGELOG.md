@@ -5,6 +5,13 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.6](https://github.com/fabiocicerchia/depwatch/compare/v1.6.5...v1.6.6) (2026-09-20)
+
+
+### Bug Fixes
+
+* **ci:** keep actions: read on the job that uploads sarif ([#87](https://github.com/fabiocicerchia/depwatch/issues/87)) ([5081514](https://github.com/fabiocicerchia/depwatch/commit/50815149c5ea679ca3a2fd5791103edb75c298b3))
+
 ## [1.6.5](https://github.com/fabiocicerchia/depwatch/compare/v1.6.4...v1.6.5) (2026-09-10)
 
 

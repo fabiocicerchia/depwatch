@@ -80,9 +80,11 @@ jobs:
             echo "::error::'$VERSION' is not a publishable version (want x.y.z)"
             exit 1
           fi
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-          echo "vsix=$VSIX_NAME-$VERSION.vsix" >> "$GITHUB_OUTPUT"
-          echo "publisher=$(node -p 'require("./" + process.env.EXT + "/package.json").publisher')" >> "$GITHUB_OUTPUT"
+          {
+            echo "version=$VERSION"
+            echo "vsix=$VSIX_NAME-$VERSION.vsix"
+            echo "publisher=$(node -p 'require("./" + process.env.EXT + "/package.json").publisher')"
+          } >> "$GITHUB_OUTPUT"
           # release-please already writes this version into the manifest (see
           # release-please-config.json), so this is normally a no-op. It stays
           # for workflow_dispatch, and so that a mismatch can never ship.

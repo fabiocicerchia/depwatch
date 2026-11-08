@@ -53,7 +53,7 @@ Feature: Scanning a project from Neovim
     Given the configured command "depwatch" is not installed
     When the plugin scans every manifest on startup
     Then the developer sees one error "depwatch: could not run `depwatch` — see :checkhealth depwatch"
-    And later scans in the same session show that error again
+    And later scans in the same session do not show that error again
 
   @id:editor-integration.editor-commands.006 @rule:editor.scan.disabled-plugin-never-scans @verified @source:extensions/nvim/lua/depwatch/init.lua#setup @test:extensions/nvim/tests/init_spec.lua#does nothing at all when the plugin is disabled
   Scenario: A disabled plugin scans nothing and shows no marks

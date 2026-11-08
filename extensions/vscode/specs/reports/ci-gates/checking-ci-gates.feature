@@ -17,6 +17,6 @@ Feature: Checking CI gates from the editor
     Then <message>
 
     Examples:
-      | state                             | message                                                                                                                             |
-      | every manifest stays under budget | an information message reads "depwatch: gates pass."                                                                                |
-      | two manifests exceed the budget   | a warning reads "depwatch: 2 gate(s) failing — <manifest label>: <first failure>" with a "Show report" action that opens the report |
+      | state                                   | message                                                                                                                                                           |
+      | every manifest is at or under 10 libyears | an information message reads "depwatch: gates pass."                                                                                                              |
+      | two manifests exceed 10 libyears          | a warning reads "depwatch: 2 gate(s) failing — " followed by the first failing manifest's label and reason, with a "Show report" action that opens the report |

@@ -86,11 +86,11 @@ Feature: Measuring Python dependencies published on PyPI
     Then the archived status and last commit date are taken from <repository>
 
     Examples:
-      | label       | repository                                                     |
-      | Source      | github.com/example-org/example-lib                             |
-      | Source Code | github.com/example-org/example-lib                             |
-      | GitHub      | github.com/example-org/example-lib                             |
-      | Bug Tracker | no repository, so archived status and last commit stay unknown |
+      | label       | repository                                                                                                       |
+      | Source      | github.com/example-org/example-lib                                                                               |
+      | Source Code | github.com/example-org/example-lib                                                                               |
+      | GitHub      | github.com/example-org/example-lib                                                                               |
+      | Bug Tracker | nowhere: the home page https://example.com is used instead, which is not on GitHub, so no repository data is read |
 
   @id:ecosystem-support.python.015 @rule:ecosystem-support.python.bus-factor-unknown @inferred @source:src/ecosystems/pypi.ts#pypi
   Scenario: A PyPI package's maintainer count is always unknown and does not lower its viability

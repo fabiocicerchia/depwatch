@@ -60,8 +60,8 @@ Feature: Measuring drift of NuGet packages
   Scenario: An unreadable NuGet lock file yields no dependencies
     Given a "packages.lock.json" that is not valid JSON
     When the operator checks the file
-    Then the report lists no dependencies
-    And no error is shown
+    Then the check fails without a report
+    And the error says "no dependencies found in packages.lock.json"
 
   @id:ecosystem-support.jvm-and-dotnet.014 @rule:nuget.registry.unlisted-versions-excluded @inferred @source:src/ecosystems/nuget.ts#nuget
   Scenario Outline: Unlisted NuGet versions do not count as releases and placeholder publish dates are treated as unknown
@@ -77,13 +77,14 @@ Feature: Measuring drift of NuGet packages
 
   @id:ecosystem-support.jvm-and-dotnet.015 @rule:nuget.metadata.repository-link @inferred @source:src/ecosystems/nuget.ts#nuget
   Scenario Outline: Deep metadata for a NuGet package gives its repository link and leaves maintainers unknown
-    Given the newest nuget.org entry for "Contoso.Widgets" has repository "<repository>" and project URL "<project>"
+    Given the newest nuget.org entry for "Contoso.Widgets" has <repository> and project URL "<project>"
     When the operator checks a project with deep metadata enabled
-    Then the package's repository is "<shown>"
+    Then <shown>
     And its maintainer count is unknown
     And it is not marked as funded
 
     Examples:
-      | repository                         | project                     | shown                              |
-      | https://github.com/contoso/widgets | https://contoso.example.com | https://github.com/contoso/widgets |
-      |                                    | https://contoso.example.com | https://contoso.example.com        |
+      | repository                                    | project                            | shown                                                                                        |
+      | repository https://github.com/contoso/widgets | https://contoso.example.com        | its archived status and last commit are read from https://github.com/contoso/widgets         |
+      | no repository                                 | https://github.com/contoso/widgets | its archived status and last commit are read from its project URL                            |
+      | no repository                                 | https://contoso.example.com        | no GitHub archived status or last commit is added, because the project URL is not on GitHub |

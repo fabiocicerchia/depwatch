@@ -3,7 +3,7 @@ Feature: Finding the manifests to scan in a workspace
   Lets a developer scan a whole workspace or monorepo and get the manifests they most likely mean, without the editor drowning in thousands of files.
 
   Background:
-    Given Given a workspace is open in the editor
+    Given a workspace is open in the editor
 
   @id:vscode.scanning.manifest-discovery.001 @rule:scanning.discovery.shallowest-first-capped @inferred @source:extensions/vscode/src/engine.ts#findManifests
   Scenario Outline: Workspace manifests are scanned shallowest first, up to the manifest limit, skipping excluded folders

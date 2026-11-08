@@ -49,17 +49,17 @@ Feature: Measuring Ruby gem drift from Gemfile.lock
   @id:ecosystem-support.web-and-scripting.016 @rule:ecosystems.rubygems.deep-metadata @inferred @source:src/ecosystems/rubygems.ts#rubygems @questionable
   Scenario Outline: Deep metadata for a gem gives its repository but no maintainer count or funding
     Given the operator has requested deep viability signals
-    And RubyGems.org lists a source code URI "<source>" and a homepage "<homepage>" for the gem
+    And RubyGems.org lists the gem's source code URI as <source> and its homepage as <homepage>
     When the operator checks the Gemfile.lock
-    Then the gem's repository is "<repo>"
+    Then the gem's repository is <repo>
     And the gem's maintainer count is unknown
     And the gem is reported as having no funding
 
     Examples:
       | source                            | homepage                   | repo                              |
       | https://github.com/example/widget | https://widget.example.com | https://github.com/example/widget |
-      |                                   | https://widget.example.com | https://widget.example.com        |
-      |                                   |                            | none                              |
+      | absent                            | https://widget.example.com | https://widget.example.com        |
+      | absent                            | absent                     | none                              |
 
   @id:ecosystem-support.web-and-scripting.017 @rule:ecosystems.rubygems.gem-purl-maps-to-rubygems @verified @source:src/ecosystems/rubygems.ts#rubygems @test:src/ecosystems/registry.test.ts#maps PURL types
   Scenario: SBOM components with a gem package URL are scored as RubyGems

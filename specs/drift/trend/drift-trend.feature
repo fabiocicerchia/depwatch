@@ -29,13 +29,13 @@ Feature: Tracking drift over a manifest's history
 
   @id:drift.trend.003 @rule:drift.trend.refuse-file-without-history @inferred @source:src/trend.ts#trend
   Scenario: A manifest with no git history is refused
-    Given the manifest has never been committed
+    Given the manifest "package.json" has never been committed
     When the operator runs the trend for the manifest
-    Then the trend fails with "no git history for <file>"
+    Then the trend fails with "no git history for package.json"
 
   @id:drift.trend.004 @rule:drift.trend.missing-git-names-install-command @verified @source:src/trend.ts#git @test:src/trend.test.ts#names the install command and stays recognisable @test:src/trend.test.ts#does not mistake an ordinary git failure for a missing one
   Scenario Outline: Without git installed, the trend says how to install it
-    Given git is not installed on the machine
+    Given git is not installed on a <platform> machine
     When the operator runs the trend for the manifest
     Then the trend fails with "git is not installed. Install it with: <install command>"
     And the failure stays recognisable as a missing program so the editor can offer to install git

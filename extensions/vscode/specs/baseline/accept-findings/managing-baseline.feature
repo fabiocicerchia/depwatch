@@ -15,7 +15,7 @@ Feature: Accepting and clearing the baseline
     And the scans show 7 acceptable findings
     When the developer accepts the current findings
     Then the baseline file is written in the workspace folder
-    And the 7 findings disappear from view without a fresh registry scan
+    And the 7 findings disappear from view, reusing the scans already in hand while they are within the refresh interval
     And a message reads "depwatch: accepted 7 finding(s) into <baseline file>. Only what gets worse will show from now on." with an "Open baseline" action
 
   @id:vscode.baseline.accept-findings.004 @rule:baseline.accept.reaccept-keeps-earlier-acceptances @inferred @source:extensions/vscode/src/commands.ts#baselineCommands

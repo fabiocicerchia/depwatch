@@ -17,7 +17,7 @@ Feature: Measuring Terraform and OpenTofu provider drift
   Scenario Outline: A provider declared in a .tf file is measured from the floor of its version constraint
     Given a <file> whose required_providers declares source "hashicorp/aws" with version "<constraint>"
     When the operator checks the <file> file
-    Then provider "hashicorp/aws" is reported as installed at "<floor>"
+    Then provider "hashicorp/aws" is reported at "<floor>"
     And the version is marked as a range floor, not resolved
 
     Examples:

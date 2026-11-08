@@ -53,7 +53,7 @@ Feature: Recognising which ecosystem an input file belongs to
     Given a CycloneDX or SPDX JSON document saved as "<file>"
     When the developer checks the file
     Then it is read as an SBOM, with each component scored in its own ecosystem
-    And the result shows the SBOM format and how many components it contained
+    And the result shows the SBOM format and how many of its components can be scored
     And without a request for the full tree, only the direct dependencies the SBOM declares are scored
 
     Examples:

@@ -54,7 +54,7 @@ Feature: Giving the CLI its options
   Scenario Outline: Recording accepted findings defaults to the shared baseline file
     When the operator runs "depwatch check package.json <arguments>"
     Then the accepted findings are written to "<file>"
-    And JSON output is <json>
+    And the --json switch is <json>
 
     Examples:
       | arguments                      | file                    | json |

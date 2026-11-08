@@ -3,7 +3,7 @@ Feature: Judging release activity from a package's version history
   Gives every user a viability reading for every dependency in every ecosystem, using only the release history the registry already returned, so a stalled project shows up without any extra lookups.
 
   Background:
-    Given Given depwatch has the published versions and release dates of the dependency from its registry
+    Given depwatch has the published versions and release dates of the dependency from its registry
 
   @id:viability.release-signals.001 @rule:viability.release-signals.pulse-is-days-since-newest-release @verified @source:src/signals.ts#timelineSignals @test:src/viability.test.ts#derives pulse and median cadence from the version list alone
   Scenario: Pulse is the number of days since the newest dated release

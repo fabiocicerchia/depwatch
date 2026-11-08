@@ -42,7 +42,7 @@ Feature: Running depwatch from the command line
 
   @id:command-line.commands.004 @rule:cli.check.unusable-ratchet-baseline-refused @inferred @source:src/cli.ts#readBaseline
   Scenario: A drift ratchet against an unusable previous report is refused rather than passed
-    Given "previous.json" is a truncated report with no total drift in it
+    Given "previous.json" is valid JSON but has no numeric total drift in it
     When the operator runs "depwatch check package.json --ci --max-libyears-increase 0 --baseline previous.json"
     Then stderr shows "depwatch: baseline previous.json has no usable totalLibyears"
     And the exit code is 2

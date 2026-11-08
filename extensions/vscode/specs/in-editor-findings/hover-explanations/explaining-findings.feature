@@ -15,7 +15,7 @@ Feature: Explaining dependency findings in plain language
   @id:vscode.in-editor-findings.hover-explanations.006 @rule:findings.explanations.unscored-dependency-not-scored @verified @source:extensions/vscode/src/explain.ts#reasons @test:extensions/vscode/src/report-view.test.ts#says a degraded dep was not scored rather than scoring it @test:extensions/vscode/src/report-view.test.ts#says only that the registry did not answer, for a degraded dep @questionable
   Scenario: A dependency the registry did not answer for is reported as not scored, never given a verdict
     Given the registry answered "registry HTTP 503" for dependency "left-pad"
-    When the developer hovers the dependency
+    When the developer reads its Problems entry and hovers the dependency
     Then the Problems message reads "left-pad: no registry data (registry HTTP 503) — not scored" and names no quadrant
     And the hover heading reads "left-pad — not scored" with a "no data" badge
     And the only fact listed is "the registry did not answer for this package (registry HTTP 503)"
@@ -23,7 +23,7 @@ Feature: Explaining dependency findings in plain language
   @id:vscode.in-editor-findings.hover-explanations.007 @rule:findings.explanations.facts-worst-first @verified @source:extensions/vscode/src/explain.ts#tooltip @test:extensions/vscode/src/report-view.test.ts#turns the signals into facts, worst first
   Scenario: The hover lists the facts behind a dependency's scores, archived status first
     Given dependency "left-pad" 1.0.0 shipped 2021-01-01 and 2.0.0 shipped 2023-07-01, 2.5 libyears behind
-    And its repository is archived, last commit 900 days ago, releases about every 400 days, it has a funding channel
+    And its last release was 2.5 years ago, its repository is archived, last commit 900 days ago, releases about every 400 days, it has a funding channel
     When the developer hovers the dependency
     Then the first fact is "the repository is archived — the maintainer has said the project is over"
     And the next fact is "2.50 libyears behind: 1.0.0 shipped 2021-01-01, 2.0.0 shipped 2023-07-01"

@@ -89,7 +89,7 @@ Feature: Scoring Maven and Gradle projects
   Scenario Outline: A Maven artifact's versions come from Maven Central and each release is dated by when its pom was published
     Given Maven Central lists versions 32.1.0-jre and 33.0.0-jre for <component>
     And the 33.0.0-jre pom on Maven Central was last modified on 2023-12-18
-    When the operator checks a manifest naming <component>
+    When the operator checks a manifest or SBOM naming <component>
     Then both versions are known for the artifact
     And 33.0.0-jre is dated 2023-12-18
     And a version whose pom gives no date is left undated

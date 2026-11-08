@@ -9,6 +9,7 @@ Feature: Settings that decide what gets scanned
   Scenario Outline: Folders hidden by the editor are skipped unless the developer opts out
     Given the editor's <section> setting maps "**/legacy/**" to <value>
     And the depwatch.useEditorExcludes setting is <useEditor>
+    And depwatch's own exclude setting keeps its default, non-empty list
     When the developer scans the whole workspace
     Then legacy/package.json is <outcome>
 

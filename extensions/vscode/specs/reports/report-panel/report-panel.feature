@@ -9,7 +9,7 @@ Feature: Viewing the dependency report in the editor
   Scenario: Opening the report again brings back the same tab
     Given the depwatch report tab is already open behind other editors
     When the developer opens the report
-    Then the existing "depwatch report" tab comes to the front in the active column
+    Then the existing "depwatch report" tab comes to the front in the column it was already in
     And no second report tab is opened
     And the tab shows the current results
 
@@ -58,4 +58,5 @@ Feature: Viewing the dependency report in the editor
     And the stale threshold is 2 libyears
     When the developer changes the stale threshold to 5 libyears in settings
     Then the report footer shows "behind > 5 libyears"
-    And the quadrant charts are redrawn against the new threshold without a rescan
+    And the quadrant charts are redrawn with the new threshold line straight away
+    And a background rescan follows to re-place dependencies in their quadrants

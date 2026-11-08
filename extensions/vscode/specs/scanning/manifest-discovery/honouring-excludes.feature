@@ -36,13 +36,14 @@ Feature: Honouring the project's excludes
   Scenario Outline: A file hidden from search still triggers rescans when it changes
     Given the editor's search.exclude hides "<pattern>"
     And rescan on save is enabled
-    When "<file>" in the project root changes
-    Then depwatch rescans the manifests it feeds
+    And the root package.json has already been scanned
+    When the lock file "<file>" in the project root changes
+    Then depwatch rescans the root package.json
 
     Examples:
       | pattern              | file              |
       | **/package-lock.json | package-lock.json |
-      | **/*.log             | npm-debug.log     |
+      | **/yarn.lock         | yarn.lock         |
 
   @id:vscode.scanning.manifest-discovery.006 @rule:scanning.excludes.literal-prefix-excludes-every-same-named-folder @verified @source:extensions/vscode/src/exclude.ts#directoryNames @test:extensions/vscode/src/exclude.test.ts#ignores segments that are themselves patterns @questionable
   Scenario: A folder named literally in an exclude pattern stops rescans for every folder with that name

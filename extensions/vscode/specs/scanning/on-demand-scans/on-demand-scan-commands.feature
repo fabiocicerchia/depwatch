@@ -37,4 +37,4 @@ Feature: Scanning on demand
     Given earlier scan results exist
     When the developer runs a deep scan
     Then a "depwatch: deep scan" progress notification is shown while it runs
-    And every manifest is rescanned with maintainer and archive signals, ignoring earlier results
+    And every manifest is rescanned with the deep viability signals, even those whose dependencies have not changed

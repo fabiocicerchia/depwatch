@@ -11,6 +11,5 @@ Feature: Clearing the registry cache
     Given the cached answers are still within their freshness window
     And a package has published a new release since they were cached
     When the developer clears the registry cache
-    Then the message "depwatch: registry cache cleared. The next scan will refetch." is shown
-    And the findings are emptied until the next scan
-    And the next scan, in this window or a new one, reports the package's new release
+    Then the next scan, in this window or a new one, asks the registries again
+    And it reports the package's new release

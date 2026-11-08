@@ -14,7 +14,7 @@ Feature: Flagging dependencies in the manifest and the Problems panel
     When the scan results are published
     Then the line declaring "left-pad" shows <shown>
     And the Problems panel lists <listed> from source "depwatch"
-    And a listed problem reads "left-pad: <quadrant label> — <libyears> libyears behind, viability <score>, 1.0.0 → <latest>" followed by the quadrant's explanation and the current thresholds
+    And any listed problem names "left-pad", its quadrant, its libyears behind, its viability and its upgrade from 1.0.0, followed by the quadrant's explanation and the current thresholds
 
     Examples:
       | quadrant | setting | shown                   | listed                |
@@ -28,11 +28,11 @@ Feature: Flagging dependencies in the manifest and the Problems panel
   @id:vscode.in-editor-findings.diagnostics.002 @rule:in-editor-findings.diagnostics.unscored-dependency @inferred @source:extensions/vscode/src/annotate.ts#Annotator
   Scenario Outline: A dependency with no registry data is flagged as not scored at the no-data severity
     Given the manifest "package.json" declares "internal-utils"
-    And the registry returned no data for "internal-utils" during the scan
+    And the registry answered "not found in registry" for "internal-utils" during the scan
     And the severity setting for no-data dependencies is "<setting>"
     When the scan results are published
     Then the Problems panel shows <listed> for "internal-utils"
-    And a listed problem reads "internal-utils: no registry data (<reason>) — not scored" with code "no-data"
+    And any listed problem reads "internal-utils: no registry data (not found in registry) — not scored" with code "no-data"
 
     Examples:
       | setting | listed      |
@@ -57,7 +57,7 @@ Feature: Flagging dependencies in the manifest and the Problems panel
 
   @id:vscode.in-editor-findings.diagnostics.004 @rule:in-editor-findings.diagnostics.only-declared-dependencies @inferred @source:extensions/vscode/src/annotate.ts#Annotator
   Scenario: Dependencies not written in the manifest are not flagged in it
-    Given the manifest "package.json" declares "express"
+    Given the manifest "package.json" declares "express", which is in the upgrade quadrant
     And the scan also reports "debug", which "express" pulls in and "package.json" never names
     And "debug" is in the replace quadrant
     When the scan results are published

@@ -9,7 +9,7 @@ Feature: Reading a dependency report in the terminal
   Scenario: Dependencies are listed worst first in a column table
     Given a manifest whose dependencies are left-pad (replace, 4.10 libyears), lodash (upgrade, 2.30 libyears), chalk (upgrade, 3.00 libyears) and zod (healthy, 0.10 libyears)
     When the operator checks the manifest
-    Then the table header reads "dep  current  eco  latest  drift  pulse  viability  quadrant", with a ruled line under it
+    Then the table header names the columns dep, current, eco, latest, drift, pulse, viability and quadrant, each padded to its widest cell, with a ruled line under it
     And the rows appear in the order left-pad, chalk, lodash, zod
     And drift, pulse and viability are shown with two decimals
     And no line ends in trailing spaces

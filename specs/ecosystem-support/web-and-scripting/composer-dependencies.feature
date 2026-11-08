@@ -44,8 +44,8 @@ Feature: Measuring PHP Composer dependencies
   Scenario: A composer file that is not valid JSON is reported as having no dependencies
     Given a composer.json or composer.lock whose content is not valid JSON
     When the operator checks that file
-    Then the report lists no dependencies
-    And no parse error is shown
+    Then the check fails with "no dependencies found in" followed by the file path
+    And the message does not mention the invalid JSON
 
   @id:ecosystem-support.web-and-scripting.006 @rule:ecosystems.composer.deep-metadata-from-packagist @inferred @source:src/ecosystems/composer.ts#composer
   Scenario: Deep checks read a Composer package's repository, maintainer count and funding from Packagist

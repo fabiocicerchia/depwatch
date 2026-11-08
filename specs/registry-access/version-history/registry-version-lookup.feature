@@ -21,8 +21,8 @@ Feature: Looking up published versions from package registries
 
   @id:registry-access.version-history.004 @rule:registry.versions.pypi-release-date-from-first-file @inferred @source:src/lib/registry-client.ts#fetchPackage
   Scenario: A PyPI release is dated by its first available upload
-    Given the PyPI package "flask-example" release 3.0.0 has a non-yanked file uploaded at 2024-03-01T10:00:00Z
-    And a later file for 3.0.0 was uploaded at 2024-03-05T09:00:00Z
+    Given the PyPI package "flask-example" release 3.0.0 lists first a non-yanked file uploaded at 2024-03-01T10:00:00Z
+    And a second file for 3.0.0, listed after it, was uploaded at 2024-03-05T09:00:00Z
     When the operator checks a manifest that depends on "flask-example"
     Then release 3.0.0 is dated 2024-03-01T10:00:00Z
 

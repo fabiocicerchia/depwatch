@@ -8,7 +8,7 @@ Feature: Reading npm and Bun projects
   @id:ecosystem-support.javascript.006 @rule:npm.lockfiles.content-decides-format @inferred @source:src/ecosystems/npm.ts#npm
   Scenario Outline: A file is read by what it contains, not what it is called
     Given a file named "<file_name>" whose contents are a <actual_format>
-    When the operator checks the file
+    When the operator checks the file with --eco npm
     Then the dependencies are read as a <actual_format>
     And their versions are <version_kind>
 
@@ -17,12 +17,12 @@ Feature: Reading npm and Bun projects
       | package.json      | package-lock.json lock (it has a lockfileVersion) | exact, resolved versions |
       | deps.txt          | Yarn lock ("# yarn lockfile v1" header)           | exact, resolved versions |
       | package-lock.json | pnpm lock ("lockfileVersion:" YAML)               | exact, resolved versions |
-      | package-lock.json | package.json manifest with dependencies           | declared version ranges  |
+      | deps.json         | package.json manifest with dependencies           | declared version ranges  |
 
   @id:ecosystem-support.javascript.007 @rule:npm.lockfiles.filename-fallback @inferred @source:src/ecosystems/npm.ts#npm @questionable
   Scenario Outline: Unrecognisable content falls back to the file's name, then to package.json
     Given a file named "<file_name>" whose contents match no known npm format
-    When the operator checks the file
+    When the operator checks the file with --eco npm
     Then the file is read as a <read_as>
 
     Examples:
@@ -56,4 +56,4 @@ Feature: Reading npm and Bun projects
     When the operator runs a deep check
     Then left-pad's maintainer count is 2
     And left-pad is marked as funded
-    And left-pad's repository is the GitHub repository it declares
+    And left-pad's archived status and last commit are read from the GitHub repository it declares

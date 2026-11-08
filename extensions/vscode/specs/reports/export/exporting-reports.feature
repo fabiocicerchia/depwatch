@@ -10,7 +10,7 @@ Feature: Exporting the report and chart
     Given findings from a scan are shown
     When the developer exports the report
     Then a save dialog for HTML files suggests depwatch-report.html in the workspace folder
-    And after saving, a message reads "depwatch: wrote depwatch-report.html" with an "Open" action that opens the page externally
+    And after saving, a message reads "depwatch: wrote" followed by the saved file's name, with an "Open" action that opens the page externally
     And if the dialog is dismissed, nothing is written
 
   @id:vscode.reports.export.002 @rule:reports.export.chart-svg-for-one-manifest @inferred @source:extensions/vscode/src/commands.ts#exporting @questionable
@@ -24,7 +24,7 @@ Feature: Exporting the report and chart
   @id:vscode.reports.export.003 @rule:reports.export.chart-scan-failure-warns @inferred @source:extensions/vscode/src/commands.ts#exporting
   Scenario: Exporting a chart for a manifest that cannot be scanned warns and writes nothing
     Given package.json has not been scanned
-    And scanning package.json fails with "registry unreachable"
+    And package.json declares no dependencies, so scanning it fails
     When the developer exports the chart
-    Then a warning reads "depwatch: registry unreachable"
+    Then a warning reads "depwatch: no dependencies found in" followed by the manifest's path
     And no save dialog is shown

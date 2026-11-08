@@ -23,7 +23,7 @@ Feature: Reusing registry answers between scans
   Scenario Outline: A package the registry could not answer for is retried after a short wait, and in every new window
     Given the registry reported "ghost-pkg" as not found <age> ago
     And no earlier answer for "ghost-pkg" exists
-    When the developer scans the manifest
+    When the developer runs "Scan the active manifest" on it
     Then the registry is asked about "ghost-pkg" again: <asked_again>
 
     Examples:
@@ -51,8 +51,8 @@ Feature: Reusing registry answers between scans
     Given the registry has never answered for "left-pad"
     And the registry cannot be reached
     When the developer scans the manifest
-    Then no releases are shown for "left-pad"
-    And the network error is reported for "left-pad"
+    Then "left-pad" is shown as having no registry data and is not scored
+    And the network error is given as the reason for "left-pad"
 
   @id:vscode.registry-cache.version-cache.005 @rule:registry-cache.persistence.new-window-starts-warm @verified @source:extensions/vscode/src/cache.ts#TtlCache @test:extensions/vscode/src/cache.test.ts#serves a new cache from what the last one wrote
   Scenario: A new window reuses the registry answers from the previous session

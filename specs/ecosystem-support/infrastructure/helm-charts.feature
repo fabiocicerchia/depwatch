@@ -28,23 +28,23 @@ Feature: Scoring Helm chart dependencies
 
   @id:ecosystem-support.infrastructure.018 @rule:ecosystems.helm.unscorable-dependencies-left-out @verified @source:src/ecosystems/helm.ts#parseDeps @test:src/ecosystems/phase3.test.ts#reads Chart.lock deps with the repo-qualified name @questionable
   Scenario Outline: Chart dependencies that cannot be scored are left out of the report
-    Given a <file> listing chart "cache" with repository "<repository>" and version "<version>"
+    Given a <file> listing chart "cache" <repository> and version "<version>"
     When the operator checks the <file>
     Then "cache" does not appear in the report
 
     Examples:
-      | file       | repository                        | version |
-      | Chart.lock | oci://registry.example.com/charts | 1.0.0   |
-      | Chart.yaml |                                   | 1.0.0   |
-      | Chart.yaml | https://charts.example.com        | 17.x    |
+      | file       | repository                                        | version |
+      | Chart.lock | with repository oci://registry.example.com/charts | 1.0.0   |
+      | Chart.yaml | with no repository field                          | 1.0.0   |
+      | Chart.yaml | with repository https://charts.example.com        | 17.x    |
 
   @id:ecosystem-support.infrastructure.019 @rule:ecosystems.helm.chart-identity-is-repository-plus-name @inferred @source:src/ecosystems/helm.ts#parseDeps
   Scenario: A chart is identified by its repository and its name together
     Given a Chart.lock with chart "redis" from https://charts.example.com/stable/
-    And and chart "redis" from https://mirror.example.org/charts
+    And chart "redis" from https://mirror.example.org/charts
     When the operator checks the Chart.lock
     Then the report lists "https://charts.example.com/stable#redis"
-    And and the report lists "https://mirror.example.org/charts#redis" as a separate dependency
+    And the report lists "https://mirror.example.org/charts#redis" as a separate dependency
 
   @id:ecosystem-support.infrastructure.020 @rule:ecosystems.helm.history-from-repository-index @inferred @source:src/ecosystems/helm.ts#helm
   Scenario: A chart's release history comes from its own repository's index
@@ -56,14 +56,14 @@ Feature: Scoring Helm chart dependencies
   @id:ecosystem-support.infrastructure.021 @rule:ecosystems.helm.deprecated-chart-is-end-of-life @inferred @source:src/ecosystems/helm.ts#helm @questionable
   Scenario: A deprecated chart is reported as end-of-life in the deep check
     Given the repository index marks a version of "https://charts.example.com#legacy" as deprecated
-    And and the chart lists no GitHub source
+    And the chart lists no GitHub source
     When the operator runs a deep check of a Chart.lock using that chart
     Then "legacy" is reported as archived
 
   @id:ecosystem-support.infrastructure.022 @rule:ecosystems.helm.deprecation-overridden-by-github-source @inferred @source:src/signals.ts#fetchDeepMeta @questionable
   Scenario: A deprecated chart whose source is an active GitHub repository is not reported as end-of-life
     Given the repository index marks "https://charts.example.com#legacy" as deprecated
-    And and the chart's newest entry lists source https://github.com/example/legacy, which is not archived
+    And the chart's newest entry lists source https://github.com/example/legacy, which is not archived
     When the operator runs a deep check of a Chart.lock using that chart
     Then "legacy" is not reported as archived
     And its last commit date is taken from the GitHub repository

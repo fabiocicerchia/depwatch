@@ -32,7 +32,7 @@ Feature: Reading Rust crate dependencies
       | anyhow = "1"                                    | anyhow          |
       | mylib = { path = "../mylib" }                   | mylib           |
       | rand = { git = "https://example.com/rand.git" } | rand            |
-      | serde.workspace = true                          | serde.workspace |
+      | serde.workspace = true                          | serde           |
 
   @id:ecosystem-support.systems-languages.003 @rule:cargo.lock.exact-resolved-versions @verified @source:src/ecosystems/cargo.ts#parseCargoLock @test:src/lockfile.test.ts#reads exact versions from Cargo.lock
   Scenario: Cargo.lock supplies the exact installed version of each crate

@@ -28,7 +28,7 @@ Feature: Reading the bottom line of the findings pane
 
   @id:vscode.findings-pane.totals.003 @rule:findings-pane.totals.unscored-not-work @verified @source:src/gates.ts#tally @test:extensions/vscode/src/totals.test.ts#counts what is off the healthy quadrant, and leaves unknowns out of it @test:extensions/vscode/src/totals.test.ts#reports unscorable deps separately from the quadrants
   Scenario: Dependencies the registry did not answer for are neither work nor healthy, and are shown as no data
-    Given a manifest has a replace, an upgrade, a watch and a healthy dependency
+    Given a manifest has a replace dependency 3 libyears behind, an upgrade dependency 2 libyears behind, a watch and a healthy dependency
     And it also has a dependency the registry reported as not found
     When the developer reads the summary row of the findings pane
     Then the summary row reads "5.00 libyears · 3 of 5 deps to address"

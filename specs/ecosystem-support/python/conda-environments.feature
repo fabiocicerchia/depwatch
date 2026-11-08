@@ -3,7 +3,7 @@ Feature: Measuring drift in conda environments
   Lets data-science and Python teams who manage packages with conda see how far their environment.yml and conda-lock.yml dependencies lag behind the conda channels they come from.
 
   Background:
-    Given Given a project whose packages are managed with conda
+    Given a project whose packages are managed with conda
 
   @id:ecosystem-support.python.001 @rule:conda.detection.recognised-file-names @verified @source:src/ecosystems/conda.ts#conda @test:src/ecosystems/phase3.test.ts#reads environment.yml specs and skips python and pip block
   Scenario Outline: conda environment and lock files are recognised by name
@@ -74,5 +74,5 @@ Feature: Measuring drift in conda environments
 
     Examples:
       | listing                             | release date                                            |
-      | uploaded files with upload times    | the earliest-listed file's upload time for that version |
+      | uploaded files with upload times    | the first-listed file's upload time for that version    |
       | only version numbers, without files | unknown                                                 |

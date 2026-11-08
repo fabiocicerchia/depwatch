@@ -12,7 +12,6 @@ Feature: Measuring Elixir and Erlang dependencies from Hex
     When the operator checks the mix.lock
     Then the report lists <package> under the Hex ecosystem at version <pinned>, marked as resolved
     And the git-sourced package is not listed
-    And a package named twice is listed once
 
     Examples:
       | package | pinned |

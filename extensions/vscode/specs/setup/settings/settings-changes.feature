@@ -11,8 +11,8 @@ Feature: Applying changed settings
     Then <outcome>
 
     Examples:
-      | setting             | outcome                                      |
-      | depwatch.thresholds | the workspace is rescanned in the background |
-      | depwatch.exclude    | the workspace is rescanned in the background |
-      | files.exclude       | the workspace is rescanned in the background |
-      | depwatch.debounceMs | the new setting is applied with no rescan    |
+      | setting                  | outcome                                      |
+      | depwatch.thresholds      | the workspace is rescanned in the background |
+      | depwatch.exclude         | the workspace is rescanned in the background |
+      | files.exclude            | the workspace is rescanned in the background |
+      | depwatch.scan.debounceMs | the new setting is applied with no rescan    |

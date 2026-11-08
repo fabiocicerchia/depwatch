@@ -52,13 +52,14 @@ Feature: Reading dependencies from pyproject.toml
     Given the pyproject.toml declares dependencies = ["requests>=2.31.0"] under [project]
     And it also has a [tool.poetry] section with no dependency tables
     When the operator checks the manifest
-    Then the report has no dependencies
+    Then the check fails with "no dependencies found in" followed by the manifest path
 
   @id:ecosystem-support.python.021 @rule:python.pyproject.extras-truncate-dependency-array @inferred @source:src/ecosystems/python.ts#parsePep621Pyproject @questionable
-  Scenario: A requirement with extras in a PEP 621 array drops itself and every dependency after it
-    Given the pyproject.toml [project] dependencies array is ["requests[security]>=2.31.0", "httpx==0.27.0"]
+  Scenario: A requirement with extras in a PEP 621 array drops itself and every later entry in the same array
+    Given the pyproject.toml [project] dependencies array is ["click>=8.0", "requests[security]>=2.31.0", "httpx==0.27.0"]
     When the operator checks the manifest
-    Then the report has no entry for requests
+    Then the report lists click at 8.0
+    And the report has no entry for requests
     And the report has no entry for httpx
 
   @id:ecosystem-support.python.022 @rule:python.pyproject.tool-arrays-after-project-swept-in @verified @source:src/ecosystems/python.ts#parsePep621Pyproject @test:src/ecosystems/python.test.ts#reads a PEP 621 [project] dependencies array (uv/pip) @questionable

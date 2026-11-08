@@ -33,7 +33,7 @@ Feature: Pointing findings at the line that declares the dependency
   @id:vscode.in-editor-findings.dependency-location.003 @rule:findings.location.no-guess-for-undeclared @verified @source:extensions/vscode/src/locate.ts#locateDeps @test:extensions/vscode/src/locate.test.ts#says nothing about a dependency that is not written down @test:extensions/vscode/src/locate.test.ts#reads Cargo.toml tables, including the [dependencies.name] form
   Scenario Outline: A dependency the manifest does not declare is not underlined anywhere
     Given the manifest <file> does not declare <dependency>
-    And the text "<dependency>" appears elsewhere in the file as <elsewhere>
+    And the only other place "<dependency>" appears in the file is <elsewhere>
     When a scan reports a finding for <dependency>
     Then the finding is not underlined anywhere in <file>
 

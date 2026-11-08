@@ -3,7 +3,7 @@ Feature: Reading the depwatch report
   Gives a developer one themed page per workspace with the drift and viability totals, a chart and table per manifest, and the CI gate verdict, so they can see where they stand without leaving the editor.
 
   Background:
-    Given the workspace has been scanned
+    Given a workspace is open in the editor
 
   @id:vscode.reports.report-panel.003 @rule:reports.page.empty-state-points-to-scan @inferred @source:extensions/vscode/src/html.ts#reportHtml
   Scenario: An empty report tells the user how to scan
@@ -70,12 +70,12 @@ Feature: Reading the depwatch report
 
   @id:vscode.reports.report-panel.010 @rule:reports.page.sortable-columns @inferred @source:extensions/vscode/src/html.ts#CLICK_SCRIPT @questionable
   Scenario Outline: Clicking a column header sorts the table, descending first
-    Given the report in the editor lists dependencies with drift 0.50, 2.50 and "—"
+    Given the report in the editor lists dependencies with drift 0.50, 2.50 and 1.25
     When the developer clicks the "<column>" header <times>
     Then the rows are ordered <order>
 
     Examples:
-      | column   | times | order                               |
-      | libyears | once  | highest number first                |
-      | libyears | twice | lowest number first                 |
-      | dep      | once  | names in reverse alphabetical order |
+      | column | times | order                               |
+      | drift  | once  | highest number first                |
+      | drift  | twice | lowest number first                 |
+      | dep    | once  | names in reverse alphabetical order |

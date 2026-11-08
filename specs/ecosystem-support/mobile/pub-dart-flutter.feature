@@ -61,6 +61,6 @@ Feature: Measuring Dart and Flutter dependencies from pub.dev
     Given the latest pubspec of "http" on pub.dev has no repository but has homepage "https://github.com/example/http"
     And that pubspec lists no funding links
     When the developer runs a deep check on a manifest that uses "http"
-    Then "http" repository is https://github.com/example/http
+    Then "http" archived status and last commit are read from https://github.com/example/http
     And "http" is reported as having no funding
     And "http" maintainer count is unknown

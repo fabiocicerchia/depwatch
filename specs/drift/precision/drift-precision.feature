@@ -13,14 +13,14 @@ Feature: Reporting drift at two decimals
     And the manifest's total drift is the sum of the dependency drifts, rounded to two decimals
 
     Examples:
-      | raw    | shown                                                       |
-      | 2.3456 | 2.35                                                        |
-      | 0.004  | 0                                                           |
-      | 1.005  | 1 (or 1.01, depending on how the value is stored in binary) |
+      | raw    | shown |
+      | 2.3456 | 2.35  |
+      | 0.004  | 0     |
+      | 1.005  | 1     |
 
   @id:drift.precision.002 @rule:drift.precision.ratchet-compares-reported-decimals @verified @source:src/round.ts#round2 @test:src/gates.test.ts#compares at the two decimals every surface reports @test:src/gates.test.ts#fails when drift grew by more than --max-libyears-increase @test:src/gates.test.ts#passes on a large total that did not grow
   Scenario Outline: The drift ratchet judges growth at the precision the report shows
-    Given the accepted baseline total drift is <baseline> libyears
+    Given the baseline report's total drift is <baseline> libyears
     And the drift allowance is set to <allowance> libyears
     When the operator checks the manifest and its total drift is <current> libyears
     Then the drift ratchet <outcome>

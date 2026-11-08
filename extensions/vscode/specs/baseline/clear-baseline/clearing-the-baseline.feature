@@ -5,7 +5,7 @@ Feature: Clearing the baseline
   @id:vscode.baseline.clear-baseline.001 @rule:baseline.clear.nothing-to-clear @verified @source:extensions/vscode/src/commands.ts#baselineCommands @test:extensions/vscode/src/extension.test.ts#says there was no baseline to clear when the file is not there
   Scenario: Clearing when there is no baseline says so
     Given a workspace folder is open
-    And And there is no baseline file
+    And there is no baseline file
     When the developer clears the baseline
     Then depwatch says "depwatch: there was no baseline to clear."
 

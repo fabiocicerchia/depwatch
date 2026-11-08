@@ -3,7 +3,7 @@ Feature: Gathering maintainer and repository signals on request
   Lets a user who opts in with --deep see bus factor, funding, archived status and last commit for each dependency, without failing the report when a registry or GitHub cannot answer.
 
   Background:
-    Given Given a manifest that declares the dependency
+    Given a manifest that declares the dependency
 
   @id:viability.maintainer-signals.001 @rule:viability.maintainer-signals.registry-maintainers-and-funding @inferred @source:src/signals.ts#fetchDeepMeta
   Scenario: With --deep, the registry's maintainer count and funding are reported
@@ -52,4 +52,4 @@ Feature: Gathering maintainer and repository signals on request
       | GitHub rate-limits or refuses the repository lookup                              | last commit age                      |
       | the repository URL is not on GitHub, e.g. https://gitlab.example.com/acme/widget | last commit age                      |
       | the registry's metadata request fails                                            | maintainer count and last commit age |
-      | the ecosystem's registry offers no maintainer metadata                           | maintainer count and last commit age |
+      | the ecosystem has no deep registry metadata at all                               | maintainer count and last commit age |

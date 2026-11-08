@@ -23,7 +23,7 @@ Feature: Reading release dates and repository links from registries
     Given the operator asks for deep metadata
     And the registry describes the package's repository as <repository field>
     When the operator checks the manifest
-    Then the report gives the package's repository as <repository>
+    Then the repository link depwatch looks up for the archived and last-commit signals is <repository>
 
     Examples:
       | repository field                                    | repository                             |

@@ -10,7 +10,7 @@ Feature: Following the baseline file
     Given the baseline file .depwatch-baseline.json is in the workspace
     When the baseline file is <change> by an edit or a git pull
     Then the findings shown for /repo/package.json are re-filtered against the new baseline
-    And no registry is queried
+    And manifests whose last scan is still within the refresh interval are not rescanned against the registries
 
     Examples:
       | change  |

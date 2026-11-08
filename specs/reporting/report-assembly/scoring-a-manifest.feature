@@ -33,7 +33,7 @@ Feature: Scoring a manifest on drift and viability
       | situation                         | reason                              |
       | registry does not know it         | not found in registry               |
       | registry lists no versions for it | registry returned no versions       |
-      | ecosystem is not supported        | unsupported ecosystem "<ecosystem>" |
+      | ecosystem "cobol" is not supported | unsupported ecosystem "cobol"       |
 
   @id:reporting.report-assembly.003 @rule:reporting.unknowns.pulse-only-ecosystem-drift-unscored @inferred @source:src/report.ts#analyseDep @questionable
   Scenario: Dependencies from ecosystems without an orderable version series get pulse and viability but no drift
@@ -71,7 +71,7 @@ Feature: Scoring a manifest on drift and viability
     Given an SBOM listing an npm component and a PyPI component
     When the developer checks the SBOM
     Then the npm component is scored from the npm registry and shows eco "npm"
-    And the PyPI component is scored from PyPI and shows eco "pypi"
+    And the PyPI component is scored from PyPI and shows eco "pep440"
 
   @id:reporting.report-assembly.008 @rule:reporting.scan.cancelled-scan-stops @verified @source:src/report.ts#ScanAborted @test:src/report.test.ts#stops taking new work once the signal aborts
   Scenario: A cancelled scan stops and reports that it was cancelled

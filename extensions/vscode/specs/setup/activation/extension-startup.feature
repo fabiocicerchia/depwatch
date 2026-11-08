@@ -21,6 +21,6 @@ Feature: Starting depwatch in the editor
   @id:vscode.setup.activation.002 @rule:setup.activation.commands-available-while-active @verified @source:extensions/vscode/src/extension.ts#activate @test:extensions/vscode/src/extension.test.ts#registers every command the manifest contributes @test:extensions/vscode/src/extension.test.ts#puts everything it created into subscriptions, so disposal is complete
   Scenario: Every depwatch command is available while the extension runs and gone once it shuts down
     Given depwatch has started in the workspace
+    And every command depwatch lists in the command palette can be run
     When the editor shuts depwatch down
     Then none of depwatch's commands can be run any more
-    And before shutdown, every command listed in the command palette could be run

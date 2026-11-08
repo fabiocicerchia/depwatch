@@ -17,7 +17,7 @@ Feature: Branding the documentation site
   Scenario: The splash page and the docs always show the same accent colours
     Given the accent pair is set to #5aa9e6 and #4ec9a4
     When a reader moves from the splash page to the documentation
-    Then the splash headline, buttons and links use the same two accent colours as the docs header, links and primary buttons
+    Then the splash headline, buttons and links use the same two accent colours as the docs hero headline, links and primary buttons
     And changing the accent pair once changes both the splash page and the docs
 
   @id:docs.documentation-site.site-theme.003 @rule:docs.theme.links-legible-per-scheme @inferred @source:docs/stylesheets/extra.css#[data-md-color-scheme="slate"] @questionable

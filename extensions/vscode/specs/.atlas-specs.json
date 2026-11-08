@@ -1,0 +1,2754 @@
+{
+ "excluded": {
+  "src/annotate": [
+   {
+    "candidate": "Index of dependency positions reused per document version",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "extensions/vscode/src/annotate.ts#Annotator"
+   },
+   {
+    "candidate": "Re-index debounced at 250 ms while typing",
+    "covered_by": "in-editor-findings.diagnostics.edits-move-squiggles-not-findings",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "extensions/vscode/src/annotate.ts#Annotator"
+   },
+   {
+    "candidate": "Only changed manifests are republished, in parallel",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "extensions/vscode/src/annotate.ts#Annotator"
+   },
+   {
+    "candidate": "Wholesale results change republishes everything",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "extensions/vscode/src/annotate.ts#Annotator"
+   },
+   {
+    "candidate": "LineIndex binary search from offsets to line/column",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "extensions/vscode/src/annotate.ts#LineIndex"
+   },
+   {
+    "candidate": "Unreadable manifest yields no ranges and so no findings",
+    "covered_by": "",
+    "reason": "TRIVIAL",
+    "source": "extensions/vscode/src/annotate.ts#Annotator"
+   },
+   {
+    "candidate": "Hover markdown has raw HTML disabled",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "extensions/vscode/src/annotate.ts#Annotator"
+   },
+   {
+    "candidate": "Disposing the annotator tears down listeners and the problem collection",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "extensions/vscode/src/annotate.ts#Annotator"
+   }
+  ],
+  "src/baseline-file": [
+   {
+    "candidate": "Writing a baseline re-filters the results already shown instead of querying registries again",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "extensions/vscode/src/baseline-file.ts#WorkspaceBaseline.write"
+   },
+   {
+    "candidate": "Debug log line 'baseline: N manifest(s)' after loading",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "extensions/vscode/src/baseline-file.ts#WorkspaceBaseline.load"
+   },
+   {
+    "candidate": "setConfig swaps the configuration used to locate the file",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "extensions/vscode/src/baseline-file.ts#WorkspaceBaseline.setConfig"
+   },
+   {
+    "candidate": "apply returns the scan unchanged when nothing is accepted",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "extensions/vscode/src/baseline-file.ts#WorkspaceBaseline.apply"
+   },
+   {
+    "candidate": "Accepted findings count excludes healthy and unscorable dependencies",
+    "covered_by": "baseline.accept.records-current-findings",
+    "reason": "DUPLICATE_OF",
+    "source": "extensions/vscode/src/baseline-file.ts#acceptableCount"
+   },
+   {
+    "candidate": "A dependency or manifest the baseline never saw is always shown",
+    "covered_by": "baseline.accept.only-worse-findings-return",
+    "reason": "DUPLICATE_OF",
+    "source": "src/baseline.ts#acceptedIn"
+   },
+   {
+    "candidate": "A missing baseline file is the normal case and accepts nothing",
+    "covered_by": "baseline.sync.file-changes-refilter",
+    "reason": "DUPLICATE_OF",
+    "source": "extensions/vscode/src/baseline-file.ts#WorkspaceBaseline.load"
+   },
+   {
+    "candidate": "Baseline file entries are sorted worst first and end with a newline",
+    "covered_by": "",
+    "reason": "TRIVIAL",
+    "source": "src/baseline.ts#serialise"
+   },
+   {
+    "candidate": "Accepting findings records every current finding and hides it at once",
+    "covered_by": "",
+    "reason": "UNVERIFIABLE",
+    "source": "extensions/vscode/src/baseline-file.ts#WorkspaceBaseline.write"
+   },
+   {
+    "candidate": "An accepted dependency stays hidden until it drifts further or falls to a worse quadrant",
+    "covered_by": "",
+    "reason": "UNVERIFIABLE",
+    "source": "extensions/vscode/src/baseline-file.ts#WorkspaceBaseline.apply"
+   },
+   {
+    "candidate": "Hidden findings leave the total drift but are counted as accepted",
+    "covered_by": "",
+    "reason": "UNVERIFIABLE",
+    "source": "extensions/vscode/src/baseline-file.ts#WorkspaceBaseline.apply"
+   },
+   {
+    "candidate": "Findings cannot be accepted without an open workspace folder",
+    "covered_by": "",
+    "reason": "UNVERIFIABLE",
+    "source": "extensions/vscode/src/baseline-file.ts#WorkspaceBaseline.uri"
+   },
+   {
+    "candidate": "A change to the baseline file is reflected without a manual rescan",
+    "covered_by": "",
+    "reason": "UNVERIFIABLE",
+    "source": "extensions/vscode/src/baseline-file.ts#WorkspaceBaseline.load"
+   },
+   {
+    "candidate": "A baseline that cannot be read accepts nothing",
+    "covered_by": "",
+    "reason": "UNVERIFIABLE",
+    "source": "extensions/vscode/src/baseline-file.ts#WorkspaceBaseline.load"
+   },
+   {
+    "candidate": "The baseline is the file at the configured path in the first workspace folder",
+    "covered_by": "",
+    "reason": "UNVERIFIABLE",
+    "source": "extensions/vscode/src/baseline-file.ts#WorkspaceBaseline.uri"
+   },
+   {
+    "candidate": "Clearing the baseline deletes it and shows every finding again",
+    "covered_by": "",
+    "reason": "UNVERIFIABLE",
+    "source": "extensions/vscode/src/baseline-file.ts#WorkspaceBaseline.forget"
+   }
+  ],
+  "src/cache": [
+   {
+    "candidate": "Concurrent requests for the same package collapse into one registry request",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "extensions/vscode/src/cache.ts#TtlCache.wrap"
+   },
+   {
+    "candidate": "Memory layer bounded by entry count and bytes, least-recently-used evicted, oversized single entry kept",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "extensions/vscode/src/cache.ts#TtlCache"
+   },
+   {
+    "candidate": "A corrupted or truncated stored entry counts as a miss",
+    "covered_by": "",
+    "reason": "TECH_PERSISTENCE",
+    "source": "extensions/vscode/src/cache.ts#TtlCache"
+   },
+   {
+    "candidate": "Disk writes are made one at a time and write failures are ignored",
+    "covered_by": "",
+    "reason": "TECH_PERSISTENCE",
+    "source": "extensions/vscode/src/cache.ts#WriteQueue"
+   },
+   {
+    "candidate": "Stored entry ids are SHA-1 hashes of the package keys",
+    "covered_by": "",
+    "reason": "TECH_PERSISTENCE",
+    "source": "extensions/vscode/src/cache.ts#id"
+   },
+   {
+    "candidate": "Startup pruning of entries older than twice the lifetime and beyond maxEntries",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "extensions/vscode/src/cache.ts#TtlCache.prune"
+   },
+   {
+    "candidate": "held / heldSize introspection and flush for tests and shutdown",
+    "covered_by": "",
+    "reason": "TECH_DEVTOOLING",
+    "source": "extensions/vscode/src/cache.ts#TtlCache"
+   },
+   {
+    "candidate": "After the registry cache is cleared, the next scan asks the registries again",
+    "covered_by": "",
+    "reason": "UNVERIFIABLE",
+    "source": "extensions/vscode/src/cache.ts#TtlCache.clear"
+   }
+  ],
+  "src/commands": [
+   {
+    "candidate": "Commands are registered once and disposed with the extension",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "extensions/vscode/src/commands.ts#registerCommands"
+   },
+   {
+    "candidate": "Handlers read config and scanner through getters so they use the current ones",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "extensions/vscode/src/commands.ts#CommandDeps"
+   },
+   {
+    "candidate": "Scan workspace command runs a workspace scan",
+    "covered_by": "",
+    "reason": "TRIVIAL",
+    "source": "extensions/vscode/src/commands.ts#scanning"
+   },
+   {
+    "candidate": "File/project scope toggle and expand all delegate to the pane",
+    "covered_by": "",
+    "reason": "UNVERIFIABLE",
+    "source": "extensions/vscode/src/commands.ts#pane"
+   },
+   {
+    "candidate": "Clear filter shows every quadrant",
+    "covered_by": "findings-pane.filtering.empty-pick-shows-everything",
+    "reason": "DUPLICATE_OF",
+    "source": "extensions/vscode/src/commands.ts#pane"
+   },
+   {
+    "candidate": "Show log opens the extension log",
+    "covered_by": "",
+    "reason": "TRIVIAL",
+    "source": "extensions/vscode/src/commands.ts#pane"
+   },
+   {
+    "candidate": "Export default path is the first workspace folder",
+    "covered_by": "reports.export.html-report-saved",
+    "reason": "DUPLICATE_OF",
+    "source": "extensions/vscode/src/commands.ts#defaultExportUri"
+   },
+   {
+    "candidate": "Trend path converted to forward slashes for git",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "extensions/vscode/src/commands.ts#report"
+   },
+   {
+    "candidate": "Export chart caches its on-the-spot scan into results",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "extensions/vscode/src/commands.ts#exporting"
+   }
+  ],
+  "src/config": [
+   {
+    "candidate": "Default values for cache TTLs, cache sizes, concurrency, debounce and refresh interval (hours/minutes converted to milliseconds)",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "extensions/vscode/src/config.ts#readConfig"
+   },
+   {
+    "candidate": "Excluded directory names derived from exclude globs for cheap file-event checks",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "extensions/vscode/src/config.ts#readConfig"
+   },
+   {
+    "candidate": "Fallback default for depwatch.exclude in code is [] while package.json contributes a default list",
+    "covered_by": "",
+    "reason": "TRIVIAL",
+    "source": "extensions/vscode/src/config.ts#readConfig"
+   },
+   {
+    "candidate": "Severity name mapping for unknown values falling back to no diagnostic",
+    "covered_by": "findings.diagnostics.severity-per-quadrant",
+    "reason": "DUPLICATE_OF",
+    "source": "extensions/vscode/src/config.ts#severityFor"
+   },
+   {
+    "candidate": "Scanner rebuilt and debouncer recreated on any depwatch settings change",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "extensions/vscode/src/extension.ts#activate"
+   },
+   {
+    "candidate": "Thresholds, badge, baseline path, trend points, statusBar settings read into config",
+    "covered_by": "",
+    "reason": "TRIVIAL",
+    "source": "extensions/vscode/src/config.ts#readConfig"
+   }
+  ],
+  "src/engine": [
+   {
+    "candidate": "Concurrent scans of the same manifest join a single scan already running",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "extensions/vscode/src/engine.ts#Scanner.scan"
+   },
+   {
+    "candidate": "Re-parsing is skipped when the mtime and size of the manifest and its lock files are unchanged",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "extensions/vscode/src/engine.ts#Scanner.scan"
+   },
+   {
+    "candidate": "Release dates are kept for 30 days; a fetch where every date failed is not saved to disk",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "extensions/vscode/src/engine.ts#Scanner"
+   },
+   {
+    "candidate": "Version lists and deep data are cached with the configured TTLs and a cap on in-memory entries",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "extensions/vscode/src/engine.ts#Scanner"
+   },
+   {
+    "candidate": "flush, prune and clear of the caches; forget a manifest",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "extensions/vscode/src/engine.ts#Scanner.clear"
+   },
+   {
+    "candidate": "A scan is deep when either the request asks for it or the deep setting is on",
+    "covered_by": "",
+    "reason": "TRIVIAL",
+    "source": "extensions/vscode/src/engine.ts#Scanner.scan"
+   },
+   {
+    "candidate": "Lock files beside a manifest are read only when the lock-file setting is on",
+    "covered_by": "",
+    "reason": "UNVERIFIABLE",
+    "source": "extensions/vscode/src/engine.ts#candidates"
+   },
+   {
+    "candidate": "A file that cannot be read fails with '<name> could not be read'",
+    "covered_by": "",
+    "reason": "UNVERIFIABLE",
+    "source": "extensions/vscode/src/engine.ts#snapshot"
+   },
+   {
+    "candidate": "isScannable: a changed file counts if it is a known lock file or its name matches a manifest pattern",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "extensions/vscode/src/engine.ts#isScannable"
+   },
+   {
+    "candidate": "isExcluded: file events under excluded folders are ignored",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "extensions/vscode/src/engine.ts#isExcluded"
+   },
+   {
+    "candidate": "Discovery ignores files outside the local file system",
+    "covered_by": "",
+    "reason": "TRIVIAL",
+    "source": "extensions/vscode/src/engine.ts#findManifests"
+   },
+   {
+    "candidate": "A running scan publishes its findings so far every tenth dependency and at the last one",
+    "covered_by": "",
+    "reason": "UNVERIFIABLE",
+    "source": "extensions/vscode/src/engine.ts#Scanner.scan"
+   },
+   {
+    "candidate": "Rescanning a manifest whose dependencies have not changed keeps the previous findings until the refresh interval passes",
+    "covered_by": "",
+    "reason": "UNVERIFIABLE",
+    "source": "extensions/vscode/src/engine.ts#Scanner.scan"
+   }
+  ],
+  "src/exclude": [
+   {
+    "candidate": "Duplicate exclude globs are dropped from the merged glob",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "extensions/vscode/src/exclude.ts#combine"
+   },
+   {
+    "candidate": "A single exclude glob is passed without a brace group; blank globs are ignored",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "extensions/vscode/src/exclude.ts#combine"
+   },
+   {
+    "candidate": "Dot-named folders like .venv and .git are treated as folders, not filenames",
+    "covered_by": "scanning.excludes.excluded-folders-not-rescanned",
+    "reason": "TRIVIAL",
+    "source": "extensions/vscode/src/exclude.ts#directoryNames"
+   },
+   {
+    "candidate": "Windows backslash paths are split into segments",
+    "covered_by": "scanning.excludes.excluded-folders-not-rescanned",
+    "reason": "DUPLICATE_OF",
+    "source": "extensions/vscode/src/exclude.ts#isExcludedPath"
+   },
+   {
+    "candidate": "No excludes means no changed file is ever treated as excluded",
+    "covered_by": "",
+    "reason": "TRIVIAL",
+    "source": "extensions/vscode/src/exclude.ts#isExcludedPath"
+   },
+   {
+    "candidate": "Folder names are extracted per segment instead of matching each glob",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "extensions/vscode/src/exclude.ts#directoryNames"
+   }
+  ],
+  "src/explain": [
+   {
+    "candidate": "ORDER re-exports the core quadrant order for the tree and report",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "extensions/vscode/src/explain.ts#ORDER"
+   },
+   {
+    "candidate": "QUADRANT labels/actions reused by totals and report panel",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "extensions/vscode/src/explain.ts#QUADRANT"
+   },
+   {
+    "candidate": "Same tooltip shown on findings-pane tree items and facts in the report panel",
+    "covered_by": "findings.explanations.facts-worst-first",
+    "reason": "DUPLICATE_OF",
+    "source": "extensions/vscode/src/tree.ts"
+   },
+   {
+    "candidate": "\"on the latest release (x)\" line for an up-to-date dependency",
+    "covered_by": "",
+    "reason": "TRIVIAL",
+    "source": "extensions/vscode/src/explain.ts#REASONS"
+   },
+   {
+    "candidate": "Cadence/last-commit day phrasing (days, months, years thresholds)",
+    "covered_by": "",
+    "reason": "TRIVIAL",
+    "source": "extensions/vscode/src/explain.ts#days"
+   },
+   {
+    "candidate": "Hover markdown has HTML disabled",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "extensions/vscode/src/annotate.ts"
+   }
+  ],
+  "src/extension": [
+   {
+    "candidate": "Findings view opens with file scope and no filter",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "extensions/vscode/src/extension.ts#activate"
+   },
+   {
+    "candidate": "Scanner rebuilt on settings change, disk cache kept, memory layer flushed",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "extensions/vscode/src/extension.ts#activate"
+   },
+   {
+    "candidate": "Debouncer recreated when debounceMs changes",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "extensions/vscode/src/extension.ts#activate"
+   },
+   {
+    "candidate": "Cache pruned once per session without delaying first scan",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "extensions/vscode/src/extension.ts#activate"
+   },
+   {
+    "candidate": "Scanner cache flushed on shutdown",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "extensions/vscode/src/extension.ts#activate"
+   },
+   {
+    "candidate": "Watcher glob built from manifest basenames plus lock names",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "extensions/vscode/src/extension.ts#manifestNames"
+   },
+   {
+    "candidate": "Behaviour of individual commands (cancel, checkGates, clearBaseline, setGitHubToken, showTrend, showLog)",
+    "covered_by": "implemented in commands.ts, outside this module",
+    "reason": "UNVERIFIABLE",
+    "source": "extensions/vscode/src/commands.ts#registerCommands"
+   },
+   {
+    "candidate": "Duplicate save + watcher events folded into one rescan",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "extensions/vscode/src/extension.ts#watchManifests"
+   }
+  ],
+  "src/html": [
+   {
+    "candidate": "Footer states thresholds, scan tier (deep vs default) and generation time",
+    "covered_by": "",
+    "reason": "TRIVIAL",
+    "source": "extensions/vscode/src/html.ts#footer"
+   },
+   {
+    "candidate": "Viability bar coloured red below the risky threshold, green otherwise",
+    "covered_by": "",
+    "reason": "TRIVIAL",
+    "source": "extensions/vscode/src/html.ts#bar"
+   },
+   {
+    "candidate": "Row hover title lists the plain-language reasons for the dependency",
+    "covered_by": "",
+    "reason": "TRIVIAL",
+    "source": "extensions/vscode/src/html.ts#row"
+   },
+   {
+    "candidate": "Report columns and order come from the shared REPORT_COLUMNS spec",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "extensions/vscode/src/html.ts#table"
+   },
+   {
+    "candidate": "Quadrant colours taken from editor chart tokens with depwatch fallbacks",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "extensions/vscode/src/html.ts#QUADRANT_CSS"
+   },
+   {
+    "candidate": "Per-manifest heading line with libyears, dep count, ecosystem, file and notes",
+    "covered_by": "",
+    "reason": "TRIVIAL",
+    "source": "extensions/vscode/src/html.ts#manifestSection"
+   },
+   {
+    "candidate": "Shared layout CSS",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "extensions/vscode/src/html.ts#LAYOUT"
+   }
+  ],
+  "src/locate": [
+   {
+    "candidate": "Version ranges containing braces do not cut a dependency section short",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "extensions/vscode/src/locate.ts#objectKeys"
+   },
+   {
+    "candidate": "The text is indexed in one pass per scan rather than searched per dependency",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "extensions/vscode/src/locate.ts#buildIndex"
+   },
+   {
+    "candidate": "File format detection by file name, including Windows paths and requirements*.txt variants",
+    "covered_by": "findings.location.declared-name-in-supported-manifests",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "extensions/vscode/src/locate.ts#shapeOf"
+   },
+   {
+    "candidate": "A name declared in two sections points at its first declaration",
+    "covered_by": "",
+    "reason": "TRIVIAL",
+    "source": "extensions/vscode/src/locate.ts#jsonSections"
+   },
+   {
+    "candidate": "Cargo.toml comments and dev/build-dependencies tables",
+    "covered_by": "findings.location.declared-name-in-supported-manifests",
+    "reason": "DUPLICATE_OF",
+    "source": "extensions/vscode/src/locate.ts#cargoToml"
+   },
+   {
+    "candidate": "Gemfile.lock only top-level specs (4-space indent) are located",
+    "covered_by": "",
+    "reason": "TRIVIAL",
+    "source": "extensions/vscode/src/locate.ts#buildIndex"
+   },
+   {
+    "candidate": "Locations are plain character offsets turned into ranges by the caller",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "extensions/vscode/src/locate.ts#Span"
+   }
+  ],
+  "src/panel": [
+   {
+    "candidate": "Render is skipped when the panel is hidden because the webview does not keep its context",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "extensions/vscode/src/panel.ts#ReportPanel"
+   },
+   {
+    "candidate": "Fresh random nonce and webview CSP source applied on every render",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "extensions/vscode/src/panel.ts#ReportPanel"
+   },
+   {
+    "candidate": "Report quadrant counts skip dependencies with no registry data (tally)",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "extensions/vscode/src/panel.ts#ReportPanel"
+   },
+   {
+    "candidate": "Generated timestamp formatted as UTC 'YYYY-MM-DD HH:MM'",
+    "covered_by": "",
+    "reason": "TRIVIAL",
+    "source": "extensions/vscode/src/panel.ts#ReportPanel"
+   },
+   {
+    "candidate": "Manifests that could not be scanned are listed with their failure message",
+    "covered_by": "",
+    "reason": "UNVERIFIABLE",
+    "source": "extensions/vscode/src/panel.ts#ReportPanel"
+   },
+   {
+    "candidate": "Disposing the panel clears the timer, closes the tab and unsubscribes",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "extensions/vscode/src/panel.ts#ReportPanel"
+   },
+   {
+    "candidate": "Results that land while the report is closed do nothing",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "extensions/vscode/src/panel.ts#ReportPanel"
+   }
+  ],
+  "src/scan-runner": [
+   {
+    "candidate": "Workspace scans run one manifest at a time to avoid saturating the connection",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "extensions/vscode/src/scan-runner.ts#ScanRunner.all"
+   },
+   {
+    "candidate": "Partial findings are published manifest by manifest as registries answer",
+    "covered_by": "scanning/incremental-results module",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "extensions/vscode/src/scan-runner.ts#ScanRunner.one"
+   },
+   {
+    "candidate": "Baseline-accepted findings are filtered out of every published result",
+    "covered_by": "baseline/accept-findings module",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "extensions/vscode/src/scan-runner.ts#ScanRunner.one"
+   },
+   {
+    "candidate": "Scanner and configuration are re-read on each run so changed settings apply",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "extensions/vscode/src/scan-runner.ts#RunnerDeps"
+   },
+   {
+    "candidate": "Workspace scan does nothing when depwatch is disabled in settings",
+    "covered_by": "setup/settings module",
+    "reason": "TRIVIAL",
+    "source": "extensions/vscode/src/scan-runner.ts#ScanRunner.all"
+   },
+   {
+    "candidate": "Debug log lines for libyears, manifest counts, cancellation and errors",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "extensions/vscode/src/scan-runner.ts#ScanRunner"
+   },
+   {
+    "candidate": "Asking to cancel when no workspace scan is running says so",
+    "covered_by": "",
+    "reason": "UNVERIFIABLE",
+    "source": "extensions/vscode/src/scan-runner.ts#ScanRunner.cancel"
+   },
+   {
+    "candidate": "A manifest that cannot be scanned is listed with the reason, replacing its old findings",
+    "covered_by": "",
+    "reason": "UNVERIFIABLE",
+    "source": "extensions/vscode/src/scan-runner.ts#ScanRunner.failed"
+   },
+   {
+    "candidate": "A manifest with no dependencies is quietly left out rather than reported as a failure",
+    "covered_by": "",
+    "reason": "UNVERIFIABLE",
+    "source": "extensions/vscode/src/scan-runner.ts#ScanRunner.failed"
+   },
+   {
+    "candidate": "A workspace with no manifests is reported only when the developer asked for the scan",
+    "covered_by": "",
+    "reason": "UNVERIFIABLE",
+    "source": "extensions/vscode/src/scan-runner.ts#ScanRunner.all"
+   },
+   {
+    "candidate": "Starting a workspace scan stops the one already running",
+    "covered_by": "",
+    "reason": "UNVERIFIABLE",
+    "source": "extensions/vscode/src/scan-runner.ts#ScanRunner.all"
+   },
+   {
+    "candidate": "The status bar shows depwatch scanning until the last running scan finishes",
+    "covered_by": "",
+    "reason": "UNVERIFIABLE",
+    "source": "extensions/vscode/src/scan-runner.ts#ScanRunner.one"
+   }
+  ],
+  "src/schedule": [
+   {
+    "candidate": "Burst: leading-edge then trailing-edge folding of UI refreshes (findings panel and state re-render) during a workspace scan",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "extensions/vscode/src/schedule.ts#Burst"
+   },
+   {
+    "candidate": "Burst: no trailing emit when nothing arrived; immediate again after the window; dispose drops pending trailing emit",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "extensions/vscode/src/schedule.ts#Burst"
+   },
+   {
+    "candidate": "Debouncer.dispose drops pending rescans when the extension shuts down or the debounce setting changes",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "extensions/vscode/src/schedule.ts#Debouncer"
+   },
+   {
+    "candidate": "Heartbeat timer is unref'd so it does not keep the process alive",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "extensions/vscode/src/schedule.ts#Heartbeat"
+   },
+   {
+    "candidate": "Heartbeat.stop/dispose clears the interval on deactivation",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "extensions/vscode/src/schedule.ts#Heartbeat"
+   },
+   {
+    "candidate": "Debouncer(250) used for annotation re-indexing while typing",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "extensions/vscode/src/annotate.ts#Annotator"
+   }
+  ],
+  "src/state": [
+   {
+    "candidate": "Change notifications coalesced over a 150 ms burst, carrying the set of changed paths or null for everything",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "extensions/vscode/src/state.ts#Results"
+   },
+   {
+    "candidate": "Sorted scan list memoised until the next change",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "extensions/vscode/src/state.ts#Results.all"
+   },
+   {
+    "candidate": "Manifests and failures listed alphabetically by relative path",
+    "covered_by": "",
+    "reason": "TRIVIAL",
+    "source": "extensions/vscode/src/state.ts#Results.allFailures"
+   },
+   {
+    "candidate": "One shared results store feeding pane, squiggles and status bar",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "extensions/vscode/src/state.ts#Results"
+   },
+   {
+    "candidate": "Clearing all results announces a whole-workspace change",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "extensions/vscode/src/state.ts#Results.clear"
+   },
+   {
+    "candidate": "Disposal of emitter and burst timer",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "extensions/vscode/src/state.ts#Results.dispose"
+   },
+   {
+    "candidate": "File scope shows the nearest manifest above the open file",
+    "covered_by": "",
+    "reason": "UNVERIFIABLE",
+    "source": "extensions/vscode/src/state.ts#Results.forFile"
+   },
+   {
+    "candidate": "The status bar sums drift across every scanned manifest",
+    "covered_by": "",
+    "reason": "UNVERIFIABLE",
+    "source": "extensions/vscode/src/state.ts#Results.totals"
+   }
+  ],
+  "src/status": [
+   {
+    "candidate": "Status bar item placed right-aligned at priority -100 (far corner)",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "extensions/vscode/src/status.ts#StatusBar"
+   },
+   {
+    "candidate": "Disposing the status bar item and its change subscription on deactivate",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "extensions/vscode/src/status.ts#StatusBar"
+   },
+   {
+    "candidate": "Status bar re-renders whenever results change",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "extensions/vscode/src/status.ts#StatusBar"
+   }
+  ],
+  "src/store": [
+   {
+    "candidate": "Cached registry answers are kept on disk under the extension's global storage, so a second window or a later session starts warm",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "extensions/vscode/src/store.ts#FileCacheStore"
+   },
+   {
+    "candidate": "A missing or unreadable cache file counts as a miss, not an error",
+    "covered_by": "",
+    "reason": "TECH_PERSISTENCE",
+    "source": "extensions/vscode/src/store.ts#FileCacheStore"
+   },
+   {
+    "candidate": "The cache directory is created lazily on first write",
+    "covered_by": "",
+    "reason": "TECH_PERSISTENCE",
+    "source": "extensions/vscode/src/store.ts#FileCacheStore"
+   },
+   {
+    "candidate": "Startup pruning keeps the disk cache to maxEntries and drops entries older than twice the TTL. The same .json id mismatch means stat always fails (mtime 0), so every entry is picked for pruning, but remove() targets non-existent paths, so in practice nothing is deleted and the disk cache grows without bound",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "extensions/vscode/src/store.ts#FileCacheStore"
+   },
+   {
+    "candidate": "Removing an entry that is already gone succeeds silently",
+    "covered_by": "",
+    "reason": "TRIVIAL",
+    "source": "extensions/vscode/src/store.ts#FileCacheStore"
+   }
+  ],
+  "src/totals": [
+   {
+    "candidate": "Every filter lens (four quadrants plus 'no data') has a label and blurb for the filter picker",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "extensions/vscode/src/totals.ts#LENS_LABEL"
+   },
+   {
+    "candidate": "Empty scope yields all-zero totals",
+    "covered_by": "findings-pane.totals.summary-line",
+    "reason": "DUPLICATE_OF",
+    "source": "extensions/vscode/src/totals.ts#totalsOf"
+   },
+   {
+    "candidate": "Singular 'dependency' wording in the badge tooltip",
+    "covered_by": "",
+    "reason": "TRIVIAL",
+    "source": "extensions/vscode/src/totals.ts#badgeTooltip"
+   },
+   {
+    "candidate": "Drift total rounded to two decimals",
+    "covered_by": "findings-pane.totals.summary-line",
+    "reason": "DUPLICATE_OF",
+    "source": "extensions/vscode/src/totals.ts#totalsOf"
+   }
+  ],
+  "src/tree": [
+   {
+    "candidate": "Tree built once per refresh and kept so reveal matches by identity and ids are stable",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "extensions/vscode/src/tree.ts#FindingsTree.tree"
+   },
+   {
+    "candidate": "Stable row ids let VS Code remember which groups were open",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "extensions/vscode/src/tree.ts#FindingsTree.getTreeItem"
+   },
+   {
+    "candidate": "Icons and theme colours per quadrant (flame red, arrow-up yellow, eye blue, check green, question grey)",
+    "covered_by": "",
+    "reason": "TRIVIAL",
+    "source": "extensions/vscode/src/tree.ts#ICON"
+   },
+   {
+    "candidate": "setContext depwatch.scope / depwatch.filtered for menu visibility",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "extensions/vscode/src/tree.ts#FindingsTree.setScope"
+   },
+   {
+    "candidate": "Dependency row hover shows the quadrant/viability explanation",
+    "covered_by": "in-editor-findings/hover-explanations (explain.ts tooltip)",
+    "reason": "DUPLICATE_OF",
+    "source": "extensions/vscode/src/tree.ts#FindingsTree.getTreeItem"
+   },
+   {
+    "candidate": "Totals row label/detail wording (\"N of M deps to address\", nothing to address)",
+    "covered_by": "totals module (summaryLabel/summaryDetail)",
+    "reason": "DUPLICATE_OF",
+    "source": "extensions/vscode/src/totals.ts#summaryLabel"
+   },
+   {
+    "candidate": "Settings change refreshes the pane",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "extensions/vscode/src/tree.ts#FindingsTree.setConfig"
+   },
+   {
+    "candidate": "Disposal of listeners",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "extensions/vscode/src/tree.ts#FindingsTree.dispose"
+   },
+   {
+    "candidate": "Empty workspace shows the view's own welcome content rather than a row",
+    "covered_by": "",
+    "reason": "TRIVIAL",
+    "source": "extensions/vscode/src/tree.ts#FindingsTree.build"
+   },
+   {
+    "candidate": "Replace always opens, Upgrade opens only when it holds ten or fewer, other groups start closed",
+    "covered_by": "",
+    "reason": "UNVERIFIABLE",
+    "source": "extensions/vscode/src/tree.ts#FindingsTree.getTreeItem"
+   },
+   {
+    "candidate": "With several manifests in view, each manifest's groups sit under a heading naming the file",
+    "covered_by": "",
+    "reason": "UNVERIFIABLE",
+    "source": "extensions/vscode/src/tree.ts#FindingsTree.build"
+   },
+   {
+    "candidate": "Clicking a dependency in the pane jumps to the line that declares it",
+    "covered_by": "",
+    "reason": "UNVERIFIABLE",
+    "source": "extensions/vscode/src/tree.ts#FindingsTree.getTreeItem"
+   },
+   {
+    "candidate": "In file scope the pane shows the findings of the manifest the active file belongs to, without rescanning",
+    "covered_by": "",
+    "reason": "UNVERIFIABLE",
+    "source": "extensions/vscode/src/tree.ts#FindingsTree.scopeScans"
+   },
+   {
+    "candidate": "In file scope, a file with no manifest says so and points to the project view",
+    "covered_by": "",
+    "reason": "UNVERIFIABLE",
+    "source": "extensions/vscode/src/tree.ts#FindingsTree.build"
+   },
+   {
+    "candidate": "Manifests that failed to scan are listed in project scope, not in file scope",
+    "covered_by": "",
+    "reason": "UNVERIFIABLE",
+    "source": "extensions/vscode/src/tree.ts#FindingsTree.build"
+   },
+   {
+    "candidate": "A filter keeps only the quadrants it names, including no data on its own",
+    "covered_by": "",
+    "reason": "UNVERIFIABLE",
+    "source": "extensions/vscode/src/tree.ts#FindingsTree.setFilter"
+   },
+   {
+    "candidate": "Choosing every quadrant or none clears the filter",
+    "covered_by": "",
+    "reason": "UNVERIFIABLE",
+    "source": "extensions/vscode/src/tree.ts#FindingsTree.setFilter"
+   },
+   {
+    "candidate": "A filter that matches nothing says so instead of looking clean",
+    "covered_by": "",
+    "reason": "UNVERIFIABLE",
+    "source": "extensions/vscode/src/tree.ts#FindingsTree.build"
+   },
+   {
+    "candidate": "A manifest with nothing left after filtering disappears from the list",
+    "covered_by": "",
+    "reason": "UNVERIFIABLE",
+    "source": "extensions/vscode/src/tree.ts#FindingsTree.build"
+   },
+   {
+    "candidate": "The filter picker shows how many dependencies each quadrant holds in the current scope",
+    "covered_by": "",
+    "reason": "UNVERIFIABLE",
+    "source": "extensions/vscode/src/tree.ts#FindingsTree.scopeCounts"
+   },
+   {
+    "candidate": "Expand all opens every manifest and quadrant group in the pane",
+    "covered_by": "",
+    "reason": "UNVERIFIABLE",
+    "source": "extensions/vscode/src/tree.ts#FindingsTree.expandAll"
+   },
+   {
+    "candidate": "The totals row is always last and counts the whole scope, even when the list is filtered",
+    "covered_by": "",
+    "reason": "UNVERIFIABLE",
+    "source": "extensions/vscode/src/tree.ts#FindingsTree.build"
+   },
+   {
+    "candidate": "Findings hidden by the baseline are counted on the totals row",
+    "covered_by": "",
+    "reason": "UNVERIFIABLE",
+    "source": "extensions/vscode/src/tree.ts#FindingsTree.getTreeItem"
+   },
+   {
+    "candidate": "The pane's tab badge counts the whole workspace, ignores scope and filter, and disappears at zero",
+    "covered_by": "",
+    "reason": "UNVERIFIABLE",
+    "source": "extensions/vscode/src/tree.ts#FindingsTree.decorate"
+   }
+  ],
+  "vscode/esbuild": [
+   {
+    "candidate": "The extension is bundled from src/extension.ts into one CommonJS file, dist/extension.js, targeting Node 20",
+    "covered_by": "",
+    "reason": "TECH_BUILD",
+    "source": "extensions/vscode/esbuild.mjs#options"
+   },
+   {
+    "candidate": "The editor's own 'vscode' API is left out of the bundle because VS Code supplies it when the extension runs",
+    "covered_by": "",
+    "reason": "TECH_BUILD",
+    "source": "extensions/vscode/esbuild.mjs#options"
+   },
+   {
+    "candidate": "Release builds are minified with no source maps; --watch builds include source maps, are not minified, and rebuild whenever a file changes",
+    "covered_by": "",
+    "reason": "TECH_DEVTOOLING",
+    "source": "extensions/vscode/esbuild.mjs#options"
+   },
+   {
+    "candidate": "The extension and the CLI report the same numbers for the same manifest, because the bundle imports the depwatch engine through the @lib/* paths instead of copying it",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "extensions/vscode/esbuild.mjs#options"
+   }
+  ]
+ },
+ "lifted": {
+  "src/annotate": [],
+  "src/baseline-file": [
+   {
+    "from_source": "src/baseline.ts#acceptedIn",
+    "rule": "An accepted dependency resurfaces only when it drifts more than 0.005 libyears beyond what was accepted or falls to a worse quadrant"
+   },
+   {
+    "from_source": "src/baseline.ts#parse",
+    "rule": "A baseline file that is not valid JSON, has an unknown version or lacks manifests accepts nothing"
+   },
+   {
+    "from_source": "src/baseline.ts#serialise",
+    "rule": "Only non-healthy, scorable findings are recorded in the baseline"
+   },
+   {
+    "from_source": "src/baseline.ts#withoutAccepted",
+    "rule": "Total drift is recomputed from the findings left after accepted ones are hidden"
+   }
+  ],
+  "src/cache": [
+   {
+    "from_source": "extensions/vscode/src/cache.ts#TtlCache",
+    "rule": "registry-cache.failures.retried-after-short-wait: a registry failure is never remembered across windows"
+   },
+   {
+    "from_source": "extensions/vscode/src/cache.ts#TtlCache",
+    "rule": "registry-cache.persistence.new-window-starts-warm"
+   }
+  ],
+  "src/commands": [],
+  "src/config": [],
+  "src/engine": [],
+  "src/exclude": [],
+  "src/explain": [],
+  "src/extension": [],
+  "src/html": [],
+  "src/locate": [],
+  "src/panel": [],
+  "src/scan-runner": [],
+  "src/schedule": [],
+  "src/state": [],
+  "src/status": [],
+  "src/store": [
+   {
+    "from_source": "extensions/vscode/src/store.ts#FileCacheStore",
+    "rule": "registry-cache.reset.next-scan-refetches"
+   }
+  ],
+  "src/totals": [
+   {
+    "from_source": "src/gates.ts#tally",
+    "rule": "Dependencies without registry data are counted in no quadrant, so they never count as work or as healthy"
+   }
+  ],
+  "src/tree": [],
+  "vscode/esbuild": []
+ },
+ "retired": [],
+ "scenarios": {
+  "vscode.automatic-rescans.lockfile-changes.001": {
+   "file": "extensions/vscode/specs/automatic-rescans/lockfile-changes/lock-file-rescans.feature",
+   "fingerprint": "99cf40d53734",
+   "human": false,
+   "rule": "automatic-rescans.lockfile.rescan-sibling-manifests",
+   "source": "extensions/vscode/src/extension.ts#staleFor",
+   "status": "verified",
+   "test": "extensions/vscode/src/extension.test.ts#watches the manifests it scans and the locks that change them",
+   "tests": [
+    "extensions/vscode/src/extension.test.ts#watches the manifests it scans and the locks that change them"
+   ]
+  },
+  "vscode.automatic-rescans.periodic-recheck.001": {
+   "file": "extensions/vscode/specs/automatic-rescans/periodic-recheck/periodic-recheck-wiring.feature",
+   "fingerprint": "ebd74d27c908",
+   "human": false,
+   "rule": "automatic-rescans.periodic.forced-full-recheck",
+   "source": "extensions/vscode/src/extension.ts#activate",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "vscode.automatic-rescans.periodic-recheck.002": {
+   "file": "extensions/vscode/specs/automatic-rescans/periodic-recheck/periodic-recheck.feature",
+   "fingerprint": "acf15388e799",
+   "human": false,
+   "rule": "automatic-rescans.periodic-recheck.runs-while-focused",
+   "source": "extensions/vscode/src/schedule.ts#Heartbeat",
+   "status": "verified",
+   "test": "extensions/vscode/src/schedule.test.ts#fires on its interval while the window has focus",
+   "tests": [
+    "extensions/vscode/src/schedule.test.ts#fires on its interval while the window has focus"
+   ]
+  },
+  "vscode.automatic-rescans.periodic-recheck.003": {
+   "file": "extensions/vscode/specs/automatic-rescans/periodic-recheck/periodic-recheck.feature",
+   "fingerprint": "acf15388e799",
+   "human": false,
+   "rule": "automatic-rescans.periodic-recheck.missed-checks-collapse-to-one-on-focus",
+   "source": "extensions/vscode/src/schedule.ts#Heartbeat",
+   "status": "verified",
+   "test": "extensions/vscode/src/schedule.test.ts#defers a tick that arrives unfocused, and runs it once on return",
+   "tests": [
+    "extensions/vscode/src/schedule.test.ts#defers a tick that arrives unfocused, and runs it once on return"
+   ]
+  },
+  "vscode.automatic-rescans.periodic-recheck.004": {
+   "file": "extensions/vscode/specs/automatic-rescans/periodic-recheck/periodic-recheck.feature",
+   "fingerprint": "acf15388e799",
+   "human": false,
+   "rule": "automatic-rescans.periodic-recheck.zero-interval-disables",
+   "source": "extensions/vscode/src/schedule.ts#Heartbeat",
+   "status": "verified",
+   "test": "extensions/vscode/src/schedule.test.ts#does not start at all when the interval is zero",
+   "tests": [
+    "extensions/vscode/src/schedule.test.ts#does not start at all when the interval is zero"
+   ]
+  },
+  "vscode.automatic-rescans.periodic-recheck.005": {
+   "file": "extensions/vscode/specs/automatic-rescans/periodic-recheck/periodic-recheck.feature",
+   "fingerprint": "acf15388e799",
+   "human": false,
+   "rule": "automatic-rescans.periodic-recheck.interval-change-applies-live",
+   "source": "extensions/vscode/src/schedule.ts#Heartbeat",
+   "status": "verified",
+   "test": "extensions/vscode/src/schedule.test.ts#restarts on a new interval",
+   "tests": [
+    "extensions/vscode/src/schedule.test.ts#restarts on a new interval"
+   ]
+  },
+  "vscode.automatic-rescans.rescan-on-save.001": {
+   "file": "extensions/vscode/specs/automatic-rescans/rescan-on-save/rescan-changed-manifests.feature",
+   "fingerprint": "c94f06eabf14",
+   "human": false,
+   "rule": "automatic-rescans.on-save.rescan-after-save",
+   "source": "extensions/vscode/src/extension.ts#watchManifests",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "vscode.automatic-rescans.rescan-on-save.002": {
+   "file": "extensions/vscode/specs/automatic-rescans/rescan-on-save/rescan-changed-manifests.feature",
+   "fingerprint": "ebd74d27c908",
+   "human": false,
+   "rule": "automatic-rescans.on-save.no-rescan-when-off-or-excluded",
+   "source": "extensions/vscode/src/extension.ts#activate",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "vscode.automatic-rescans.rescan-on-save.003": {
+   "file": "extensions/vscode/specs/automatic-rescans/rescan-on-save/rescan-changed-manifests.feature",
+   "fingerprint": "ebd74d27c908",
+   "human": false,
+   "rule": "automatic-rescans.on-save.deleted-manifest-findings-removed",
+   "source": "extensions/vscode/src/extension.ts#activate",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "vscode.automatic-rescans.rescan-on-save.004": {
+   "file": "extensions/vscode/specs/automatic-rescans/rescan-on-save/rescan-on-save-debounce.feature",
+   "fingerprint": "23df53b6bb85",
+   "human": false,
+   "rule": "automatic-rescans.rescan-on-save.burst-of-saves-scans-once",
+   "source": "extensions/vscode/src/schedule.ts#Debouncer",
+   "status": "verified",
+   "test": "extensions/vscode/src/schedule.test.ts#runs once for a burst of saves",
+   "tests": [
+    "extensions/vscode/src/schedule.test.ts#runs once for a burst of saves",
+    "extensions/vscode/src/schedule.test.ts#runs synchronously when the delay is zero"
+   ]
+  },
+  "vscode.automatic-rescans.rescan-on-save.005": {
+   "file": "extensions/vscode/specs/automatic-rescans/rescan-on-save/rescan-on-save-debounce.feature",
+   "fingerprint": "23df53b6bb85",
+   "human": false,
+   "rule": "automatic-rescans.rescan-on-save.manifests-debounced-independently",
+   "source": "extensions/vscode/src/schedule.ts#Debouncer",
+   "status": "verified",
+   "test": "extensions/vscode/src/schedule.test.ts#keeps different files apart",
+   "tests": [
+    "extensions/vscode/src/schedule.test.ts#keeps different files apart"
+   ]
+  },
+  "vscode.automatic-rescans.scan-coalescing.001": {
+   "file": "extensions/vscode/specs/automatic-rescans/scan-coalescing/scan-coalescing.feature",
+   "fingerprint": "ea0fb6895baa",
+   "human": false,
+   "rule": "automatic-rescans.scan-coalescing.joins-in-flight-scan",
+   "source": "extensions/vscode/src/schedule.ts#Coalescer",
+   "status": "verified",
+   "test": "extensions/vscode/src/schedule.test.ts#joins a second request to the one already running",
+   "tests": [
+    "extensions/vscode/src/schedule.test.ts#joins a second request to the one already running"
+   ]
+  },
+  "vscode.automatic-rescans.scan-coalescing.002": {
+   "file": "extensions/vscode/specs/automatic-rescans/scan-coalescing/scan-coalescing.feature",
+   "fingerprint": "ea0fb6895baa",
+   "human": false,
+   "rule": "automatic-rescans.scan-coalescing.next-scan-runs-after-finish-or-failure",
+   "source": "extensions/vscode/src/schedule.ts#Coalescer",
+   "status": "verified",
+   "test": "extensions/vscode/src/schedule.test.ts#lets the next request start once the first finished",
+   "tests": [
+    "extensions/vscode/src/schedule.test.ts#lets the next request start once the first finished",
+    "extensions/vscode/src/schedule.test.ts#releases the key when the task rejects"
+   ]
+  },
+  "vscode.baseline.accept-findings.001": {
+   "file": "extensions/vscode/specs/baseline/accept-findings/accepting-findings-into-a-baseline.feature",
+   "fingerprint": "a44590437aad",
+   "human": false,
+   "rule": "baseline.accept.reaccepting-keeps-earlier-acceptances",
+   "source": "extensions/vscode/src/commands.ts#baselineCommands",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "vscode.baseline.accept-findings.002": {
+   "file": "extensions/vscode/specs/baseline/accept-findings/managing-baseline.feature",
+   "fingerprint": "a44590437aad",
+   "human": false,
+   "rule": "baseline.accept.needs-workspace-folder",
+   "source": "extensions/vscode/src/commands.ts#baselineCommands",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "vscode.baseline.accept-findings.003": {
+   "file": "extensions/vscode/specs/baseline/accept-findings/managing-baseline.feature",
+   "fingerprint": "a44590437aad",
+   "human": false,
+   "rule": "baseline.accept.writes-and-hides-accepted",
+   "source": "extensions/vscode/src/commands.ts#baselineCommands",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "vscode.baseline.accept-findings.004": {
+   "file": "extensions/vscode/specs/baseline/accept-findings/managing-baseline.feature",
+   "fingerprint": "a44590437aad",
+   "human": false,
+   "rule": "baseline.accept.reaccept-keeps-earlier-acceptances",
+   "source": "extensions/vscode/src/commands.ts#baselineCommands",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "vscode.baseline.accept-findings.005": {
+   "file": "extensions/vscode/specs/baseline/accept-findings/managing-baseline.feature",
+   "fingerprint": "a44590437aad",
+   "human": false,
+   "rule": "baseline.clear.shows-every-finding",
+   "source": "extensions/vscode/src/commands.ts#baselineCommands",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "vscode.baseline.baseline-sync.001": {
+   "file": "extensions/vscode/specs/baseline/baseline-sync/baseline-file-sync.feature",
+   "fingerprint": "d4856ebcb1c1",
+   "human": false,
+   "rule": "baseline.sync.refilter-on-baseline-change",
+   "source": "extensions/vscode/src/extension.ts#watchBaseline",
+   "status": "verified",
+   "test": "extensions/vscode/src/extension.test.ts#watches the manifests it scans and the locks that change them",
+   "tests": [
+    "extensions/vscode/src/extension.test.ts#watches the manifests it scans and the locks that change them"
+   ]
+  },
+  "vscode.baseline.clear-baseline.001": {
+   "file": "extensions/vscode/specs/baseline/clear-baseline/clearing-the-baseline.feature",
+   "fingerprint": "a44590437aad",
+   "human": false,
+   "rule": "baseline.clear.nothing-to-clear",
+   "source": "extensions/vscode/src/commands.ts#baselineCommands",
+   "status": "verified",
+   "test": "extensions/vscode/src/extension.test.ts#says there was no baseline to clear when the file is not there",
+   "tests": [
+    "extensions/vscode/src/extension.test.ts#says there was no baseline to clear when the file is not there"
+   ]
+  },
+  "vscode.baseline.clear-baseline.002": {
+   "file": "extensions/vscode/specs/baseline/clear-baseline/clearing-the-baseline.feature",
+   "fingerprint": "a44590437aad",
+   "human": false,
+   "rule": "baseline.clear.no-folder-does-nothing",
+   "source": "extensions/vscode/src/commands.ts#baselineCommands",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "vscode.findings-pane.filtering.001": {
+   "file": "extensions/vscode/specs/findings-pane/filtering/filtering-findings.feature",
+   "fingerprint": "328318c4d638",
+   "human": false,
+   "rule": "findings-pane.filtering.quadrant-picker-with-counts",
+   "source": "extensions/vscode/src/commands.ts#pane",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "vscode.findings-pane.filtering.002": {
+   "file": "extensions/vscode/specs/findings-pane/filtering/filtering-findings.feature",
+   "fingerprint": "328318c4d638",
+   "human": false,
+   "rule": "findings-pane.filtering.empty-pick-shows-everything",
+   "source": "extensions/vscode/src/commands.ts#pane",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "vscode.findings-pane.quadrant-grouping.001": {
+   "file": "extensions/vscode/specs/findings-pane/quadrant-grouping/findings-quadrant-grouping.feature",
+   "fingerprint": "650dc83d2f3b",
+   "human": false,
+   "rule": "findings.grouping.worst-quadrant-first",
+   "source": "extensions/vscode/src/tree.ts#groupsOf",
+   "status": "verified",
+   "test": "extensions/vscode/src/tree.test.ts#runs worst quadrant first and leaves out the empty ones",
+   "tests": [
+    "extensions/vscode/src/tree.test.ts#runs worst quadrant first and leaves out the empty ones",
+    "extensions/vscode/src/tree.test.ts#keeps the unscored ones in their own group, after the quadrants"
+   ]
+  },
+  "vscode.findings-pane.quadrant-grouping.002": {
+   "file": "extensions/vscode/specs/findings-pane/quadrant-grouping/findings-quadrant-grouping.feature",
+   "fingerprint": "6c892b593e1b",
+   "human": false,
+   "rule": "findings.grouping.worst-drift-first-within-group",
+   "source": "extensions/vscode/src/tree.ts#worstFirst",
+   "status": "verified",
+   "test": "extensions/vscode/src/tree.test.ts#orders a group by drift, then viability, then name",
+   "tests": [
+    "extensions/vscode/src/tree.test.ts#orders a group by drift, then viability, then name"
+   ]
+  },
+  "vscode.findings-pane.quadrant-grouping.003": {
+   "file": "extensions/vscode/specs/findings-pane/quadrant-grouping/findings-quadrant-grouping.feature",
+   "fingerprint": "650dc83d2f3b",
+   "human": false,
+   "rule": "findings.grouping.unscored-listed-once",
+   "source": "extensions/vscode/src/tree.ts#groupsOf",
+   "status": "verified",
+   "test": "extensions/vscode/src/tree.test.ts#keeps the unscored ones in their own group, after the quadrants",
+   "tests": [
+    "extensions/vscode/src/tree.test.ts#keeps the unscored ones in their own group, after the quadrants"
+   ]
+  },
+  "vscode.findings-pane.status-bar.001": {
+   "file": "extensions/vscode/specs/findings-pane/status-bar/status-bar-drift.feature",
+   "fingerprint": "f3c48e10c59e",
+   "human": false,
+   "rule": "findings.status-bar.shows-total-drift",
+   "source": "extensions/vscode/src/status.ts#StatusBar",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "vscode.findings-pane.status-bar.002": {
+   "file": "extensions/vscode/specs/findings-pane/status-bar/status-bar-drift.feature",
+   "fingerprint": "f3c48e10c59e",
+   "human": false,
+   "rule": "findings.status-bar.tooltip-summary-opens-report",
+   "source": "extensions/vscode/src/status.ts#StatusBar",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "vscode.findings-pane.status-bar.003": {
+   "file": "extensions/vscode/specs/findings-pane/status-bar/status-bar-drift.feature",
+   "fingerprint": "f3c48e10c59e",
+   "human": false,
+   "rule": "findings.status-bar.failing-gate-warns",
+   "source": "extensions/vscode/src/status.ts#StatusBar",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "vscode.findings-pane.status-bar.004": {
+   "file": "extensions/vscode/specs/findings-pane/status-bar/status-bar-drift.feature",
+   "fingerprint": "f3c48e10c59e",
+   "human": false,
+   "rule": "findings.status-bar.hidden-when-off-or-empty",
+   "source": "extensions/vscode/src/status.ts#StatusBar",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "vscode.findings-pane.status-bar.005": {
+   "file": "extensions/vscode/specs/findings-pane/status-bar/status-bar-drift.feature",
+   "fingerprint": "f3c48e10c59e",
+   "human": false,
+   "rule": "findings.status-bar.scanning-indicator",
+   "source": "extensions/vscode/src/status.ts#StatusBar",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "vscode.findings-pane.totals.001": {
+   "file": "extensions/vscode/specs/findings-pane/totals/findings-pane-totals.feature",
+   "fingerprint": "7941aec161cc",
+   "human": false,
+   "rule": "findings-pane.totals.summary-line",
+   "source": "extensions/vscode/src/totals.ts#summaryLabel",
+   "status": "verified",
+   "test": "extensions/vscode/src/totals.test.ts#leads with the drift and says how much of it is work",
+   "tests": [
+    "extensions/vscode/src/totals.test.ts#leads with the drift and says how much of it is work",
+    "extensions/vscode/src/totals.test.ts#says so plainly when there is nothing to do",
+    "extensions/vscode/src/totals.test.ts#counts one dependency in the singular"
+   ]
+  },
+  "vscode.findings-pane.totals.002": {
+   "file": "extensions/vscode/specs/findings-pane/totals/findings-pane-totals.feature",
+   "fingerprint": "1ffc98958b68",
+   "human": false,
+   "rule": "findings-pane.totals.across-all-manifests",
+   "source": "extensions/vscode/src/totals.ts#totalsOf",
+   "status": "verified",
+   "test": "extensions/vscode/src/totals.test.ts#adds up drift and quadrants across every manifest in scope",
+   "tests": [
+    "extensions/vscode/src/totals.test.ts#adds up drift and quadrants across every manifest in scope"
+   ]
+  },
+  "vscode.findings-pane.totals.003": {
+   "file": "extensions/vscode/specs/findings-pane/totals/findings-pane-totals.feature",
+   "fingerprint": "5f3fec2e388f",
+   "human": false,
+   "rule": "findings-pane.totals.unscored-not-work",
+   "source": "src/gates.ts#tally",
+   "status": "verified",
+   "test": "extensions/vscode/src/totals.test.ts#counts what is off the healthy quadrant, and leaves unknowns out of it",
+   "tests": [
+    "extensions/vscode/src/totals.test.ts#counts what is off the healthy quadrant, and leaves unknowns out of it",
+    "extensions/vscode/src/totals.test.ts#reports unscorable deps separately from the quadrants"
+   ]
+  },
+  "vscode.findings-pane.totals.004": {
+   "file": "extensions/vscode/specs/findings-pane/totals/findings-pane-totals.feature",
+   "fingerprint": "c133a79d184e",
+   "human": false,
+   "rule": "findings-pane.totals.quadrant-breakdown",
+   "source": "extensions/vscode/src/totals.ts#summaryDetail",
+   "status": "verified",
+   "test": "extensions/vscode/src/totals.test.ts#breaks the total down, worst quadrant first, skipping empty ones",
+   "tests": [
+    "extensions/vscode/src/totals.test.ts#breaks the total down, worst quadrant first, skipping empty ones"
+   ]
+  },
+  "vscode.findings-pane.totals.005": {
+   "file": "extensions/vscode/specs/findings-pane/totals/findings-pane-totals.feature",
+   "fingerprint": "f8d1966178f0",
+   "human": false,
+   "rule": "findings-pane.totals.tab-badge-mode",
+   "source": "extensions/vscode/src/totals.ts#badgeValue",
+   "status": "verified",
+   "test": "extensions/vscode/src/totals.test.ts#counts the work by default, not the whole manifest",
+   "tests": [
+    "extensions/vscode/src/totals.test.ts#counts the work by default, not the whole manifest",
+    "extensions/vscode/src/totals.test.ts#explains itself in the tooltip"
+   ]
+  },
+  "vscode.findings-pane.totals.006": {
+   "file": "extensions/vscode/specs/findings-pane/totals/findings-pane-totals.feature",
+   "fingerprint": "54590cf3a1e4",
+   "human": false,
+   "rule": "findings-pane.totals.no-badge-when-zero",
+   "source": "extensions/vscode/src/tree.ts#decorate",
+   "status": "verified",
+   "test": "extensions/vscode/src/totals.test.ts#is zero when there is nothing to address",
+   "tests": [
+    "extensions/vscode/src/totals.test.ts#is zero when there is nothing to address",
+    "extensions/vscode/src/totals.test.ts#counts the work by default, not the whole manifest"
+   ]
+  },
+  "vscode.in-editor-findings.dependency-location.001": {
+   "file": "extensions/vscode/specs/in-editor-findings/dependency-location/dependency-location.feature",
+   "fingerprint": "fa123cd7e994",
+   "human": false,
+   "rule": "findings.location.declared-name-in-supported-manifests",
+   "source": "extensions/vscode/src/locate.ts#locateDeps",
+   "status": "verified",
+   "test": "extensions/vscode/src/locate.test.ts#finds names in every dependency section",
+   "tests": [
+    "extensions/vscode/src/locate.test.ts#finds names in every dependency section",
+    "extensions/vscode/src/locate.test.ts#reads composer.json require sections",
+    "extensions/vscode/src/locate.test.ts#reads requirements.txt, including extras and markers",
+    "extensions/vscode/src/locate.test.ts#reads Cargo.toml tables, including the [dependencies.name] form",
+    "extensions/vscode/src/locate.test.ts#reads Cargo.lock and Gemfile.lock"
+   ]
+  },
+  "vscode.in-editor-findings.dependency-location.002": {
+   "file": "extensions/vscode/specs/in-editor-findings/dependency-location/dependency-location.feature",
+   "fingerprint": "e79d760e5c0d",
+   "human": false,
+   "rule": "findings.location.only-dependency-sections",
+   "source": "extensions/vscode/src/locate.ts#jsonSections",
+   "status": "verified",
+   "test": "extensions/vscode/src/locate.test.ts#ignores keys outside the dependency sections",
+   "tests": [
+    "extensions/vscode/src/locate.test.ts#ignores keys outside the dependency sections"
+   ]
+  },
+  "vscode.in-editor-findings.dependency-location.003": {
+   "file": "extensions/vscode/specs/in-editor-findings/dependency-location/dependency-location.feature",
+   "fingerprint": "fa123cd7e994",
+   "human": false,
+   "rule": "findings.location.no-guess-for-undeclared",
+   "source": "extensions/vscode/src/locate.ts#locateDeps",
+   "status": "verified",
+   "test": "extensions/vscode/src/locate.test.ts#says nothing about a dependency that is not written down",
+   "tests": [
+    "extensions/vscode/src/locate.test.ts#says nothing about a dependency that is not written down",
+    "extensions/vscode/src/locate.test.ts#reads Cargo.toml tables, including the [dependencies.name] form"
+   ]
+  },
+  "vscode.in-editor-findings.dependency-location.004": {
+   "file": "extensions/vscode/specs/in-editor-findings/dependency-location/dependency-location.feature",
+   "fingerprint": "15855d38c79f",
+   "human": false,
+   "rule": "findings.location.sbom-quoted-name",
+   "source": "extensions/vscode/src/locate.ts#fallback",
+   "status": "verified",
+   "test": "extensions/vscode/src/locate.test.ts#falls back to the quoted name for an SBOM",
+   "tests": [
+    "extensions/vscode/src/locate.test.ts#falls back to the quoted name for an SBOM"
+   ]
+  },
+  "vscode.in-editor-findings.dependency-location.005": {
+   "file": "extensions/vscode/specs/in-editor-findings/dependency-location/dependency-location.feature",
+   "fingerprint": "15855d38c79f",
+   "human": false,
+   "rule": "findings.location.no-partial-word-match",
+   "source": "extensions/vscode/src/locate.ts#fallback",
+   "status": "verified",
+   "test": "extensions/vscode/src/locate.test.ts#refuses a partial word match",
+   "tests": [
+    "extensions/vscode/src/locate.test.ts#refuses a partial word match"
+   ]
+  },
+  "vscode.in-editor-findings.dependency-location.006": {
+   "file": "extensions/vscode/specs/in-editor-findings/dependency-location/dependency-location.feature",
+   "fingerprint": "dea43bec00f0",
+   "human": false,
+   "rule": "findings.location.python-name-spelling",
+   "source": "extensions/vscode/src/locate.ts#normalise",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "vscode.in-editor-findings.diagnostics.001": {
+   "file": "extensions/vscode/specs/in-editor-findings/diagnostics/dependency-squiggles.feature",
+   "fingerprint": "1d6b5f436d53",
+   "human": false,
+   "rule": "in-editor-findings.diagnostics.severity-per-quadrant",
+   "source": "extensions/vscode/src/annotate.ts#Annotator",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "vscode.in-editor-findings.diagnostics.002": {
+   "file": "extensions/vscode/specs/in-editor-findings/diagnostics/dependency-squiggles.feature",
+   "fingerprint": "1d6b5f436d53",
+   "human": false,
+   "rule": "in-editor-findings.diagnostics.unscored-dependency",
+   "source": "extensions/vscode/src/annotate.ts#Annotator",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "vscode.in-editor-findings.diagnostics.003": {
+   "file": "extensions/vscode/specs/in-editor-findings/diagnostics/dependency-squiggles.feature",
+   "fingerprint": "1d6b5f436d53",
+   "human": false,
+   "rule": "in-editor-findings.diagnostics.registry-link",
+   "source": "extensions/vscode/src/annotate.ts#Annotator",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "vscode.in-editor-findings.diagnostics.004": {
+   "file": "extensions/vscode/specs/in-editor-findings/diagnostics/dependency-squiggles.feature",
+   "fingerprint": "1d6b5f436d53",
+   "human": false,
+   "rule": "in-editor-findings.diagnostics.only-declared-dependencies",
+   "source": "extensions/vscode/src/annotate.ts#Annotator",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "vscode.in-editor-findings.diagnostics.005": {
+   "file": "extensions/vscode/specs/in-editor-findings/diagnostics/dependency-squiggles.feature",
+   "fingerprint": "1d6b5f436d53",
+   "human": false,
+   "rule": "in-editor-findings.diagnostics.unopened-manifests-listed",
+   "source": "extensions/vscode/src/annotate.ts#Annotator",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "vscode.in-editor-findings.diagnostics.006": {
+   "file": "extensions/vscode/specs/in-editor-findings/diagnostics/dependency-squiggles.feature",
+   "fingerprint": "1d6b5f436d53",
+   "human": false,
+   "rule": "in-editor-findings.diagnostics.edits-move-squiggles-not-findings",
+   "source": "extensions/vscode/src/annotate.ts#Annotator",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "vscode.in-editor-findings.diagnostics.007": {
+   "file": "extensions/vscode/specs/in-editor-findings/diagnostics/dependency-squiggles.feature",
+   "fingerprint": "1d6b5f436d53",
+   "human": false,
+   "rule": "in-editor-findings.diagnostics.disable-clears",
+   "source": "extensions/vscode/src/annotate.ts#Annotator",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "vscode.in-editor-findings.diagnostics.008": {
+   "file": "extensions/vscode/specs/in-editor-findings/diagnostics/dependency-squiggles.feature",
+   "fingerprint": "1d6b5f436d53",
+   "human": false,
+   "rule": "in-editor-findings.diagnostics.cleared-when-results-gone",
+   "source": "extensions/vscode/src/annotate.ts#Annotator",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "vscode.in-editor-findings.diagnostics.009": {
+   "file": "extensions/vscode/specs/in-editor-findings/diagnostics/diagnostic-severities.feature",
+   "fingerprint": "835216d58e1d",
+   "human": false,
+   "rule": "findings.diagnostics.severity-per-quadrant",
+   "source": "extensions/vscode/src/config.ts#severityFor",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "vscode.in-editor-findings.diagnostics.010": {
+   "file": "extensions/vscode/specs/in-editor-findings/diagnostics/diagnostic-severities.feature",
+   "fingerprint": "835216d58e1d",
+   "human": false,
+   "rule": "findings.diagnostics.degraded-uses-degraded-severity",
+   "source": "extensions/vscode/src/config.ts#severityFor",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "vscode.in-editor-findings.hover-explanations.001": {
+   "file": "extensions/vscode/specs/in-editor-findings/hover-explanations/dependency-hover.feature",
+   "fingerprint": "1d6b5f436d53",
+   "human": false,
+   "rule": "in-editor-findings.hover.explains-dependency",
+   "source": "extensions/vscode/src/annotate.ts#Annotator",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "vscode.in-editor-findings.hover-explanations.002": {
+   "file": "extensions/vscode/specs/in-editor-findings/hover-explanations/dependency-hover.feature",
+   "fingerprint": "1d6b5f436d53",
+   "human": false,
+   "rule": "in-editor-findings.hover.unscored-dependency",
+   "source": "extensions/vscode/src/annotate.ts#Annotator",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "vscode.in-editor-findings.hover-explanations.003": {
+   "file": "extensions/vscode/specs/in-editor-findings/hover-explanations/dependency-hover.feature",
+   "fingerprint": "1d6b5f436d53",
+   "human": false,
+   "rule": "in-editor-findings.hover.independent-of-squiggles",
+   "source": "extensions/vscode/src/annotate.ts#Annotator",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "vscode.in-editor-findings.hover-explanations.004": {
+   "file": "extensions/vscode/specs/in-editor-findings/hover-explanations/dependency-hover.feature",
+   "fingerprint": "1d6b5f436d53",
+   "human": false,
+   "rule": "in-editor-findings.hover.only-on-dependency",
+   "source": "extensions/vscode/src/annotate.ts#Annotator",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "vscode.in-editor-findings.hover-explanations.005": {
+   "file": "extensions/vscode/specs/in-editor-findings/hover-explanations/explaining-findings.feature",
+   "fingerprint": "31b79eef2bfe",
+   "human": false,
+   "rule": "findings.explanations.problem-message-states-quadrant-and-numbers",
+   "source": "extensions/vscode/src/explain.ts#summarise",
+   "status": "verified",
+   "test": "extensions/vscode/src/report-view.test.ts#names the quadrant, both numbers and the upgrade",
+   "tests": [
+    "extensions/vscode/src/report-view.test.ts#names the quadrant, both numbers and the upgrade"
+   ]
+  },
+  "vscode.in-editor-findings.hover-explanations.006": {
+   "file": "extensions/vscode/specs/in-editor-findings/hover-explanations/explaining-findings.feature",
+   "fingerprint": "875f7d623327",
+   "human": false,
+   "rule": "findings.explanations.unscored-dependency-not-scored",
+   "source": "extensions/vscode/src/explain.ts#reasons",
+   "status": "verified",
+   "test": "extensions/vscode/src/report-view.test.ts#says a degraded dep was not scored rather than scoring it",
+   "tests": [
+    "extensions/vscode/src/report-view.test.ts#says a degraded dep was not scored rather than scoring it",
+    "extensions/vscode/src/report-view.test.ts#says only that the registry did not answer, for a degraded dep"
+   ]
+  },
+  "vscode.in-editor-findings.hover-explanations.007": {
+   "file": "extensions/vscode/specs/in-editor-findings/hover-explanations/explaining-findings.feature",
+   "fingerprint": "ccb14bce0a3d",
+   "human": false,
+   "rule": "findings.explanations.facts-worst-first",
+   "source": "extensions/vscode/src/explain.ts#tooltip",
+   "status": "verified",
+   "test": "extensions/vscode/src/report-view.test.ts#turns the signals into facts, worst first",
+   "tests": [
+    "extensions/vscode/src/report-view.test.ts#turns the signals into facts, worst first"
+   ]
+  },
+  "vscode.in-editor-findings.hover-explanations.008": {
+   "file": "extensions/vscode/specs/in-editor-findings/hover-explanations/explaining-findings.feature",
+   "fingerprint": "b7472197a9ca",
+   "human": false,
+   "rule": "findings.explanations.bus-factor-wording",
+   "source": "extensions/vscode/src/explain.ts#bus",
+   "status": "verified",
+   "test": "extensions/vscode/src/report-view.test.ts#turns the signals into facts, worst first",
+   "tests": [
+    "extensions/vscode/src/report-view.test.ts#turns the signals into facts, worst first"
+   ]
+  },
+  "vscode.in-editor-findings.hover-explanations.009": {
+   "file": "extensions/vscode/specs/in-editor-findings/hover-explanations/explaining-findings.feature",
+   "fingerprint": "49563499fda9",
+   "human": false,
+   "rule": "findings.explanations.range-version-is-upper-bound",
+   "source": "extensions/vscode/src/explain.ts#REASONS",
+   "status": "verified",
+   "test": "extensions/vscode/src/report-view.test.ts#explains that a range-derived version is an upper bound",
+   "tests": [
+    "extensions/vscode/src/report-view.test.ts#explains that a range-derived version is an upper bound"
+   ]
+  },
+  "vscode.in-editor-findings.hover-explanations.010": {
+   "file": "extensions/vscode/specs/in-editor-findings/hover-explanations/explaining-findings.feature",
+   "fingerprint": "2e96f5a63b57",
+   "human": false,
+   "rule": "findings.explanations.suggest-deep-scan",
+   "source": "extensions/vscode/src/explain.ts#isCheapTierOnly",
+   "status": "verified",
+   "test": "extensions/vscode/src/report-view.test.ts#says when only the release timeline was available",
+   "tests": [
+    "extensions/vscode/src/report-view.test.ts#says when only the release timeline was available"
+   ]
+  },
+  "vscode.in-editor-findings.hover-explanations.011": {
+   "file": "extensions/vscode/specs/in-editor-findings/hover-explanations/explaining-findings.feature",
+   "fingerprint": "d93896fef126",
+   "human": false,
+   "rule": "findings.explanations.registry-link",
+   "source": "extensions/vscode/src/explain.ts#registryUrl",
+   "status": "verified",
+   "test": "extensions/vscode/src/report-view.test.ts#links to the registry the dep came from",
+   "tests": [
+    "extensions/vscode/src/report-view.test.ts#links to the registry the dep came from"
+   ]
+  },
+  "vscode.in-editor-findings.hover-explanations.012": {
+   "file": "extensions/vscode/specs/in-editor-findings/hover-explanations/explaining-findings.feature",
+   "fingerprint": "f801fa66dd87",
+   "human": false,
+   "rule": "findings.explanations.release-age-phrasing",
+   "source": "extensions/vscode/src/explain.ts#years",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "vscode.registry-cache.cache-reset.001": {
+   "file": "extensions/vscode/specs/registry-cache/cache-reset/clearing-registry-cache.feature",
+   "fingerprint": "045b65e74b4c",
+   "human": false,
+   "rule": "registry-cache.reset.clear-on-demand",
+   "source": "extensions/vscode/src/commands.ts#scanning",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "vscode.registry-cache.cache-reset.002": {
+   "file": "extensions/vscode/specs/registry-cache/cache-reset/clearing-registry-cache-store.feature",
+   "fingerprint": "5923ee939eec",
+   "human": false,
+   "rule": "registry-cache.reset.next-scan-refetches",
+   "source": "extensions/vscode/src/store.ts#FileCacheStore",
+   "status": "verified",
+   "test": "extensions/vscode/src/cache.test.ts#clears everything on request",
+   "tests": [
+    "extensions/vscode/src/cache.test.ts#clears everything on request"
+   ]
+  },
+  "vscode.registry-cache.version-cache.001": {
+   "file": "extensions/vscode/specs/registry-cache/version-cache/registry-answer-reuse.feature",
+   "fingerprint": "a967a3cb0056",
+   "human": false,
+   "rule": "registry-cache.versions.reused-while-fresh",
+   "source": "extensions/vscode/src/cache.ts#TtlCache",
+   "status": "verified",
+   "test": "extensions/vscode/src/cache.test.ts#loads once and serves the rest from memory",
+   "tests": [
+    "extensions/vscode/src/cache.test.ts#loads once and serves the rest from memory",
+    "extensions/vscode/src/cache.test.ts#refetches once the entry is past its TTL"
+   ]
+  },
+  "vscode.registry-cache.version-cache.002": {
+   "file": "extensions/vscode/specs/registry-cache/version-cache/registry-answer-reuse.feature",
+   "fingerprint": "a967a3cb0056",
+   "human": false,
+   "rule": "registry-cache.failures.retried-after-short-wait",
+   "source": "extensions/vscode/src/cache.ts#TtlCache",
+   "status": "verified",
+   "test": "extensions/vscode/src/cache.test.ts#keeps them out of the disk cache but remembers them briefly",
+   "tests": [
+    "extensions/vscode/src/cache.test.ts#keeps them out of the disk cache but remembers them briefly"
+   ]
+  },
+  "vscode.registry-cache.version-cache.003": {
+   "file": "extensions/vscode/specs/registry-cache/version-cache/registry-answer-reuse.feature",
+   "fingerprint": "a967a3cb0056",
+   "human": false,
+   "rule": "registry-cache.offline.serves-last-known-answer",
+   "source": "extensions/vscode/src/cache.ts#TtlCache",
+   "status": "verified",
+   "test": "extensions/vscode/src/cache.test.ts#serves a stale entry when a refetch fails",
+   "tests": [
+    "extensions/vscode/src/cache.test.ts#serves a stale entry when a refetch fails",
+    "extensions/vscode/src/cache.test.ts#serves a stale entry when the loader throws"
+   ]
+  },
+  "vscode.registry-cache.version-cache.004": {
+   "file": "extensions/vscode/specs/registry-cache/version-cache/registry-answer-reuse.feature",
+   "fingerprint": "a967a3cb0056",
+   "human": false,
+   "rule": "registry-cache.offline.fails-without-prior-answer",
+   "source": "extensions/vscode/src/cache.ts#TtlCache",
+   "status": "verified",
+   "test": "extensions/vscode/src/cache.test.ts#rethrows when there is nothing stale to fall back to",
+   "tests": [
+    "extensions/vscode/src/cache.test.ts#rethrows when there is nothing stale to fall back to"
+   ]
+  },
+  "vscode.registry-cache.version-cache.005": {
+   "file": "extensions/vscode/specs/registry-cache/version-cache/registry-answer-reuse.feature",
+   "fingerprint": "a967a3cb0056",
+   "human": false,
+   "rule": "registry-cache.persistence.new-window-starts-warm",
+   "source": "extensions/vscode/src/cache.ts#TtlCache",
+   "status": "verified",
+   "test": "extensions/vscode/src/cache.test.ts#serves a new cache from what the last one wrote",
+   "tests": [
+    "extensions/vscode/src/cache.test.ts#serves a new cache from what the last one wrote"
+   ]
+  },
+  "vscode.reports.ci-gates.001": {
+   "file": "extensions/vscode/specs/reports/ci-gates/checking-ci-gates.feature",
+   "fingerprint": "4ebcd0ff05a1",
+   "human": false,
+   "rule": "reports.ci-gates.unconfigured-points-to-settings",
+   "source": "extensions/vscode/src/commands.ts#report",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "vscode.reports.ci-gates.002": {
+   "file": "extensions/vscode/specs/reports/ci-gates/checking-ci-gates.feature",
+   "fingerprint": "4ebcd0ff05a1",
+   "human": false,
+   "rule": "reports.ci-gates.pass-or-fail-summary",
+   "source": "extensions/vscode/src/commands.ts#report",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "vscode.reports.drift-trend.001": {
+   "file": "extensions/vscode/specs/reports/drift-trend/drift-trend.feature",
+   "fingerprint": "4ebcd0ff05a1",
+   "human": false,
+   "rule": "reports.drift-trend.history-tab",
+   "source": "extensions/vscode/src/commands.ts#report",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "vscode.reports.drift-trend.002": {
+   "file": "extensions/vscode/specs/reports/drift-trend/drift-trend.feature",
+   "fingerprint": "4ebcd0ff05a1",
+   "human": false,
+   "rule": "reports.drift-trend.needs-workspace-folder",
+   "source": "extensions/vscode/src/commands.ts#report",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "vscode.reports.drift-trend.003": {
+   "file": "extensions/vscode/specs/reports/drift-trend/drift-trend.feature",
+   "fingerprint": "44adbc8d8b31",
+   "human": false,
+   "rule": "reports.drift-trend.missing-git-offers-install",
+   "source": "extensions/vscode/src/commands.ts#showHistory",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "vscode.reports.drift-trend.004": {
+   "file": "extensions/vscode/specs/reports/drift-trend/drift-trend-page.feature",
+   "fingerprint": "0be6b3ff92d5",
+   "human": false,
+   "rule": "reports.trend.row-per-sampled-commit",
+   "source": "extensions/vscode/src/html.ts#trendHtml",
+   "status": "verified",
+   "test": "extensions/vscode/src/report-view.test.ts#lists a row per sampled commit and says which way it went",
+   "tests": [
+    "extensions/vscode/src/report-view.test.ts#lists a row per sampled commit and says which way it went"
+   ]
+  },
+  "vscode.reports.drift-trend.005": {
+   "file": "extensions/vscode/specs/reports/drift-trend/drift-trend-page.feature",
+   "fingerprint": "0be6b3ff92d5",
+   "human": false,
+   "rule": "reports.trend.direction-summary",
+   "source": "extensions/vscode/src/html.ts#trendHtml",
+   "status": "verified",
+   "test": "extensions/vscode/src/report-view.test.ts#lists a row per sampled commit and says which way it went",
+   "tests": [
+    "extensions/vscode/src/report-view.test.ts#lists a row per sampled commit and says which way it went"
+   ]
+  },
+  "vscode.reports.drift-trend.006": {
+   "file": "extensions/vscode/specs/reports/drift-trend/drift-trend-page.feature",
+   "fingerprint": "0be6b3ff92d5",
+   "human": false,
+   "rule": "reports.trend.no-history",
+   "source": "extensions/vscode/src/html.ts#trendHtml",
+   "status": "verified",
+   "test": "extensions/vscode/src/report-view.test.ts#says so when there is no history",
+   "tests": [
+    "extensions/vscode/src/report-view.test.ts#says so when there is no history"
+   ]
+  },
+  "vscode.reports.drift-trend.007": {
+   "file": "extensions/vscode/specs/reports/drift-trend/drift-trend-page.feature",
+   "fingerprint": "345968d39c38",
+   "human": false,
+   "rule": "reports.trend.ignores-editor-theme",
+   "source": "extensions/vscode/src/panel.ts#showTrend",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "vscode.reports.drift-trend.008": {
+   "file": "extensions/vscode/specs/reports/drift-trend/drift-trend-tab.feature",
+   "fingerprint": "345968d39c38",
+   "human": false,
+   "rule": "reports.drift-trend.opens-own-tab",
+   "source": "extensions/vscode/src/panel.ts#showTrend",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "vscode.reports.export.001": {
+   "file": "extensions/vscode/specs/reports/export/exporting-reports.feature",
+   "fingerprint": "1825640e63cd",
+   "human": false,
+   "rule": "reports.export.html-report-saved",
+   "source": "extensions/vscode/src/commands.ts#exporting",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "vscode.reports.export.002": {
+   "file": "extensions/vscode/specs/reports/export/exporting-reports.feature",
+   "fingerprint": "1825640e63cd",
+   "human": false,
+   "rule": "reports.export.chart-svg-for-one-manifest",
+   "source": "extensions/vscode/src/commands.ts#exporting",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "vscode.reports.export.003": {
+   "file": "extensions/vscode/specs/reports/export/exporting-reports.feature",
+   "fingerprint": "1825640e63cd",
+   "human": false,
+   "rule": "reports.export.chart-scan-failure-warns",
+   "source": "extensions/vscode/src/commands.ts#exporting",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "vscode.reports.export.004": {
+   "file": "extensions/vscode/specs/reports/export/report-export.feature",
+   "fingerprint": "66ef5c9b83b6",
+   "human": false,
+   "rule": "reports.export.standalone-without-scripts",
+   "source": "extensions/vscode/src/html.ts#page",
+   "status": "verified",
+   "test": "extensions/vscode/src/report-view.test.ts#only scripts the page when rendered into a webview",
+   "tests": [
+    "extensions/vscode/src/report-view.test.ts#only scripts the page when rendered into a webview"
+   ]
+  },
+  "vscode.reports.export.005": {
+   "file": "extensions/vscode/specs/reports/export/report-export.feature",
+   "fingerprint": "66ef5c9b83b6",
+   "human": false,
+   "rule": "reports.export.depwatch-palette",
+   "source": "extensions/vscode/src/html.ts#page",
+   "status": "verified",
+   "test": "extensions/vscode/src/report-view.test.ts#themes itself from VS Code inside a webview and from the docs palette outside",
+   "tests": [
+    "extensions/vscode/src/report-view.test.ts#themes itself from VS Code inside a webview and from the docs palette outside"
+   ]
+  },
+  "vscode.reports.export.006": {
+   "file": "extensions/vscode/specs/reports/export/report-export-panel.feature",
+   "fingerprint": "758c4207784b",
+   "human": false,
+   "rule": "reports.export.standalone-html-page",
+   "source": "extensions/vscode/src/panel.ts#ReportPanel",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "vscode.reports.report-panel.001": {
+   "file": "extensions/vscode/specs/reports/report-panel/report-panel-commands.feature",
+   "fingerprint": "4ebcd0ff05a1",
+   "human": false,
+   "rule": "reports.panel.scan-before-first-show",
+   "source": "extensions/vscode/src/commands.ts#report",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "vscode.reports.report-panel.002": {
+   "file": "extensions/vscode/specs/reports/report-panel/report-panel-commands.feature",
+   "fingerprint": "328318c4d638",
+   "human": false,
+   "rule": "reports.panel.row-jumps-to-dependency",
+   "source": "extensions/vscode/src/commands.ts#pane",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "vscode.reports.report-panel.003": {
+   "file": "extensions/vscode/specs/reports/report-panel/report-page.feature",
+   "fingerprint": "65cbca7e49b4",
+   "human": false,
+   "rule": "reports.page.empty-state-points-to-scan",
+   "source": "extensions/vscode/src/html.ts#reportHtml",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "vscode.reports.report-panel.004": {
+   "file": "extensions/vscode/specs/reports/report-panel/report-page.feature",
+   "fingerprint": "65cbca7e49b4",
+   "human": false,
+   "rule": "reports.page.workspace-totals",
+   "source": "extensions/vscode/src/html.ts#reportHtml",
+   "status": "verified",
+   "test": "extensions/vscode/src/report-view.test.ts#renders the totals, the chart and a row per dep",
+   "tests": [
+    "extensions/vscode/src/report-view.test.ts#renders the totals, the chart and a row per dep"
+   ]
+  },
+  "vscode.reports.report-panel.005": {
+   "file": "extensions/vscode/specs/reports/report-panel/report-page.feature",
+   "fingerprint": "e31b85e02079",
+   "human": false,
+   "rule": "reports.page.package-names-never-markup",
+   "source": "extensions/vscode/src/html.ts#row",
+   "status": "verified",
+   "test": "extensions/vscode/src/report-view.test.ts#escapes anything that came from a package name",
+   "tests": [
+    "extensions/vscode/src/report-view.test.ts#escapes anything that came from a package name"
+   ]
+  },
+  "vscode.reports.report-panel.006": {
+   "file": "extensions/vscode/specs/reports/report-panel/report-page.feature",
+   "fingerprint": "6a6356893a57",
+   "human": false,
+   "rule": "reports.page.gate-verdict",
+   "source": "extensions/vscode/src/html.ts#gateBanner",
+   "status": "verified",
+   "test": "extensions/vscode/src/report-view.test.ts#reports gate failures when gates are configured",
+   "tests": [
+    "extensions/vscode/src/report-view.test.ts#reports gate failures when gates are configured",
+    "extensions/vscode/src/report-view.test.ts#says nothing about gates when none are set"
+   ]
+  },
+  "vscode.reports.report-panel.007": {
+   "file": "extensions/vscode/specs/reports/report-panel/report-page.feature",
+   "fingerprint": "65cbca7e49b4",
+   "human": false,
+   "rule": "reports.page.unscanned-manifests-listed",
+   "source": "extensions/vscode/src/html.ts#reportHtml",
+   "status": "verified",
+   "test": "extensions/vscode/src/report-view.test.ts#lists manifests that could not be scanned",
+   "tests": [
+    "extensions/vscode/src/report-view.test.ts#lists manifests that could not be scanned"
+   ]
+  },
+  "vscode.reports.report-panel.008": {
+   "file": "extensions/vscode/specs/reports/report-panel/report-page.feature",
+   "fingerprint": "5ca4989f83cc",
+   "human": false,
+   "rule": "reports.page.drift-caveats-stated",
+   "source": "extensions/vscode/src/html.ts#manifestSection",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "vscode.reports.report-panel.009": {
+   "file": "extensions/vscode/specs/reports/report-panel/report-page.feature",
+   "fingerprint": "da0dda7bef74",
+   "human": false,
+   "rule": "reports.page.row-jumps-to-dependency",
+   "source": "extensions/vscode/src/html.ts#CLICK_SCRIPT",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "vscode.reports.report-panel.010": {
+   "file": "extensions/vscode/specs/reports/report-panel/report-page.feature",
+   "fingerprint": "da0dda7bef74",
+   "human": false,
+   "rule": "reports.page.sortable-columns",
+   "source": "extensions/vscode/src/html.ts#CLICK_SCRIPT",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "vscode.reports.report-panel.011": {
+   "file": "extensions/vscode/specs/reports/report-panel/report-panel.feature",
+   "fingerprint": "758c4207784b",
+   "human": false,
+   "rule": "reports.report-panel.single-report-tab",
+   "source": "extensions/vscode/src/panel.ts#ReportPanel",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "vscode.reports.report-panel.012": {
+   "file": "extensions/vscode/specs/reports/report-panel/report-panel.feature",
+   "fingerprint": "758c4207784b",
+   "human": false,
+   "rule": "reports.report-panel.live-updates-while-open",
+   "source": "extensions/vscode/src/panel.ts#ReportPanel",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "vscode.reports.report-panel.013": {
+   "file": "extensions/vscode/specs/reports/report-panel/report-panel.feature",
+   "fingerprint": "758c4207784b",
+   "human": false,
+   "rule": "reports.report-panel.row-jumps-to-dependency",
+   "source": "extensions/vscode/src/panel.ts#ReportPanel",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "vscode.reports.report-panel.014": {
+   "file": "extensions/vscode/specs/reports/report-panel/report-panel.feature",
+   "fingerprint": "758c4207784b",
+   "human": false,
+   "rule": "reports.report-panel.gates-judged-per-manifest",
+   "source": "extensions/vscode/src/panel.ts#ReportPanel",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "vscode.reports.report-panel.015": {
+   "file": "extensions/vscode/specs/reports/report-panel/report-panel.feature",
+   "fingerprint": "758c4207784b",
+   "human": false,
+   "rule": "reports.report-panel.deep-tier-only-when-all-deep",
+   "source": "extensions/vscode/src/panel.ts#ReportPanel",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "vscode.reports.report-panel.016": {
+   "file": "extensions/vscode/specs/reports/report-panel/report-panel.feature",
+   "fingerprint": "758c4207784b",
+   "human": false,
+   "rule": "reports.report-panel.settings-apply-immediately",
+   "source": "extensions/vscode/src/panel.ts#ReportPanel",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "vscode.scanning.incremental-results.001": {
+   "file": "extensions/vscode/specs/scanning/incremental-results/incremental-scan-results.feature",
+   "fingerprint": "587b143d79b4",
+   "human": false,
+   "rule": "scanning.incremental.unsaved-edits-are-scanned",
+   "source": "extensions/vscode/src/engine.ts#readText",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "vscode.scanning.manifest-discovery.001": {
+   "file": "extensions/vscode/specs/scanning/manifest-discovery/workspace-manifest-discovery.feature",
+   "fingerprint": "6ac0e2282050",
+   "human": false,
+   "rule": "scanning.discovery.shallowest-first-capped",
+   "source": "extensions/vscode/src/engine.ts#findManifests",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "vscode.scanning.manifest-discovery.002": {
+   "file": "extensions/vscode/specs/scanning/manifest-discovery/workspace-manifest-discovery.feature",
+   "fingerprint": "6ac0e2282050",
+   "human": false,
+   "rule": "scanning.discovery.limit-reached-skips-later-patterns",
+   "source": "extensions/vscode/src/engine.ts#findManifests",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "vscode.scanning.manifest-discovery.003": {
+   "file": "extensions/vscode/specs/scanning/manifest-discovery/honouring-excludes.feature",
+   "fingerprint": "c3b844c6e397",
+   "human": false,
+   "rule": "scanning.excludes.editor-excludes-merged",
+   "source": "extensions/vscode/src/exclude.ts#combine",
+   "status": "verified",
+   "test": "extensions/vscode/src/exclude.test.ts#folds several globs into one brace group",
+   "tests": [
+    "extensions/vscode/src/exclude.test.ts#folds several globs into one brace group",
+    "extensions/vscode/src/exclude.test.ts#drops duplicates, which the merge produces constantly"
+   ]
+  },
+  "vscode.scanning.manifest-discovery.004": {
+   "file": "extensions/vscode/specs/scanning/manifest-discovery/honouring-excludes.feature",
+   "fingerprint": "cf99e6881ad0",
+   "human": false,
+   "rule": "scanning.excludes.excluded-folders-not-rescanned",
+   "source": "extensions/vscode/src/exclude.ts#isExcludedPath",
+   "status": "verified",
+   "test": "extensions/vscode/src/exclude.test.ts#matches a whole segment anywhere in the path",
+   "tests": [
+    "extensions/vscode/src/exclude.test.ts#matches a whole segment anywhere in the path",
+    "extensions/vscode/src/exclude.test.ts#leaves ordinary paths alone",
+    "extensions/vscode/src/exclude.test.ts#does not match a partial segment",
+    "extensions/vscode/src/exclude.test.ts#reads a directory in the middle of a pattern even with a dot in it",
+    "extensions/vscode/src/exclude.test.ts#takes the directories out of depwatch and editor globs alike"
+   ]
+  },
+  "vscode.scanning.manifest-discovery.005": {
+   "file": "extensions/vscode/specs/scanning/manifest-discovery/honouring-excludes.feature",
+   "fingerprint": "d553e5d1b1ec",
+   "human": false,
+   "rule": "scanning.excludes.hidden-files-still-rescan",
+   "source": "extensions/vscode/src/exclude.ts#directoryNames",
+   "status": "verified",
+   "test": "extensions/vscode/src/exclude.test.ts#does not treat an excluded filename as an excluded directory",
+   "tests": [
+    "extensions/vscode/src/exclude.test.ts#does not treat an excluded filename as an excluded directory"
+   ]
+  },
+  "vscode.scanning.manifest-discovery.006": {
+   "file": "extensions/vscode/specs/scanning/manifest-discovery/honouring-excludes.feature",
+   "fingerprint": "d553e5d1b1ec",
+   "human": false,
+   "rule": "scanning.excludes.literal-prefix-excludes-every-same-named-folder",
+   "source": "extensions/vscode/src/exclude.ts#directoryNames",
+   "status": "verified",
+   "test": "extensions/vscode/src/exclude.test.ts#ignores segments that are themselves patterns",
+   "tests": [
+    "extensions/vscode/src/exclude.test.ts#ignores segments that are themselves patterns"
+   ]
+  },
+  "vscode.scanning.manifest-discovery.007": {
+   "file": "extensions/vscode/specs/scanning/manifest-discovery/honouring-excludes.feature",
+   "fingerprint": "c3b844c6e397",
+   "human": false,
+   "rule": "scanning.excludes.editor-excludes-apply-when-nothing-excluded",
+   "source": "extensions/vscode/src/exclude.ts#combine",
+   "status": "verified",
+   "test": "extensions/vscode/src/exclude.test.ts#leaves a lone glob alone and gives nothing for none",
+   "tests": [
+    "extensions/vscode/src/exclude.test.ts#leaves a lone glob alone and gives nothing for none"
+   ]
+  },
+  "vscode.scanning.on-demand-scans.001": {
+   "file": "extensions/vscode/specs/scanning/on-demand-scans/on-demand-scan-commands.feature",
+   "fingerprint": "c15d41974878",
+   "human": false,
+   "rule": "scanning.on-demand.target-manifest-choice",
+   "source": "extensions/vscode/src/commands.ts#activeManifest",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "vscode.scanning.on-demand-scans.002": {
+   "file": "extensions/vscode/specs/scanning/on-demand-scans/on-demand-scan-commands.feature",
+   "fingerprint": "c15d41974878",
+   "human": false,
+   "rule": "scanning.on-demand.no-manifest-warning",
+   "source": "extensions/vscode/src/commands.ts#activeManifest",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "vscode.scanning.on-demand-scans.003": {
+   "file": "extensions/vscode/specs/scanning/on-demand-scans/on-demand-scan-commands.feature",
+   "fingerprint": "045b65e74b4c",
+   "human": false,
+   "rule": "scanning.progress.cancel-without-running-scan",
+   "source": "extensions/vscode/src/commands.ts#scanning",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "vscode.scanning.on-demand-scans.004": {
+   "file": "extensions/vscode/specs/scanning/on-demand-scans/on-demand-scan-commands.feature",
+   "fingerprint": "045b65e74b4c",
+   "human": false,
+   "rule": "scanning.on-demand.deep-scan-shows-progress",
+   "source": "extensions/vscode/src/commands.ts#scanning",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "vscode.scanning.scan-progress.001": {
+   "file": "extensions/vscode/specs/scanning/scan-progress/scan-progress-and-failures.feature",
+   "fingerprint": "4b5a4800fbd8",
+   "human": false,
+   "rule": "scanning.progress.where-progress-is-shown",
+   "source": "extensions/vscode/src/scan-runner.ts#progressFor",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "vscode.scanning.scan-progress.002": {
+   "file": "extensions/vscode/specs/scanning/scan-progress/scan-progress-and-failures.feature",
+   "fingerprint": "8592dafa53f1",
+   "human": false,
+   "rule": "scanning.progress.cancel-keeps-findings",
+   "source": "extensions/vscode/src/scan-runner.ts#ScanRunner",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "vscode.scanning.scan-progress.003": {
+   "file": "extensions/vscode/specs/scanning/scan-progress/manifest-scan-outcome.feature",
+   "fingerprint": "95d6db9cf273",
+   "human": false,
+   "rule": "scanning.outcome.latest-outcome-replaces-previous",
+   "source": "extensions/vscode/src/state.ts#Results",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "vscode.setup.activation.001": {
+   "file": "extensions/vscode/specs/setup/activation/extension-startup.feature",
+   "fingerprint": "ebd74d27c908",
+   "human": false,
+   "rule": "setup.activation.startup-scan-respects-enable",
+   "source": "extensions/vscode/src/extension.ts#activate",
+   "status": "verified",
+   "test": "extensions/vscode/src/extension.test.ts#scans nothing on startup when the extension is switched off",
+   "tests": [
+    "extensions/vscode/src/extension.test.ts#scans nothing on startup when the extension is switched off",
+    "extensions/vscode/src/extension.test.ts#goes looking for manifests on startup when it is on"
+   ]
+  },
+  "vscode.setup.activation.002": {
+   "file": "extensions/vscode/specs/setup/activation/extension-startup.feature",
+   "fingerprint": "ebd74d27c908",
+   "human": false,
+   "rule": "setup.activation.commands-available-while-active",
+   "source": "extensions/vscode/src/extension.ts#activate",
+   "status": "verified",
+   "test": "extensions/vscode/src/extension.test.ts#registers every command the manifest contributes",
+   "tests": [
+    "extensions/vscode/src/extension.test.ts#registers every command the manifest contributes",
+    "extensions/vscode/src/extension.test.ts#puts everything it created into subscriptions, so disposal is complete"
+   ]
+  },
+  "vscode.setup.credentials.001": {
+   "file": "extensions/vscode/specs/setup/credentials/github-token.feature",
+   "fingerprint": "0317c05fea76",
+   "human": false,
+   "rule": "setup.credentials.token-in-keychain",
+   "source": "extensions/vscode/src/commands.ts#token",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "vscode.setup.credentials.002": {
+   "file": "extensions/vscode/specs/setup/credentials/github-token.feature",
+   "fingerprint": "0317c05fea76",
+   "human": false,
+   "rule": "setup.credentials.empty-token-clears",
+   "source": "extensions/vscode/src/commands.ts#token",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "vscode.setup.credentials.003": {
+   "file": "extensions/vscode/specs/setup/credentials/github-token-at-startup.feature",
+   "fingerprint": "ebd74d27c908",
+   "human": false,
+   "rule": "setup.credentials.environment-token-takes-precedence",
+   "source": "extensions/vscode/src/extension.ts#activate",
+   "status": "verified",
+   "test": "extensions/vscode/src/extension.test.ts#takes a stored token out of the keychain and into the environment",
+   "tests": [
+    "extensions/vscode/src/extension.test.ts#takes a stored token out of the keychain and into the environment",
+    "extensions/vscode/src/extension.test.ts#never overwrites a token the environment already carries"
+   ]
+  },
+  "vscode.setup.settings.001": {
+   "file": "extensions/vscode/specs/setup/settings/scan-settings.feature",
+   "fingerprint": "74e450a886ea",
+   "human": false,
+   "rule": "settings.excludes.honour-editor-excludes",
+   "source": "extensions/vscode/src/config.ts#readConfig",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "vscode.setup.settings.002": {
+   "file": "extensions/vscode/specs/setup/settings/scan-settings.feature",
+   "fingerprint": "74e450a886ea",
+   "human": false,
+   "rule": "settings.excludes.single-glob-accepted",
+   "source": "extensions/vscode/src/config.ts#readConfig",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "vscode.setup.settings.003": {
+   "file": "extensions/vscode/specs/setup/settings/scan-settings.feature",
+   "fingerprint": "c254effa144d",
+   "human": false,
+   "rule": "settings.changes.rescan-when-results-affected",
+   "source": "extensions/vscode/src/config.ts#affectsResults",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "vscode.setup.settings.004": {
+   "file": "extensions/vscode/specs/setup/settings/scan-settings.feature",
+   "fingerprint": "74e450a886ea",
+   "human": false,
+   "rule": "settings.gates.configured-when-either-budget-set",
+   "source": "extensions/vscode/src/config.ts#readConfig",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "vscode.setup.settings.005": {
+   "file": "extensions/vscode/specs/setup/settings/settings-changes.feature",
+   "fingerprint": "ebd74d27c908",
+   "human": false,
+   "rule": "setup.settings.results-affecting-change-rescans",
+   "source": "extensions/vscode/src/extension.ts#activate",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  }
+ },
+ "taxonomy": {
+  "domains": [
+   {
+    "areas": [
+     {
+      "description": "Locating the manifests and lock files to scan, honouring the editor's own file and search excludes.",
+      "slug": "manifest-discovery",
+      "title": "Manifest discovery"
+     },
+     {
+      "description": "Scanning the active manifest, the whole workspace, or a deep scan with maintainer and archive signals when the user asks.",
+      "slug": "on-demand-scans",
+      "title": "On-demand scans"
+     },
+     {
+      "description": "Reporting progress while a scan runs, letting the user cancel it, and explaining each way it can fail.",
+      "slug": "scan-progress",
+      "title": "Progress and cancellation"
+     },
+     {
+      "description": "Publishing partial results manifest by manifest and skipping work when files and dependency versions are unchanged.",
+      "slug": "incremental-results",
+      "title": "Incremental results"
+     }
+    ],
+    "description": "Finding dependency manifests in the workspace and measuring their drift and viability from inside the editor.",
+    "slug": "scanning",
+    "title": "Scanning"
+   },
+   {
+    "areas": [
+     {
+      "description": "Rescanning debounced after a manifest is saved, never while typing.",
+      "slug": "rescan-on-save",
+      "title": "Rescan on save"
+     },
+     {
+      "description": "Rescanning the manifests next to a lock file when a package manager or git changes it.",
+      "slug": "lockfile-changes",
+      "title": "Lock file and package manager changes"
+     },
+     {
+      "description": "A slow, hours-long timer that notices new releases and only fires while the window has focus.",
+      "slug": "periodic-recheck",
+      "title": "Periodic re-check"
+     },
+     {
+      "description": "Joining a scan already in flight and folding bursts of triggers into one run.",
+      "slug": "scan-coalescing",
+      "title": "Duplicate scan prevention"
+     }
+    ],
+    "description": "Deciding when a scan runs on its own without disturbing the user.",
+    "slug": "automatic-rescans",
+    "title": "Automatic rescans"
+   },
+   {
+    "areas": [
+     {
+      "description": "Underlining dependencies on the line that declares them and listing them in the Problems panel with configurable severities.",
+      "slug": "diagnostics",
+      "title": "Squiggles and Problems"
+     },
+     {
+      "description": "Plain-language explanations of a dependency's quadrant and viability signals on hover.",
+      "slug": "hover-explanations",
+      "title": "Hover explanations"
+     },
+     {
+      "description": "Finding where each dependency is written in a manifest so findings and report rows can point at the right line.",
+      "slug": "dependency-location",
+      "title": "Dependency location"
+     }
+    ],
+    "description": "Showing what each dependency's problem is right where it is written in the manifest.",
+    "slug": "in-editor-findings",
+    "title": "In-editor findings"
+   },
+   {
+    "areas": [
+     {
+      "description": "Findings grouped by quadrant and ordered by worst drift, then viability, then name.",
+      "slug": "quadrant-grouping",
+      "title": "Quadrant grouping"
+     },
+     {
+      "description": "Switching between findings for the current file's manifest and the whole project.",
+      "slug": "scope-toggle",
+      "title": "File or project scope"
+     },
+     {
+      "description": "Filtering findings by quadrant, clearing the filter, and expanding all groups.",
+      "slug": "filtering",
+      "title": "Filtering and expanding"
+     },
+     {
+      "description": "The bottom-line row showing total drift and how many dependencies it is spread across.",
+      "slug": "totals",
+      "title": "Totals"
+     },
+     {
+      "description": "The total drift figure shown in the status bar corner all day.",
+      "slug": "status-bar",
+      "title": "Status bar"
+     }
+    ],
+    "description": "The side pane that lists findings worst-first and sums up the drift being carried.",
+    "slug": "findings-pane",
+    "title": "Findings pane"
+   },
+   {
+    "areas": [
+     {
+      "description": "The themed report tab with stats, quadrant chart and sortable table, where clicking a row jumps to the dependency.",
+      "slug": "report-panel",
+      "title": "Report panel"
+     },
+     {
+      "description": "Exporting the report as a standalone HTML page or the quadrant chart as SVG.",
+      "slug": "export",
+      "title": "Export"
+     },
+     {
+      "description": "Showing how a manifest's drift has changed across git history in its own tab.",
+      "slug": "drift-trend",
+      "title": "Drift over history"
+     },
+     {
+      "description": "Checking the current findings against the project's CI gates from the editor.",
+      "slug": "ci-gates",
+      "title": "CI gate check"
+     }
+    ],
+    "description": "The full two-axis report and its exports.",
+    "slug": "reports",
+    "title": "Reports"
+   },
+   {
+    "areas": [
+     {
+      "description": "Writing the current findings to a committed baseline file and filtering them out without a rescan.",
+      "slug": "accept-findings",
+      "title": "Accepting findings"
+     },
+     {
+      "description": "Removing the baseline so every finding shows again.",
+      "slug": "clear-baseline",
+      "title": "Clearing the baseline"
+     },
+     {
+      "description": "Following changes to the baseline file from edits or git pulls so the display stays current.",
+      "slug": "baseline-sync",
+      "title": "Baseline sync"
+     }
+    ],
+    "description": "Recording the drift a team accepts today so only new findings are flagged.",
+    "slug": "baseline",
+    "title": "Baseline"
+   },
+   {
+    "areas": [
+     {
+      "description": "Time-limited caching of version lists and long-lived caching of release dates, with failures cached briefly and stale entries served when offline.",
+      "slug": "version-cache",
+      "title": "Version and release caching"
+     },
+     {
+      "description": "A bounded memory layer in front of a disk store so new windows and sessions start warm, with serialized disk writes.",
+      "slug": "persistent-cache",
+      "title": "Persistent cache"
+     },
+     {
+      "description": "Letting the user clear the registry cache on demand.",
+      "slug": "cache-reset",
+      "title": "Clearing the cache"
+     }
+    ],
+    "description": "Keeping registry lookups cheap, offline-tolerant and rate-limit friendly.",
+    "slug": "registry-cache",
+    "title": "Registry cache"
+   },
+   {
+    "areas": [
+     {
+      "description": "Wiring up commands, watchers and views when the extension starts and tearing them down on exit.",
+      "slug": "activation",
+      "title": "Activation and commands"
+     },
+     {
+      "description": "Reading severities, thresholds and excludes from settings and invalidating results when relevant ones change.",
+      "slug": "settings",
+      "title": "Settings"
+     },
+     {
+      "description": "Storing the GitHub token that deep scans use for maintainer and repository signals.",
+      "slug": "credentials",
+      "title": "GitHub token"
+     },
+     {
+      "description": "Showing the extension log and offering to install a missing tool in a terminal.",
+      "slug": "troubleshooting",
+      "title": "Log and fixes"
+     }
+    ],
+    "description": "Activating the extension and configuring how it behaves.",
+    "slug": "setup",
+    "title": "Setup and settings"
+   },
+   {
+    "areas": [
+     {
+      "description": "The esbuild configuration that bundles the extension and the shared engine for release.",
+      "slug": "bundling",
+      "title": "Bundling"
+     }
+    ],
+    "description": "Building and packaging the extension.",
+    "slug": "developer-tooling",
+    "title": "Developer tooling"
+   }
+  ]
+ }
+}

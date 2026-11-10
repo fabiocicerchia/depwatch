@@ -4,12 +4,14 @@ What this code does, one atomic Gherkin scenario per behaviour, read from the co
 Tags: `@verified` a test asserts it · `@inferred` read from the code only · `@gap` an entry point no test covers · `@human` written or amended by a person, never rewritten.
 
 ## Command line
+
 The depwatch CLI that users and scripts invoke.
 
 - **Commands**: [Running depwatch from the command line](command-line/commands/cli-commands.feature) (6)
 - **Options and arguments**: [Giving the CLI its options](command-line/options/cli-option-grammar.feature) (5), [Choosing and listing supported ecosystems on the command line](command-line/options/ecosystem-option-and-help.feature) (2)
 
 ## Dependency discovery
+
 Finding a project's dependencies and their pinned versions from manifests, lock files and SBOMs.
 
 - **Direct vs transitive dependencies**: [Counting only the dependencies the project chose](dependency-discovery/direct-vs-transitive/direct-dependencies-from-lock.feature) (3)
@@ -18,6 +20,7 @@ Finding a project's dependencies and their pinned versions from manifests, lock 
 - **SBOM input**: [Being told what an SBOM contributed](dependency-discovery/sbom-input/sbom-input-summary.feature) (2), [Reading an SBOM as the dependency list](dependency-discovery/sbom-input/sbom-input.feature) (7), [Assigning SBOM components to ecosystems by package URL type](dependency-discovery/sbom-input/sbom-package-url-ecosystems.feature) (1)
 
 ## Drift measurement
+
 The objective axis: how far behind each dependency and the whole project are, in libyears.
 
 - **Libyear calculation**: [Measuring dependency drift in libyears](drift/libyear-calculation/libyear-drift.feature) (7)
@@ -26,6 +29,7 @@ The objective axis: how far behind each dependency and the whole project are, in
 - **Version comparison**: [Ordering versions to find installed and newest releases](drift/version-comparison/version-ordering.feature) (4)
 
 ## Ecosystem support
+
 Per-package-manager knowledge of manifest formats and where each ecosystem publishes its release history.
 
 - **Infrastructure as code**: [Tracking Docker base images](ecosystem-support/infrastructure/docker-base-images.feature) (7), [Measuring GitHub Actions used by workflows](ecosystem-support/infrastructure/github-actions-dependencies.feature) (8), [Scoring Helm chart dependencies](ecosystem-support/infrastructure/helm-charts.feature) (5), [Measuring Terraform and OpenTofu provider drift](ecosystem-support/infrastructure/terraform-providers.feature) (7)
@@ -37,6 +41,7 @@ Per-package-manager knowledge of manifest formats and where each ecosystem publi
 - **PHP, Ruby and Elixir**: [Measuring PHP Composer dependencies](ecosystem-support/web-and-scripting/composer-dependencies.feature) (5), [Measuring Elixir and Erlang dependencies from Hex](ecosystem-support/web-and-scripting/hex-packages.feature) (4), [Measuring Ruby gem drift from Gemfile.lock](ecosystem-support/web-and-scripting/rubygems-support.feature) (6)
 
 ## Editor integration
+
 Bringing depwatch results into the editor while dependencies are being edited.
 
 - **Editor commands and triggers**: [Scanning a project from Neovim](editor-integration/editor-commands/nvim-scanning.feature) (6)
@@ -44,6 +49,7 @@ Bringing depwatch results into the editor while dependencies are being edited.
 - **Setup and health**: [Configuring and health-checking the Neovim plugin](editor-integration/editor-setup/nvim-setup-health.feature) (5)
 
 ## Policy and CI gates
+
 Turning a report into a pass or fail verdict and keeping long-lived projects focused on what got worse.
 
 - **Accepted baselines**: [Accepting today's findings](policy-gates/baselines/accepted-baseline.feature) (5), [Accepting today's findings and reporting only what gets worse](policy-gates/baselines/accepted-baselines.feature) (5), [Accepting a baseline from the editor](policy-gates/baselines/nvim-baseline.feature) (1)
@@ -51,12 +57,14 @@ Turning a report into a pass or fail verdict and keeping long-lived projects foc
 - **Pass/fail gates**: [Checking CI gates from the editor](policy-gates/gates/nvim-gates.feature) (2), [Failing a check on drift and replace thresholds](policy-gates/gates/pass-fail-gates.feature) (6)
 
 ## Registry access
+
 Fetching version timelines and package metadata from package registries and repository hosts, politely and resiliently.
 
 - **Failure handling**: [Explaining why a dependency could not be looked up](registry-access/failure-handling/registry-failure-reasons.feature) (1)
 - **Version history lookup**: [Reading release dates and repository links from registries](registry-access/version-history/registry-dates-and-links.feature) (2), [Looking up published versions from package registries](registry-access/version-history/registry-version-lookup.feature) (3)
 
 ## Reporting
+
 Presenting drift against viability so people can see what to update, replace or leave alone.
 
 - **Pull request summary**: [Summarising a depwatch check in a GitHub Actions run](reporting/pull-request-summary/pull-request-check-summary.feature) (8)
@@ -65,6 +73,7 @@ Presenting drift against viability so people can see what to update, replace or 
 - **Terminal output**: [Reading a dependency report in the terminal](reporting/terminal-output/terminal-report.feature) (6)
 
 ## Viability assessment
+
 The heuristic axis: whether a dependency's project is alive enough for catching up to be possible.
 
 - **Maintainer and repository signals**: [Gathering maintainer and repository signals on request](viability/maintainer-signals/maintainer-and-repository-signals.feature) (4)

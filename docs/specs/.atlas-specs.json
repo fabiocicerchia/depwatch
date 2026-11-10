@@ -1,301 +1,298 @@
 {
- "excluded": {
-  "stylesheets/extra": [
-   {
-    "candidate": "Header is translucent and blurred, with a hairline divider and a shadow when scrolled",
-    "covered_by": "",
-    "reason": "TRIVIAL",
-    "source": "docs/stylesheets/extra.css#.md-header"
-   },
-   {
-    "candidate": "Nav tabs are dimmed until hovered or active",
-    "covered_by": "",
-    "reason": "TRIVIAL",
-    "source": "docs/stylesheets/extra.css#.md-tabs__link"
-   },
-   {
-    "candidate": "Heading weights, letter-spacing and kerning/ligatures",
-    "covered_by": "",
-    "reason": "TRIVIAL",
-    "source": "docs/stylesheets/extra.css#.md-typeset h1"
-   },
-   {
-    "candidate": "Rounded, bordered code blocks",
-    "covered_by": "",
-    "reason": "TRIVIAL",
-    "source": "docs/stylesheets/extra.css#.md-typeset .highlight"
-   },
-   {
-    "candidate": "Tables drawn as rounded cards with uppercase headers (the comment says they scroll on narrow screens, but overflow: hidden clips them)",
-    "covered_by": "",
-    "reason": "TRIVIAL",
-    "source": "docs/stylesheets/extra.css#.md-typeset table:not([class])"
-   },
-   {
-    "candidate": "Pill-shaped buttons with a gradient primary and a hover lift",
-    "covered_by": "",
-    "reason": "TRIVIAL",
-    "source": "docs/stylesheets/extra.css#.md-typeset .md-button"
-   },
-   {
-    "candidate": "Home hero gradient headline, tagline and button spacing",
-    "covered_by": "",
-    "reason": "TRIVIAL",
-    "source": "docs/stylesheets/extra.css#.md-typeset .hero"
-   },
-   {
-    "candidate": "Feature cards with rounded borders, accent icons and a hover lift",
-    "covered_by": "",
-    "reason": "TRIVIAL",
-    "source": "docs/stylesheets/extra.css#.md-typeset .grid.cards > ul > li"
-   },
-   {
-    "candidate": "Sidebar nav title and active link weight",
-    "covered_by": "",
-    "reason": "TRIVIAL",
-    "source": "docs/stylesheets/extra.css#.md-nav__title"
-   },
-   {
-    "candidate": "Footer background, divider and muted link colour",
-    "covered_by": "",
-    "reason": "TRIVIAL",
-    "source": "docs/stylesheets/extra.css#.md-footer-meta"
-   },
-   {
-    "candidate": "Smooth scrolling for in-page anchors",
-    "covered_by": "",
-    "reason": "TRIVIAL",
-    "source": "docs/stylesheets/extra.css#html"
-   }
-  ]
- },
- "lifted": {
-  "stylesheets/extra": [
-   {
-    "from_source": "mkdocs.yml#theme",
-    "rule": "docs.theme.no-third-party-requests"
-   }
-  ]
- },
- "retired": [
-  "docs.documentation-site.site-theme.002",
-  "docs.documentation-site.site-theme.004"
- ],
- "scenarios": {
-  "docs.documentation-site.site-theme.001": {
-   "file": "docs/specs/documentation-site/site-theme/docs-site-theme.feature",
-   "fingerprint": "d8705c5e2242",
-   "human": false,
-   "rule": "docs.theme.no-third-party-requests",
-   "source": "docs/stylesheets/extra.css#:root",
-   "status": "inferred",
-   "test": "",
-   "tests": []
+  "excluded": {
+    "stylesheets/extra": [
+      {
+        "candidate": "Header is translucent and blurred, with a hairline divider and a shadow when scrolled",
+        "covered_by": "",
+        "reason": "TRIVIAL",
+        "source": "docs/stylesheets/extra.css#.md-header"
+      },
+      {
+        "candidate": "Nav tabs are dimmed until hovered or active",
+        "covered_by": "",
+        "reason": "TRIVIAL",
+        "source": "docs/stylesheets/extra.css#.md-tabs__link"
+      },
+      {
+        "candidate": "Heading weights, letter-spacing and kerning/ligatures",
+        "covered_by": "",
+        "reason": "TRIVIAL",
+        "source": "docs/stylesheets/extra.css#.md-typeset h1"
+      },
+      {
+        "candidate": "Rounded, bordered code blocks",
+        "covered_by": "",
+        "reason": "TRIVIAL",
+        "source": "docs/stylesheets/extra.css#.md-typeset .highlight"
+      },
+      {
+        "candidate": "Tables drawn as rounded cards with uppercase headers (the comment says they scroll on narrow screens, but overflow: hidden clips them)",
+        "covered_by": "",
+        "reason": "TRIVIAL",
+        "source": "docs/stylesheets/extra.css#.md-typeset table:not([class])"
+      },
+      {
+        "candidate": "Pill-shaped buttons with a gradient primary and a hover lift",
+        "covered_by": "",
+        "reason": "TRIVIAL",
+        "source": "docs/stylesheets/extra.css#.md-typeset .md-button"
+      },
+      {
+        "candidate": "Home hero gradient headline, tagline and button spacing",
+        "covered_by": "",
+        "reason": "TRIVIAL",
+        "source": "docs/stylesheets/extra.css#.md-typeset .hero"
+      },
+      {
+        "candidate": "Feature cards with rounded borders, accent icons and a hover lift",
+        "covered_by": "",
+        "reason": "TRIVIAL",
+        "source": "docs/stylesheets/extra.css#.md-typeset .grid.cards > ul > li"
+      },
+      {
+        "candidate": "Sidebar nav title and active link weight",
+        "covered_by": "",
+        "reason": "TRIVIAL",
+        "source": "docs/stylesheets/extra.css#.md-nav__title"
+      },
+      {
+        "candidate": "Footer background, divider and muted link colour",
+        "covered_by": "",
+        "reason": "TRIVIAL",
+        "source": "docs/stylesheets/extra.css#.md-footer-meta"
+      },
+      {
+        "candidate": "Smooth scrolling for in-page anchors",
+        "covered_by": "",
+        "reason": "TRIVIAL",
+        "source": "docs/stylesheets/extra.css#html"
+      }
+    ]
   },
-  "docs.documentation-site.site-theme.003": {
-   "file": "docs/specs/documentation-site/site-theme/docs-site-theme.feature",
-   "fingerprint": "433084a194b6",
-   "human": false,
-   "rule": "docs.theme.links-legible-per-scheme",
-   "source": "docs/stylesheets/extra.css#[data-md-color-scheme=\"slate\"]",
-   "status": "inferred",
-   "test": "",
-   "tests": []
+  "lifted": {
+    "stylesheets/extra": [
+      {
+        "from_source": "mkdocs.yml#theme",
+        "rule": "docs.theme.no-third-party-requests"
+      }
+    ]
+  },
+  "retired": ["docs.documentation-site.site-theme.002", "docs.documentation-site.site-theme.004"],
+  "scenarios": {
+    "docs.documentation-site.site-theme.001": {
+      "file": "docs/specs/documentation-site/site-theme/docs-site-theme.feature",
+      "fingerprint": "d8705c5e2242",
+      "human": false,
+      "rule": "docs.theme.no-third-party-requests",
+      "source": "docs/stylesheets/extra.css#:root",
+      "status": "inferred",
+      "test": "",
+      "tests": []
+    },
+    "docs.documentation-site.site-theme.003": {
+      "file": "docs/specs/documentation-site/site-theme/docs-site-theme.feature",
+      "fingerprint": "433084a194b6",
+      "human": false,
+      "rule": "docs.theme.links-legible-per-scheme",
+      "source": "docs/stylesheets/extra.css#[data-md-color-scheme=\"slate\"]",
+      "status": "inferred",
+      "test": "",
+      "tests": []
+    }
+  },
+  "taxonomy": {
+    "domains": [
+      {
+        "areas": [
+          {
+            "description": "Computes the release-date gap between the version in use and the latest version.",
+            "slug": "libyears",
+            "title": "Libyears calculation"
+          },
+          {
+            "description": "Works out which version is actually installed versus the latest available one.",
+            "slug": "version-resolution",
+            "title": "Version resolution"
+          },
+          {
+            "description": "Tracks how drift changes across history instead of at a single point.",
+            "slug": "trend-mode",
+            "title": "Trend over time"
+          }
+        ],
+        "description": "How far behind each dependency is, measured objectively in libyears.",
+        "slug": "dependency-drift",
+        "title": "Dependency drift"
+      },
+      {
+        "areas": [
+          {
+            "description": "Last commit, release cadence and how active the maintainers are.",
+            "slug": "maintainer-activity",
+            "title": "Maintainer activity"
+          },
+          {
+            "description": "How concentrated the project's maintenance is in a few people.",
+            "slug": "bus-factor",
+            "title": "Bus factor"
+          },
+          {
+            "description": "Archived or deprecated flags and whether the project is funded.",
+            "slug": "project-status",
+            "title": "Archived and funding status"
+          },
+          {
+            "description": "Combines the individual signals into one viability score with stated reasons.",
+            "slug": "viability-scoring",
+            "title": "Viability scoring"
+          }
+        ],
+        "description": "Heuristic signals for whether a dependency can realistically be caught up with.",
+        "slug": "project-viability",
+        "title": "Project viability"
+      },
+      {
+        "areas": [
+          {
+            "description": "Reads dependency manifests and lockfiles, preferring the most accurate input available.",
+            "slug": "manifests-lockfiles",
+            "title": "Manifests and lockfiles"
+          },
+          {
+            "description": "Which package ecosystems are covered and which are deliberately not.",
+            "slug": "ecosystems",
+            "title": "Ecosystem support"
+          },
+          {
+            "description": "Rate-limited, cached queries to package registries and source hosts.",
+            "slug": "registry-lookups",
+            "title": "Registry lookups"
+          }
+        ],
+        "description": "Finding which dependencies a project has, across languages and input formats.",
+        "slug": "dependency-discovery",
+        "title": "Dependency discovery"
+      },
+      {
+        "areas": [
+          {
+            "description": "The two-axis chart that places each dependency by drift and viability.",
+            "slug": "two-axis-plot",
+            "title": "Drift vs viability plot"
+          },
+          {
+            "description": "The check command's terminal and machine-readable reports.",
+            "slug": "cli-output",
+            "title": "Command-line output"
+          },
+          {
+            "description": "How results map to process exit status for scripting.",
+            "slug": "exit-codes",
+            "title": "Exit codes"
+          }
+        ],
+        "description": "Presenting drift against viability so users can decide what to act on.",
+        "slug": "reporting",
+        "title": "Reporting"
+      },
+      {
+        "areas": [
+          {
+            "description": "The packaged action with its inputs, outputs and required permissions.",
+            "slug": "github-action",
+            "title": "GitHub Action"
+          },
+          {
+            "description": "The shapes of drift and viability limits that make a check pass or fail.",
+            "slug": "thresholds",
+            "title": "Thresholds"
+          },
+          {
+            "description": "Introducing a gate on an existing project without failing on day one.",
+            "slug": "gate-adoption",
+            "title": "Gate adoption"
+          }
+        ],
+        "description": "Using depwatch in continuous integration to block or flag risky dependencies.",
+        "slug": "ci-gating",
+        "title": "CI gating"
+      },
+      {
+        "areas": [
+          {
+            "description": "When and which files the extension scans in the workspace.",
+            "slug": "scanning-policy",
+            "title": "Scanning policy"
+          },
+          {
+            "description": "Where findings are drawn in the editor against the manifest lines.",
+            "slug": "inline-findings",
+            "title": "Inline findings"
+          },
+          {
+            "description": "Accepting the current state so only new problems surface.",
+            "slug": "baselines",
+            "title": "Baselines"
+          },
+          {
+            "description": "The in-editor report view of the whole project's dependencies.",
+            "slug": "editor-report",
+            "title": "Editor report"
+          }
+        ],
+        "description": "Seeing drift and viability findings inside VS Code while editing.",
+        "slug": "editor-integration",
+        "title": "Editor integration"
+      },
+      {
+        "areas": [
+          {
+            "description": "Palette, typography, header, footer and logo styling shared by the docs and the splash page.",
+            "slug": "site-theme",
+            "title": "Site theme and branding"
+          },
+          {
+            "description": "The home hero, call-to-action buttons and feature cards.",
+            "slug": "landing-page",
+            "title": "Landing page"
+          },
+          {
+            "description": "Getting-started, architecture, action, extension and performance pages.",
+            "slug": "guides",
+            "title": "Guides and reference"
+          }
+        ],
+        "description": "The published docs and landing page that explain the product.",
+        "slug": "documentation-site",
+        "title": "Documentation site"
+      },
+      {
+        "areas": [
+          {
+            "description": "Bundling the CLI and running the test suite and lint gate.",
+            "slug": "build-test",
+            "title": "Build and test"
+          },
+          {
+            "description": "What keeps a run cheap and which performance limits are enforced.",
+            "slug": "performance",
+            "title": "Performance budget"
+          },
+          {
+            "description": "Versioning, changelog and publishing the CLI and the editor extension.",
+            "slug": "releases",
+            "title": "Releases"
+          },
+          {
+            "description": "Pinned tooling, secret scanning and vulnerability scanning of the repo.",
+            "slug": "supply-chain",
+            "title": "Supply-chain hardening"
+          }
+        ],
+        "description": "Building, testing, releasing and securing depwatch itself.",
+        "slug": "operations",
+        "title": "Operations"
+      }
+    ]
   }
- },
- "taxonomy": {
-  "domains": [
-   {
-    "areas": [
-     {
-      "description": "Computes the release-date gap between the version in use and the latest version.",
-      "slug": "libyears",
-      "title": "Libyears calculation"
-     },
-     {
-      "description": "Works out which version is actually installed versus the latest available one.",
-      "slug": "version-resolution",
-      "title": "Version resolution"
-     },
-     {
-      "description": "Tracks how drift changes across history instead of at a single point.",
-      "slug": "trend-mode",
-      "title": "Trend over time"
-     }
-    ],
-    "description": "How far behind each dependency is, measured objectively in libyears.",
-    "slug": "dependency-drift",
-    "title": "Dependency drift"
-   },
-   {
-    "areas": [
-     {
-      "description": "Last commit, release cadence and how active the maintainers are.",
-      "slug": "maintainer-activity",
-      "title": "Maintainer activity"
-     },
-     {
-      "description": "How concentrated the project's maintenance is in a few people.",
-      "slug": "bus-factor",
-      "title": "Bus factor"
-     },
-     {
-      "description": "Archived or deprecated flags and whether the project is funded.",
-      "slug": "project-status",
-      "title": "Archived and funding status"
-     },
-     {
-      "description": "Combines the individual signals into one viability score with stated reasons.",
-      "slug": "viability-scoring",
-      "title": "Viability scoring"
-     }
-    ],
-    "description": "Heuristic signals for whether a dependency can realistically be caught up with.",
-    "slug": "project-viability",
-    "title": "Project viability"
-   },
-   {
-    "areas": [
-     {
-      "description": "Reads dependency manifests and lockfiles, preferring the most accurate input available.",
-      "slug": "manifests-lockfiles",
-      "title": "Manifests and lockfiles"
-     },
-     {
-      "description": "Which package ecosystems are covered and which are deliberately not.",
-      "slug": "ecosystems",
-      "title": "Ecosystem support"
-     },
-     {
-      "description": "Rate-limited, cached queries to package registries and source hosts.",
-      "slug": "registry-lookups",
-      "title": "Registry lookups"
-     }
-    ],
-    "description": "Finding which dependencies a project has, across languages and input formats.",
-    "slug": "dependency-discovery",
-    "title": "Dependency discovery"
-   },
-   {
-    "areas": [
-     {
-      "description": "The two-axis chart that places each dependency by drift and viability.",
-      "slug": "two-axis-plot",
-      "title": "Drift vs viability plot"
-     },
-     {
-      "description": "The check command's terminal and machine-readable reports.",
-      "slug": "cli-output",
-      "title": "Command-line output"
-     },
-     {
-      "description": "How results map to process exit status for scripting.",
-      "slug": "exit-codes",
-      "title": "Exit codes"
-     }
-    ],
-    "description": "Presenting drift against viability so users can decide what to act on.",
-    "slug": "reporting",
-    "title": "Reporting"
-   },
-   {
-    "areas": [
-     {
-      "description": "The packaged action with its inputs, outputs and required permissions.",
-      "slug": "github-action",
-      "title": "GitHub Action"
-     },
-     {
-      "description": "The shapes of drift and viability limits that make a check pass or fail.",
-      "slug": "thresholds",
-      "title": "Thresholds"
-     },
-     {
-      "description": "Introducing a gate on an existing project without failing on day one.",
-      "slug": "gate-adoption",
-      "title": "Gate adoption"
-     }
-    ],
-    "description": "Using depwatch in continuous integration to block or flag risky dependencies.",
-    "slug": "ci-gating",
-    "title": "CI gating"
-   },
-   {
-    "areas": [
-     {
-      "description": "When and which files the extension scans in the workspace.",
-      "slug": "scanning-policy",
-      "title": "Scanning policy"
-     },
-     {
-      "description": "Where findings are drawn in the editor against the manifest lines.",
-      "slug": "inline-findings",
-      "title": "Inline findings"
-     },
-     {
-      "description": "Accepting the current state so only new problems surface.",
-      "slug": "baselines",
-      "title": "Baselines"
-     },
-     {
-      "description": "The in-editor report view of the whole project's dependencies.",
-      "slug": "editor-report",
-      "title": "Editor report"
-     }
-    ],
-    "description": "Seeing drift and viability findings inside VS Code while editing.",
-    "slug": "editor-integration",
-    "title": "Editor integration"
-   },
-   {
-    "areas": [
-     {
-      "description": "Palette, typography, header, footer and logo styling shared by the docs and the splash page.",
-      "slug": "site-theme",
-      "title": "Site theme and branding"
-     },
-     {
-      "description": "The home hero, call-to-action buttons and feature cards.",
-      "slug": "landing-page",
-      "title": "Landing page"
-     },
-     {
-      "description": "Getting-started, architecture, action, extension and performance pages.",
-      "slug": "guides",
-      "title": "Guides and reference"
-     }
-    ],
-    "description": "The published docs and landing page that explain the product.",
-    "slug": "documentation-site",
-    "title": "Documentation site"
-   },
-   {
-    "areas": [
-     {
-      "description": "Bundling the CLI and running the test suite and lint gate.",
-      "slug": "build-test",
-      "title": "Build and test"
-     },
-     {
-      "description": "What keeps a run cheap and which performance limits are enforced.",
-      "slug": "performance",
-      "title": "Performance budget"
-     },
-     {
-      "description": "Versioning, changelog and publishing the CLI and the editor extension.",
-      "slug": "releases",
-      "title": "Releases"
-     },
-     {
-      "description": "Pinned tooling, secret scanning and vulnerability scanning of the repo.",
-      "slug": "supply-chain",
-      "title": "Supply-chain hardening"
-     }
-    ],
-    "description": "Building, testing, releasing and securing depwatch itself.",
-    "slug": "operations",
-    "title": "Operations"
-   }
-  ]
- }
 }

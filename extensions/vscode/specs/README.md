@@ -4,6 +4,7 @@ What this code does, one atomic Gherkin scenario per behaviour, read from the co
 Tags: `@verified` a test asserts it · `@inferred` read from the code only · `@gap` an entry point no test covers · `@human` written or amended by a person, never rewritten.
 
 ## Automatic rescans
+
 Deciding when a scan runs on its own without disturbing the user.
 
 - **Lock file and package manager changes**: [Rescanning after a lock file changes](automatic-rescans/lockfile-changes/lock-file-rescans.feature) (1)
@@ -12,6 +13,7 @@ Deciding when a scan runs on its own without disturbing the user.
 - **Duplicate scan prevention**: [Not scanning the same manifest twice at once](automatic-rescans/scan-coalescing/scan-coalescing.feature) (2)
 
 ## Baseline
+
 Recording the drift a team accepts today so only new findings are flagged.
 
 - **Accepting findings**: [Accepting findings into a baseline](baseline/accept-findings/accepting-findings-into-a-baseline.feature) (1), [Accepting and clearing the baseline](baseline/accept-findings/managing-baseline.feature) (3)
@@ -19,6 +21,7 @@ Recording the drift a team accepts today so only new findings are flagged.
 - **Clearing the baseline**: [Clearing the baseline](baseline/clear-baseline/clearing-the-baseline.feature) (1)
 
 ## Findings pane
+
 The side pane that lists findings worst-first and sums up the drift being carried.
 
 - **Filtering and expanding**: [Filtering findings by quadrant](findings-pane/filtering/filtering-findings.feature) (2)
@@ -27,6 +30,7 @@ The side pane that lists findings worst-first and sums up the drift being carrie
 - **Totals**: [Reading the bottom line of the findings pane](findings-pane/totals/findings-pane-totals.feature) (6)
 
 ## In-editor findings
+
 Showing what each dependency's problem is right where it is written in the manifest.
 
 - **Dependency location**: [Pointing findings at the line that declares the dependency](in-editor-findings/dependency-location/dependency-location.feature) (6)
@@ -34,12 +38,14 @@ Showing what each dependency's problem is right where it is written in the manif
 - **Hover explanations**: [Explaining a dependency on hover](in-editor-findings/hover-explanations/dependency-hover.feature) (3), [Explaining dependency findings in plain language](in-editor-findings/hover-explanations/explaining-findings.feature) (8)
 
 ## Registry cache
+
 Keeping registry lookups cheap, offline-tolerant and rate-limit friendly.
 
 - **Clearing the cache**: [Clearing the registry cache](registry-cache/cache-reset/clearing-registry-cache-store.feature) (1), [Clearing the registry cache](registry-cache/cache-reset/clearing-registry-cache.feature) (1)
 - **Version and release caching**: [Reusing registry answers between scans](registry-cache/version-cache/registry-answer-reuse.feature) (5)
 
 ## Reports
+
 The full two-axis report and its exports.
 
 - **CI gate check**: [Checking CI gates from the editor](reports/ci-gates/checking-ci-gates.feature) (2)
@@ -48,6 +54,7 @@ The full two-axis report and its exports.
 - **Report panel**: [Reading the depwatch report](reports/report-panel/report-page.feature) (7), [Opening the report and jumping to a dependency](reports/report-panel/report-panel-commands.feature) (2), [Viewing the dependency report in the editor](reports/report-panel/report-panel.feature) (5)
 
 ## Scanning
+
 Finding dependency manifests in the workspace and measuring their drift and viability from inside the editor.
 
 - **Incremental results**: [Showing scan results as they arrive and skipping unchanged work](scanning/incremental-results/incremental-scan-results.feature) (1)
@@ -56,6 +63,7 @@ Finding dependency manifests in the workspace and measuring their drift and viab
 - **Progress and cancellation**: [Showing each manifest's latest scan outcome](scanning/scan-progress/manifest-scan-outcome.feature) (1), [Following, cancelling and understanding a scan](scanning/scan-progress/scan-progress-and-failures.feature) (2)
 
 ## Setup and settings
+
 Activating the extension and configuring how it behaves.
 
 - **Activation and commands**: [Starting depwatch in the editor](setup/activation/extension-startup.feature) (2)

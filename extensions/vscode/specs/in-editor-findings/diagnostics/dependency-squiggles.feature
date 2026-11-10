@@ -24,6 +24,7 @@ Feature: Flagging dependencies in the manifest and the Problems panel
       | healthy  | off     | no squiggle             | nothing               |
       | replace  | error   | an error squiggle       | one error             |
       | upgrade  | hint    | a hint marker           | one hint              |
+      | watch    | off     | no squiggle             | nothing               |
 
   @id:vscode.in-editor-findings.diagnostics.002 @rule:in-editor-findings.diagnostics.unscored-dependency @inferred @source:extensions/vscode/src/annotate.ts#Annotator
   Scenario Outline: A dependency with no registry data is flagged as not scored at the no-data severity
@@ -38,22 +39,8 @@ Feature: Flagging dependencies in the manifest and the Problems panel
       | setting | listed      |
       | off     | nothing     |
       | warning | one warning |
-
-  @id:vscode.in-editor-findings.diagnostics.003 @rule:in-editor-findings.diagnostics.registry-link @inferred @source:extensions/vscode/src/annotate.ts#Annotator
-  Scenario Outline: A problem's code links to the package on its public registry
-    Given a <ecosystem> manifest declares "<package>"
-    And "<package>" is flagged by the latest scan
-    When the developer views the problem in the Problems panel
-    Then the problem's code is the quadrant name
-    And following the code opens "<url>"
-
-    Examples:
-      | ecosystem | package         | url                                            |
-      | npm       | left-pad        | https://www.npmjs.com/package/left-pad         |
-      | Python    | requests        | https://pypi.org/project/requests/             |
-      | Cargo     | serde           | https://crates.io/crates/serde                 |
-      | Composer  | monolog/monolog | https://packagist.org/packages/monolog/monolog |
-      | RubyGems  | rails           | https://rubygems.org/gems/rails                |
+      | hint    | one hint    |
+      | error   | one error   |
 
   @id:vscode.in-editor-findings.diagnostics.004 @rule:in-editor-findings.diagnostics.only-declared-dependencies @inferred @source:extensions/vscode/src/annotate.ts#Annotator
   Scenario: Dependencies not written in the manifest are not flagged in it

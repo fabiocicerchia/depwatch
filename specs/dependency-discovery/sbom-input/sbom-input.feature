@@ -32,14 +32,6 @@ Feature: Reading an SBOM as the dependency list
       | pkg:pypi/django@4.2.1                     | django                 | pep440    | 4.2.1    |
       | pkg:maven/com.google.guava/guava@30.0-jre | com.google.guava/guava | maven     | 30.0-jre |
 
-  @id:dependency-discovery.sbom-input.006 @rule:sbom.input.unscorable-components-reported @verified @source:src/sbom.ts#collect @test:src/sbom.test.ts#counts what it skipped, by ecosystem @test:src/sbom.test.ts#skips the document root and counts unsupported ecosystems
-  Scenario: Components with no registry depwatch can query are counted and reported, not silently dropped
-    Given the SBOM lists 1 component with package URL "pkg:deb/debian/libssl3@3.0.11"
-    And the SBOM lists 2 npm components the project depends on directly
-    When the operator checks the SBOM
-    Then "libssl3" is not scored
-    And the run notes "skipped 1 deb — no public registry this tool can query"
-
   @id:dependency-discovery.sbom-input.007 @rule:sbom.input.components-without-purl-ignored @inferred @source:src/sbom.ts#collect @questionable
   Scenario: Components without a usable package URL are left out without being reported
     Given the SBOM lists a component "internal-tool" with no package URL

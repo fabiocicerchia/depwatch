@@ -33,22 +33,6 @@ Feature: Reading npm and Bun projects
       | package.json      | package.json manifest  |
       | deps.json         | package.json manifest  |
 
-  @id:ecosystem-support.javascript.008 @rule:npm.bun.text-lock-exact-versions @verified @source:src/ecosystems/bun.ts#parseBunLock @test:src/ecosystems/python.test.ts#reads bun.lock JSONC (comments, trailing commas)
-  Scenario: A Bun text lock file reports each package's exact installed version
-    Given a bun.lock that has comments and trailing commas
-    And it lists react@18.3.1 and @remix-run/router@1.15.0
-    When the operator checks the bun.lock
-    Then react is reported at 18.3.1 as an installed version
-    And @remix-run/router is reported at 1.15.0 as an installed version
-    And the result is in the npm ecosystem
-
-  @id:ecosystem-support.javascript.009 @rule:npm.bun.binary-lock-refused @verified @source:src/ecosystems/bun.ts#bunBinaryError @test:src/ecosystems/python.test.ts#gives an actionable error for the binary bun.lockb
-  Scenario: A binary Bun lock file is refused with instructions for producing a readable one
-    Given a project whose only lock file is the binary bun.lockb
-    When the operator checks the bun.lockb
-    Then the check fails with "bun.lockb is a binary lockfile depwatch cannot read"
-    And the message tells the operator to run `bun install --save-text-lockfile` or to point depwatch at package.json
-
   @id:ecosystem-support.javascript.010 @rule:npm.metadata.maintainers-funding-repository @inferred @source:src/ecosystems/npm.ts#npm
   Scenario: Deep checks take an npm package's maintainers, funding and repository from the registry
     Given the npm package "left-pad" lists 2 maintainers on the registry

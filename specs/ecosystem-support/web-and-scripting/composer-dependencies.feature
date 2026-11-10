@@ -13,12 +13,6 @@ Feature: Measuring PHP Composer dependencies
     Then "monolog/monolog" is measured at installed version "3.5.2", marked as resolved
     And "phpunit/phpunit" is measured at installed version "10.5.1", marked as resolved
 
-  @id:ecosystem-support.web-and-scripting.002 @rule:ecosystems.composer.lock-preferred-over-manifest @verified @source:src/ecosystems/composer.ts#composer @test:src/lockfile.test.ts#finds Cargo.lock and composer.lock
-  Scenario: A composer.lock next to composer.json is measured instead of the manifest
-    Given a project folder containing composer.json and composer.lock
-    When the operator checks the composer.json
-    Then the report is built from composer.lock
-
   @id:ecosystem-support.web-and-scripting.003 @rule:ecosystems.composer.manifest-range-floor @verified @source:src/ecosystems/composer.ts#parseComposerJson @test:src/manifest.test.ts#ignores the package version and platform requirements
   Scenario: composer.json measures each Packagist package from the floor of its constraint and skips platform requirements
     Given a composer.json requiring "php" ">=8.1", "ext-json" "*" and "monolog/monolog" "^3.5.0"

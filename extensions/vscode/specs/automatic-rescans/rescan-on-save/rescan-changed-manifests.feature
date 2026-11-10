@@ -5,13 +5,6 @@ Feature: Rescanning manifests that change on disk
   Background:
     Given depwatch has scanned /repo/package.json
 
-  @id:vscode.automatic-rescans.rescan-on-save.001 @rule:automatic-rescans.on-save.rescan-after-save @inferred @source:extensions/vscode/src/extension.ts#watchManifests
-  Scenario: A saved manifest is rescanned after the debounce period
-    Given depwatch is enabled with rescan on save on
-    When the developer saves /repo/package.json
-    Then /repo/package.json is rescanned once the debounce period has passed
-    And its findings reflect the saved versions
-
   @id:vscode.automatic-rescans.rescan-on-save.002 @rule:automatic-rescans.on-save.no-rescan-when-off-or-excluded @inferred @source:extensions/vscode/src/extension.ts#activate @questionable
   Scenario Outline: Changed manifests are not rescanned when depwatch or rescan-on-save is off, or the file is in an excluded folder
     Given <condition>

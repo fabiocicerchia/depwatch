@@ -43,15 +43,6 @@ Feature: Failing a check on drift and replace thresholds
       | 40.00    | 40.00 | 0         | pass                          |
       | 9.00     | 1.00  | 0         | pass                          |
 
-  @id:policy-gates.gates.006 @rule:policy.gates.ratchet-failure-reason @verified @source:src/gates.ts#gateFailures @test:src/gates.test.ts#fails when drift grew by more than --max-libyears-increase
-  Scenario: A ratchet failure names the growth, the baseline and the new total
-    Given the baseline total drift is 3.10 libyears
-    And the report's total drift is 3.52 libyears
-    And the max-libyears-increase allowance is 0.25
-    When the gates are applied to the report
-    Then the check fails on max-libyears-increase
-    And the reason reads "drift grew by 0.42 libyears (3.10 → 3.52), more than --max-libyears-increase 0.25"
-
   @id:policy-gates.gates.007 @rule:policy.gates.ratchet-needs-baseline @verified @source:src/gates.ts#gateFailures @test:src/gates.test.ts#is inert without a baseline
   Scenario: The drift ratchet does nothing without a baseline
     Given the report's total drift is 40.00 libyears

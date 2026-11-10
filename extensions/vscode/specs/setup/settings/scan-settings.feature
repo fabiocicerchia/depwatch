@@ -49,6 +49,7 @@ Feature: Settings that decide what gets scanned
       | depwatch.statusBar                | not rescanned                             |
       | depwatch.diagnostics.replace      | not rescanned                             |
       | depwatch.enable                   | not rescanned                             |
+      | depwatch.scan.debounceMs          | not rescanned                             |
 
   @id:vscode.setup.settings.004 @rule:settings.gates.configured-when-either-budget-set @inferred @source:extensions/vscode/src/config.ts#readConfig
   Scenario Outline: CI gates count as configured as soon as either budget is set

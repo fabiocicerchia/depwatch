@@ -6,18 +6,19 @@ Feature: Ordering versions to find installed and newest releases
     Given a package's registry has published a list of version strings
 
   @id:drift.version-comparison.001 @rule:drift.version-comparison.numeric-ordering @verified @source:src/lib/semver.ts#compareVersions @test:src/lib/engine.test.ts#ranks by the numeric core, not by string
-  Scenario Outline: Versions rank by their numbers, not alphabetically
+  Scenario Outline: Versions rank by their numbers, not alphabetically, and a release after its own prereleases
     Given the registry lists versions "<a>" and "<b>"
     When depwatch compares "<a>" with "<b>"
     Then "<a>" ranks <relation> "<b>"
 
     Examples:
-      | a      | b      | relation    |
-      | 1.10.0 | 1.9.0  | after       |
-      | 1.2    | 1.2.0  | the same as |
-      | v2.0.0 | 2.0.0  | the same as |
-      | =3.1.0 | 3.1.0  | the same as |
-      | 2.0.0  | 10.0.0 | before      |
+      | a      | b          | relation    |
+      | 1.10.0 | 1.9.0      | after       |
+      | 1.2    | 1.2.0      | the same as |
+      | v2.0.0 | 2.0.0      | the same as |
+      | =3.1.0 | 3.1.0      | the same as |
+      | 2.0.0  | 10.0.0     | before      |
+      | 1.0.0  | 1.0.0-rc.1 | after       |
 
   @id:drift.version-comparison.002 @rule:drift.version-comparison.prerelease-classification @verified @source:src/lib/semver.ts#isPrerelease @test:src/lib/engine.test.ts#puts a release ahead of its own prereleases
   Scenario Outline: A version is a prerelease when anything but build metadata or a post-release follows its numbers
@@ -34,12 +35,6 @@ Feature: Ordering versions to find installed and newest releases
       | 1.2.3+build.5 | a stable release |
       | 1.2.post1     | a stable release |
       | 1.0-r2        | a stable release |
-
-  @id:drift.version-comparison.003 @rule:drift.version-comparison.release-outranks-own-prerelease @verified @source:src/lib/semver.ts#compareVersions @test:src/lib/engine.test.ts#puts a release ahead of its own prereleases
-  Scenario: A release ranks after its own prereleases
-    Given the registry lists versions "1.0.0-rc.1" and "1.0.0"
-    When depwatch compares "1.0.0" with "1.0.0-rc.1"
-    Then "1.0.0" ranks after "1.0.0-rc.1"
 
   @id:drift.version-comparison.004 @rule:drift.version-comparison.same-core-prereleases-tie @inferred @source:src/lib/semver.ts#compareVersions @questionable
   Scenario: Prereleases of the same release rank as equal

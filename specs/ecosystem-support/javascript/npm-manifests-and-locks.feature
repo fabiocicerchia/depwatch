@@ -57,15 +57,3 @@ Feature: Reading npm manifests and lock files
     And the same lock lists "debug" at 4.3.4 under "node_modules/debug"
     When the operator checks the lock file
     Then "debug" appears once in the report, at 2.6.9
-
-  @id:ecosystem-support.javascript.016 @rule:javascript.detection.content-over-filename @verified @source:src/lib/libyear/engine.ts#detectKind @test:src/lib/engine.test.ts#tells a lock file from the manifest beside it
-  Scenario Outline: A lock file is read as a lock file whatever it is named
-    Given a file named "package.json" contains <content>
-    When the operator checks the file
-    Then its dependencies are reported at the installed versions, marked as resolved
-
-    Examples:
-      | content                                        |
-      | a package-lock document with a lockfileVersion |
-      | a yarn lockfile                                |
-      | a pnpm lockfile                                |

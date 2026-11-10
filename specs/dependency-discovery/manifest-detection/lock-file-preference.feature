@@ -21,19 +21,17 @@ Feature: Reading the lock file beside a manifest
       | Cargo.toml    | Cargo.lock        |
       | composer.json | composer.lock     |
 
-  @id:dependency-discovery.manifest-detection.005 @rule:input.lock.manifest-when-no-lock @verified @source:src/input.ts#resolveInput @test:src/lockfile.test.ts#leaves the manifest alone when there is no lock file
-  Scenario: A manifest without a lock file beside it is read as it is
-    Given the project holds package.json and no lock file
-    When the operator checks package.json
+  @id:dependency-discovery.manifest-detection.005 @rule:input.lock.manifest-when-no-lock @verified @source:src/input.ts#resolveInput @test:src/lockfile.test.ts#leaves the manifest alone when there is no lock file @test:src/lockfile.test.ts#respects --no-lock
+  Scenario Outline: A manifest is read as it is when no lock file sits beside it or the operator opts out
+    Given the project holds <files>
+    When the operator checks package.json <option>
     Then the versions measured are the floors of the ranges in package.json
     And no note about exact versions is shown
 
-  @id:dependency-discovery.manifest-detection.006 @rule:input.lock.no-lock-opt-out @verified @source:src/input.ts#resolveInput @test:src/lockfile.test.ts#respects --no-lock
-  Scenario: The operator can opt out of reading the lock file
-    Given the project holds package.json and package-lock.json side by side
-    When the operator checks package.json with --no-lock
-    Then the versions measured are the floors of the ranges in package.json
-    And no note about exact versions is shown
+    Examples:
+      | files                              | option    |
+      | package.json and no lock file      | (none)    |
+      | package.json and package-lock.json | --no-lock |
 
   @id:dependency-discovery.manifest-detection.007 @rule:input.lock.go-sum-is-not-a-lock @verified @source:src/input.ts#resolveInput @test:src/lockfile.test.ts#does not read go.sum in place of go.mod
   Scenario: A Go module is measured from go.mod even when go.sum sits beside it

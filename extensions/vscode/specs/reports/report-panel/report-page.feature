@@ -62,12 +62,6 @@ Feature: Reading the depwatch report
       | 1     | had no registry answer                           | 1 dep(s) had no registry data and were not scored.                                                                             |
       | 2     | have only a version range and no lock file entry | Upper bound: 2 of 4 versions came from a range, not a lock file — a range gives its floor, so the real drift is this or lower. |
 
-  @id:vscode.reports.report-panel.009 @rule:reports.page.row-jumps-to-dependency @inferred @source:extensions/vscode/src/html.ts#CLICK_SCRIPT
-  Scenario: Clicking a dependency in the report jumps to it in its manifest
-    Given the report in the editor lists "left-pad" from "/repo/package.json"
-    When the developer clicks the "left-pad" row
-    Then the editor opens /repo/package.json at the line declaring "left-pad"
-
   @id:vscode.reports.report-panel.010 @rule:reports.page.sortable-columns @inferred @source:extensions/vscode/src/html.ts#CLICK_SCRIPT @questionable
   Scenario Outline: Clicking a column header sorts the table, descending first
     Given the report in the editor lists dependencies with drift 0.50, 2.50 and 1.25

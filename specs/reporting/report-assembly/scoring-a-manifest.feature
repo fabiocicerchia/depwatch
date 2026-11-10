@@ -35,23 +35,6 @@ Feature: Scoring a manifest on drift and viability
       | registry lists no versions for it | registry returned no versions       |
       | ecosystem "cobol" is not supported | unsupported ecosystem "cobol"       |
 
-  @id:reporting.report-assembly.003 @rule:reporting.unknowns.pulse-only-ecosystem-drift-unscored @inferred @source:src/report.ts#analyseDep @questionable
-  Scenario: Dependencies from ecosystems without an orderable version series get pulse and viability but no drift
-    Given a Docker base image pinned to a tag released 2.00 years ago
-    When the developer checks the manifest
-    Then its drift column shows "—" and latest shows "—"
-    And its pulse column shows "2.00"
-    And its viability is scored
-    And its quadrant shows "pulse-only"
-
-  @id:reporting.report-assembly.004 @rule:reporting.totals.total-libyears-and-worst-five @verified @source:src/report.ts#analyse @test:src/report.test.ts#scores drift and viability from the injected cache without fetching
-  Scenario: The report totals drift across the manifest and names the five deepest in debt
-    Given a manifest of seven dependencies with drift 5.00, 4.00, 3.00, 2.00, 1.50, 0.50 and 0.00 libyears
-    When the developer checks the manifest
-    Then the total drift is 16.00 libyears
-    And the worst dependencies are the five at 5.00, 4.00, 3.00, 2.00 and 1.50 libyears
-    And the report names the manifest file, its ecosystem and when it was generated
-
   @id:reporting.report-assembly.005 @rule:reporting.ordering.worst-first @inferred @source:src/report.ts#compareDeps
   Scenario: Dependencies are listed worst first
     Given dependencies "alpha" healthy at 0.10 libyears, "beta" replace at 2.00, "gamma" upgrade at 4.00 and "delta" upgrade at 4.00

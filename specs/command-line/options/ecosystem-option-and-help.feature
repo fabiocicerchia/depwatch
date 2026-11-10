@@ -10,17 +10,6 @@ Feature: Choosing and listing supported ecosystems on the command line
     And pattern-matched inputs are shown by shape, such as "PyPI: pyproject.toml, requirements*.txt, poetry.lock, uv.lock"
     And the Go modules line shows "Go modules: go.mod" and does not mention go.sum, even though go.sum is recognised
 
-  @id:command-line.options.002 @rule:cli.options.eco-must-be-supported @verified @source:src/ecosystems/registry.ts#isEcoId @test:src/ecosystems/registry.test.ts#validates ecosystem ids
-  Scenario Outline: A forced ecosystem that depwatch does not support is refused
-    When the operator checks a manifest with --eco <name>
-    Then <outcome>
-
-    Examples:
-      | name  | outcome                                                                                 |
-      | maven | depwatch reads the manifest as a Maven Central file                                     |
-      | npmm  | depwatch refuses with unsupported ecosystem "npmm" (want one of: npm, pep440, cargo, …) |
-      | brew  | depwatch refuses with unsupported ecosystem "brew" (want one of: npm, pep440, cargo, …) |
-
   @id:command-line.options.003 @rule:cli.options.eco-rejects-object-property-names @inferred @source:src/ecosystems/registry.ts#isEcoId @questionable
   Scenario: A forced ecosystem named like a built-in object property gets past validation
     When the operator checks package.json with --eco constructor

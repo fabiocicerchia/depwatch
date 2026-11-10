@@ -12,17 +12,19 @@ Feature: Recognising a dependency file's ecosystem from its name
     Then depwatch reads it as a <ecosystem> file
 
     Examples:
-      | path                           | ecosystem |
-      | package.json                   | npm       |
-      | a/b/yarn.lock                  | npm       |
-      | requirements-dev.txt           | PyPI      |
-      | Cargo.lock                     | crates.io |
-      | composer.json                  | Packagist |
-      | Gemfile.lock                   | RubyGems  |
-      | infra/main.tf                  | Terraform |
-      | src/App/App.csproj             | NuGet     |
-      | Dockerfile.prod                | Docker    |
-      | C:\work\shop\package-lock.json | npm       |
+      | path                           | ecosystem     |
+      | package.json                   | npm           |
+      | a/b/yarn.lock                  | npm           |
+      | requirements-dev.txt           | PyPI          |
+      | Cargo.lock                     | crates.io     |
+      | composer.json                  | Packagist     |
+      | Gemfile.lock                   | RubyGems      |
+      | infra/main.tf                  | Terraform     |
+      | src/App/App.csproj             | NuGet         |
+      | Dockerfile.prod                | Docker        |
+      | C:\work\shop\package-lock.json | npm           |
+      | Cargo.toml                     | crates.io     |
+      | pom.xml                        | Maven Central |
 
   @id:dependency-discovery.manifest-detection.002 @rule:discovery.detection.workflow-files-by-directory @inferred @source:src/ecosystems/registry.ts#byFile
   Scenario Outline: A workflow file is recognised as GitHub Actions only inside .github/workflows

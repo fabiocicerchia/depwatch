@@ -2082,7 +2082,35 @@
   "src/trend": [],
   "src/viability": []
  },
- "retired": [],
+ "retired": [
+  "dependency-discovery.manifest-detection.009",
+  "dependency-discovery.manifest-detection.010",
+  "command-line.options.002",
+  "dependency-discovery.manifest-detection.013",
+  "dependency-discovery.manifest-detection.006",
+  "dependency-discovery.sbom-input.006",
+  "drift.version-comparison.003",
+  "ecosystem-support.javascript.008",
+  "ecosystem-support.javascript.009",
+  "ecosystem-support.javascript.016",
+  "ecosystem-support.python.009",
+  "ecosystem-support.python.024",
+  "ecosystem-support.python.011",
+  "ecosystem-support.python.012",
+  "ecosystem-support.web-and-scripting.017",
+  "ecosystem-support.python.017",
+  "ecosystem-support.web-and-scripting.002",
+  "ecosystem-support.systems-languages.009",
+  "policy-gates.baselines.006",
+  "policy-gates.baselines.010",
+  "policy-gates.gates.006",
+  "registry-access.version-history.006",
+  "reporting.report-assembly.004",
+  "reporting.report-assembly.003",
+  "ecosystem-support.infrastructure.021",
+  "ecosystem-support.infrastructure.022",
+  "viability.release-signals.003"
+ ],
  "scenarios": {
   "command-line.commands.001": {
    "file": "specs/command-line/commands/cli-commands.feature",
@@ -2153,18 +2181,6 @@
    "status": "inferred",
    "test": "",
    "tests": []
-  },
-  "command-line.options.002": {
-   "file": "specs/command-line/options/ecosystem-option-and-help.feature",
-   "fingerprint": "4adc6d61548a",
-   "human": false,
-   "rule": "cli.options.eco-must-be-supported",
-   "source": "src/ecosystems/registry.ts#isEcoId",
-   "status": "verified",
-   "test": "src/ecosystems/registry.test.ts#validates ecosystem ids",
-   "tests": [
-    "src/ecosystems/registry.test.ts#validates ecosystem ids"
-   ]
   },
   "command-line.options.003": {
    "file": "specs/command-line/options/ecosystem-option-and-help.feature",
@@ -2438,18 +2454,7 @@
    "status": "verified",
    "test": "src/lockfile.test.ts#leaves the manifest alone when there is no lock file",
    "tests": [
-    "src/lockfile.test.ts#leaves the manifest alone when there is no lock file"
-   ]
-  },
-  "dependency-discovery.manifest-detection.006": {
-   "file": "specs/dependency-discovery/manifest-detection/lock-file-preference.feature",
-   "fingerprint": "f50c8a9d06d7",
-   "human": false,
-   "rule": "input.lock.no-lock-opt-out",
-   "source": "src/input.ts#resolveInput",
-   "status": "verified",
-   "test": "src/lockfile.test.ts#respects --no-lock",
-   "tests": [
+    "src/lockfile.test.ts#leaves the manifest alone when there is no lock file",
     "src/lockfile.test.ts#respects --no-lock"
    ]
   },
@@ -2475,30 +2480,6 @@
    "test": "",
    "tests": []
   },
-  "dependency-discovery.manifest-detection.009": {
-   "file": "specs/dependency-discovery/manifest-detection/recognising-manifests.feature",
-   "fingerprint": "a96d0066e83c",
-   "human": false,
-   "rule": "discovery.manifests.ecosystem-from-file-name",
-   "source": "src/manifest.ts#detectEcosystem",
-   "status": "verified",
-   "test": "src/manifest.test.ts#maps conventional manifest names",
-   "tests": [
-    "src/manifest.test.ts#maps conventional manifest names"
-   ]
-  },
-  "dependency-discovery.manifest-detection.010": {
-   "file": "specs/dependency-discovery/manifest-detection/recognising-manifests.feature",
-   "fingerprint": "8d8ee6fa37c6",
-   "human": false,
-   "rule": "discovery.manifests.unrecognised-input-refused",
-   "source": "src/manifest.ts#parse",
-   "status": "verified",
-   "test": "src/manifest.test.ts#refuses to guess at an unknown manifest",
-   "tests": [
-    "src/manifest.test.ts#refuses to guess at an unknown manifest"
-   ]
-  },
   "dependency-discovery.manifest-detection.011": {
    "file": "specs/dependency-discovery/manifest-detection/recognising-manifests.feature",
    "fingerprint": "144e0b1dfb24",
@@ -2516,16 +2497,6 @@
    "fingerprint": "8d8ee6fa37c6",
    "human": false,
    "rule": "discovery.manifests.named-ecosystem-overrides-file-name",
-   "source": "src/manifest.ts#parse",
-   "status": "inferred",
-   "test": "",
-   "tests": []
-  },
-  "dependency-discovery.manifest-detection.013": {
-   "file": "specs/dependency-discovery/manifest-detection/recognising-manifests.feature",
-   "fingerprint": "8d8ee6fa37c6",
-   "human": false,
-   "rule": "discovery.manifests.sbom-recognised-by-content",
    "source": "src/manifest.ts#parse",
    "status": "inferred",
    "test": "",
@@ -2594,19 +2565,6 @@
     "src/sbom.test.ts#marks every SBOM version as resolved \u2014 that is what an SBOM is for",
     "src/sbom.test.ts#reads purls out of externalRefs, ignoring the cpe entries",
     "src/ecosystems/phase4.test.ts#parses both group:artifact and PURL group/artifact via the SBOM path"
-   ]
-  },
-  "dependency-discovery.sbom-input.006": {
-   "file": "specs/dependency-discovery/sbom-input/sbom-input.feature",
-   "fingerprint": "ac888706da95",
-   "human": false,
-   "rule": "sbom.input.unscorable-components-reported",
-   "source": "src/sbom.ts#collect",
-   "status": "verified",
-   "test": "src/sbom.test.ts#counts what it skipped, by ecosystem",
-   "tests": [
-    "src/sbom.test.ts#counts what it skipped, by ecosystem",
-    "src/sbom.test.ts#skips the document root and counts unsupported ecosystems"
    ]
   },
   "dependency-discovery.sbom-input.007": {
@@ -2845,18 +2803,6 @@
    "human": false,
    "rule": "drift.version-comparison.prerelease-classification",
    "source": "src/lib/semver.ts#isPrerelease",
-   "status": "verified",
-   "test": "src/lib/engine.test.ts#puts a release ahead of its own prereleases",
-   "tests": [
-    "src/lib/engine.test.ts#puts a release ahead of its own prereleases"
-   ]
-  },
-  "drift.version-comparison.003": {
-   "file": "specs/drift/version-comparison/version-ordering.feature",
-   "fingerprint": "37f7e0cdc043",
-   "human": false,
-   "rule": "drift.version-comparison.release-outranks-own-prerelease",
-   "source": "src/lib/semver.ts#compareVersions",
    "status": "verified",
    "test": "src/lib/engine.test.ts#puts a release ahead of its own prereleases",
    "tests": [
@@ -3102,26 +3048,6 @@
    "test": "",
    "tests": []
   },
-  "ecosystem-support.infrastructure.021": {
-   "file": "specs/ecosystem-support/infrastructure/helm-charts.feature",
-   "fingerprint": "cb5e3bd8fcb5",
-   "human": false,
-   "rule": "ecosystems.helm.deprecated-chart-is-end-of-life",
-   "source": "src/ecosystems/helm.ts#helm",
-   "status": "inferred",
-   "test": "",
-   "tests": []
-  },
-  "ecosystem-support.infrastructure.022": {
-   "file": "specs/ecosystem-support/infrastructure/helm-charts.feature",
-   "fingerprint": "af71e24560f4",
-   "human": false,
-   "rule": "ecosystems.helm.deprecation-overridden-by-github-source",
-   "source": "src/signals.ts#fetchDeepMeta",
-   "status": "inferred",
-   "test": "",
-   "tests": []
-  },
   "ecosystem-support.infrastructure.023": {
    "file": "specs/ecosystem-support/infrastructure/terraform-providers.feature",
    "fingerprint": "fd2c0e31990f",
@@ -3272,30 +3198,6 @@
    "test": "",
    "tests": []
   },
-  "ecosystem-support.javascript.008": {
-   "file": "specs/ecosystem-support/javascript/npm-and-bun-dependencies.feature",
-   "fingerprint": "8be8c094ef31",
-   "human": false,
-   "rule": "npm.bun.text-lock-exact-versions",
-   "source": "src/ecosystems/bun.ts#parseBunLock",
-   "status": "verified",
-   "test": "src/ecosystems/python.test.ts#reads bun.lock JSONC (comments, trailing commas)",
-   "tests": [
-    "src/ecosystems/python.test.ts#reads bun.lock JSONC (comments, trailing commas)"
-   ]
-  },
-  "ecosystem-support.javascript.009": {
-   "file": "specs/ecosystem-support/javascript/npm-and-bun-dependencies.feature",
-   "fingerprint": "d4fcaa230583",
-   "human": false,
-   "rule": "npm.bun.binary-lock-refused",
-   "source": "src/ecosystems/bun.ts#bunBinaryError",
-   "status": "verified",
-   "test": "src/ecosystems/python.test.ts#gives an actionable error for the binary bun.lockb",
-   "tests": [
-    "src/ecosystems/python.test.ts#gives an actionable error for the binary bun.lockb"
-   ]
-  },
   "ecosystem-support.javascript.010": {
    "file": "specs/ecosystem-support/javascript/npm-and-bun-dependencies.feature",
    "fingerprint": "d596581a18ca",
@@ -3363,18 +3265,6 @@
    "status": "inferred",
    "test": "",
    "tests": []
-  },
-  "ecosystem-support.javascript.016": {
-   "file": "specs/ecosystem-support/javascript/npm-manifests-and-locks.feature",
-   "fingerprint": "2817667dd755",
-   "human": false,
-   "rule": "javascript.detection.content-over-filename",
-   "source": "src/lib/libyear/engine.ts#detectKind",
-   "status": "verified",
-   "test": "src/lib/engine.test.ts#tells a lock file from the manifest beside it",
-   "tests": [
-    "src/lib/engine.test.ts#tells a lock file from the manifest beside it"
-   ]
   },
   "ecosystem-support.jvm-and-dotnet.001": {
    "file": "specs/ecosystem-support/jvm-and-dotnet/maven-projects.feature",
@@ -3761,18 +3651,6 @@
     "src/manifest.test.ts#maps conventional manifest names"
    ]
   },
-  "ecosystem-support.python.009": {
-   "file": "specs/ecosystem-support/python/python-pypi-dependencies.feature",
-   "fingerprint": "bd8861c86056",
-   "human": false,
-   "rule": "ecosystem-support.python.requirements-pin-versus-floor",
-   "source": "src/lib/libyear/engine.ts#parseRequirements",
-   "status": "verified",
-   "test": "src/lib/engine.test.ts#resolves == pins in requirements.txt but not the other operators",
-   "tests": [
-    "src/lib/engine.test.ts#resolves == pins in requirements.txt but not the other operators"
-   ]
-  },
   "ecosystem-support.python.010": {
    "file": "specs/ecosystem-support/python/python-pypi-dependencies.feature",
    "fingerprint": "bd8861c86056",
@@ -3783,30 +3661,6 @@
    "test": "src/lib/engine.test.ts#resolves == pins in requirements.txt but not the other operators",
    "tests": [
     "src/lib/engine.test.ts#resolves == pins in requirements.txt but not the other operators"
-   ]
-  },
-  "ecosystem-support.python.011": {
-   "file": "specs/ecosystem-support/python/python-pypi-dependencies.feature",
-   "fingerprint": "8e95c1dd3abf",
-   "human": false,
-   "rule": "ecosystem-support.python.lock-files-give-exact-versions",
-   "source": "src/ecosystems/parse-util.ts#parsePackageArrayLock",
-   "status": "verified",
-   "test": "src/ecosystems/python.test.ts#reads exact versions from poetry.lock / uv.lock",
-   "tests": [
-    "src/ecosystems/python.test.ts#reads exact versions from poetry.lock / uv.lock"
-   ]
-  },
-  "ecosystem-support.python.012": {
-   "file": "specs/ecosystem-support/python/python-pypi-dependencies.feature",
-   "fingerprint": "7628f88b022f",
-   "human": false,
-   "rule": "ecosystem-support.python.sbom-pypi-components-scored",
-   "source": "src/ecosystems/pypi.ts#pypi",
-   "status": "verified",
-   "test": "src/ecosystems/registry.test.ts#maps PURL types",
-   "tests": [
-    "src/ecosystems/registry.test.ts#maps PURL types"
    ]
   },
   "ecosystem-support.python.013": {
@@ -3849,18 +3703,6 @@
    "test": "src/ecosystems/python.test.ts#reads a poetry [tool.poetry.dependencies] table",
    "tests": [
     "src/ecosystems/python.test.ts#reads a poetry [tool.poetry.dependencies] table"
-   ]
-  },
-  "ecosystem-support.python.017": {
-   "file": "specs/ecosystem-support/python/python-pyproject-dependencies.feature",
-   "fingerprint": "ce6cde061441",
-   "human": false,
-   "rule": "python.pyproject.pep621-arrays-give-floors-or-pins",
-   "source": "src/ecosystems/python.ts#parsePep621Pyproject",
-   "status": "verified",
-   "test": "src/ecosystems/python.test.ts#reads a PEP 621 [project] dependencies array (uv/pip)",
-   "tests": [
-    "src/ecosystems/python.test.ts#reads a PEP 621 [project] dependencies array (uv/pip)"
    ]
   },
   "ecosystem-support.python.018": {
@@ -3922,18 +3764,6 @@
    "fingerprint": "bd8861c86056",
    "human": false,
    "rule": "python.requirements.pins-resolved-others-floor",
-   "source": "src/lib/libyear/engine.ts#parseRequirements",
-   "status": "verified",
-   "test": "src/lib/engine.test.ts#resolves == pins in requirements.txt but not the other operators",
-   "tests": [
-    "src/lib/engine.test.ts#resolves == pins in requirements.txt but not the other operators"
-   ]
-  },
-  "ecosystem-support.python.024": {
-   "file": "specs/ecosystem-support/python/pip-requirements.feature",
-   "fingerprint": "bd8861c86056",
-   "human": false,
-   "rule": "python.requirements.non-package-lines-ignored",
    "source": "src/lib/libyear/engine.ts#parseRequirements",
    "status": "verified",
    "test": "src/lib/engine.test.ts#resolves == pins in requirements.txt but not the other operators",
@@ -4043,18 +3873,6 @@
     "src/lockfile.test.ts#still recognises both files as Go"
    ]
   },
-  "ecosystem-support.systems-languages.009": {
-   "file": "specs/ecosystem-support/systems-languages/go-modules.feature",
-   "fingerprint": "8f6425c247e5",
-   "human": false,
-   "rule": "ecosystems.go.go-mod-read-even-beside-go-sum",
-   "source": "src/ecosystems/go.ts#go",
-   "status": "verified",
-   "test": "src/lockfile.test.ts#does not read go.sum in place of go.mod",
-   "tests": [
-    "src/lockfile.test.ts#does not read go.sum in place of go.mod"
-   ]
-  },
   "ecosystem-support.systems-languages.010": {
    "file": "specs/ecosystem-support/systems-languages/go-modules.feature",
    "fingerprint": "02574cf7fc24",
@@ -4095,18 +3913,6 @@
    "test": "src/lockfile.test.ts#reads exact versions from composer.lock, including dev",
    "tests": [
     "src/lockfile.test.ts#reads exact versions from composer.lock, including dev"
-   ]
-  },
-  "ecosystem-support.web-and-scripting.002": {
-   "file": "specs/ecosystem-support/web-and-scripting/composer-dependencies.feature",
-   "fingerprint": "31f8062b4c19",
-   "human": false,
-   "rule": "ecosystems.composer.lock-preferred-over-manifest",
-   "source": "src/ecosystems/composer.ts#composer",
-   "status": "verified",
-   "test": "src/lockfile.test.ts#finds Cargo.lock and composer.lock",
-   "tests": [
-    "src/lockfile.test.ts#finds Cargo.lock and composer.lock"
    ]
   },
   "ecosystem-support.web-and-scripting.003": {
@@ -4260,18 +4066,6 @@
    "status": "inferred",
    "test": "",
    "tests": []
-  },
-  "ecosystem-support.web-and-scripting.017": {
-   "file": "specs/ecosystem-support/web-and-scripting/rubygems-support.feature",
-   "fingerprint": "965c093ad354",
-   "human": false,
-   "rule": "ecosystems.rubygems.gem-purl-maps-to-rubygems",
-   "source": "src/ecosystems/rubygems.ts#rubygems",
-   "status": "verified",
-   "test": "src/ecosystems/registry.test.ts#maps PURL types",
-   "tests": [
-    "src/ecosystems/registry.test.ts#maps PURL types"
-   ]
   },
   "editor-integration.editor-commands.001": {
    "file": "specs/editor-integration/editor-commands/nvim-scanning.feature",
@@ -4529,20 +4323,6 @@
     "src/cli-baseline.test.ts#still reports a dependency that was not there when it was written"
    ]
   },
-  "policy-gates.baselines.006": {
-   "file": "specs/policy-gates/baselines/accepted-baselines.feature",
-   "fingerprint": "61a43b190f99",
-   "human": false,
-   "rule": "policy.baselines.totals-exclude-accepted",
-   "source": "src/baseline.ts#withoutAccepted",
-   "status": "verified",
-   "test": "src/baseline.test.ts#drops the accepted deps and recomputes the total",
-   "tests": [
-    "src/baseline.test.ts#drops the accepted deps and recomputes the total",
-    "src/baseline.test.ts#leaves a fully accepted manifest reading as zero",
-    "src/cli-baseline.test.ts#accepts everything it recorded"
-   ]
-  },
   "policy-gates.baselines.007": {
    "file": "specs/policy-gates/baselines/accepted-baselines.feature",
    "fingerprint": "e3ecc58bca9f",
@@ -4578,20 +4358,6 @@
    "test": "src/cli-baseline.test.ts#accepts everything it recorded",
    "tests": [
     "src/cli-baseline.test.ts#accepts everything it recorded"
-   ]
-  },
-  "policy-gates.baselines.010": {
-   "file": "specs/policy-gates/baselines/accepted-baseline.feature",
-   "fingerprint": "471479665139",
-   "human": false,
-   "rule": "baselines.accept.worsened-findings-resurface",
-   "source": "src/baseline.ts#acceptedIn",
-   "status": "verified",
-   "test": "src/cli-baseline.test.ts#still reports a dependency that got worse",
-   "tests": [
-    "src/cli-baseline.test.ts#still reports a dependency that got worse",
-    "src/cli-baseline.test.ts#still reports a dependency that fell to a worse quadrant",
-    "src/cli-baseline.test.ts#still reports a dependency that was not there when it was written"
    ]
   },
   "policy-gates.baselines.011": {
@@ -4746,18 +4512,6 @@
     "src/gates.test.ts#compares at the two decimals every surface reports"
    ]
   },
-  "policy-gates.gates.006": {
-   "file": "specs/policy-gates/gates/pass-fail-gates.feature",
-   "fingerprint": "6a71c2ae2262",
-   "human": false,
-   "rule": "policy.gates.ratchet-failure-reason",
-   "source": "src/gates.ts#gateFailures",
-   "status": "verified",
-   "test": "src/gates.test.ts#fails when drift grew by more than --max-libyears-increase",
-   "tests": [
-    "src/gates.test.ts#fails when drift grew by more than --max-libyears-increase"
-   ]
-  },
   "policy-gates.gates.007": {
    "file": "specs/policy-gates/gates/pass-fail-gates.feature",
    "fingerprint": "6a71c2ae2262",
@@ -4849,16 +4603,6 @@
    "fingerprint": "4ad08eb59175",
    "human": false,
    "rule": "registry.versions.packagist-v-prefix-stripped",
-   "source": "src/lib/registry-client.ts#fetchPackage",
-   "status": "inferred",
-   "test": "",
-   "tests": []
-  },
-  "registry-access.version-history.006": {
-   "file": "specs/registry-access/version-history/registry-version-lookup.feature",
-   "fingerprint": "4ad08eb59175",
-   "human": false,
-   "rule": "registry.lookup.failure-reason-reported",
    "source": "src/lib/registry-client.ts#fetchPackage",
    "status": "inferred",
    "test": "",
@@ -5037,28 +4781,6 @@
     "src/report.test.ts#degrades a dep the registry could not answer for"
    ]
   },
-  "reporting.report-assembly.003": {
-   "file": "specs/reporting/report-assembly/scoring-a-manifest.feature",
-   "fingerprint": "5f0c4de64479",
-   "human": false,
-   "rule": "reporting.unknowns.pulse-only-ecosystem-drift-unscored",
-   "source": "src/report.ts#analyseDep",
-   "status": "inferred",
-   "test": "",
-   "tests": []
-  },
-  "reporting.report-assembly.004": {
-   "file": "specs/reporting/report-assembly/scoring-a-manifest.feature",
-   "fingerprint": "c08940c44388",
-   "human": false,
-   "rule": "reporting.totals.total-libyears-and-worst-five",
-   "source": "src/report.ts#analyse",
-   "status": "verified",
-   "test": "src/report.test.ts#scores drift and viability from the injected cache without fetching",
-   "tests": [
-    "src/report.test.ts#scores drift and viability from the injected cache without fetching"
-   ]
-  },
   "reporting.report-assembly.005": {
    "file": "specs/reporting/report-assembly/scoring-a-manifest.feature",
    "fingerprint": "2469bbf9c0ff",
@@ -5225,18 +4947,6 @@
    "test": "src/viability.test.ts#derives pulse and median cadence from the version list alone",
    "tests": [
     "src/viability.test.ts#derives pulse and median cadence from the version list alone"
-   ]
-  },
-  "viability.release-signals.003": {
-   "file": "specs/viability/release-signals/release-activity-signals.feature",
-   "fingerprint": "7f71fb3f011f",
-   "human": false,
-   "rule": "viability.release-signals.stopped-package-scores-low",
-   "source": "src/signals.ts#timelineSignals",
-   "status": "verified",
-   "test": "src/viability.test.ts#lets pulse outweigh a healthy historical cadence once a package stops",
-   "tests": [
-    "src/viability.test.ts#lets pulse outweigh a healthy historical cadence once a package stops"
    ]
   },
   "viability.release-signals.004": {

@@ -26,13 +26,6 @@ Feature: Judging release activity from a package's version history
       | a single dated release                                                          | unknown |
       | 12 releases: the oldest a 1000-day gap before the rest, then 10 gaps of 30 days | 30      |
 
-  @id:viability.release-signals.003 @rule:viability.release-signals.stopped-package-scores-low @verified @source:src/signals.ts#timelineSignals @test:src/viability.test.ts#lets pulse outweigh a healthy historical cadence once a package stops
-  Scenario: A package that stopped releasing years ago scores low despite a brisk past cadence
-    Given the dependency released twice, 30 days apart, and the last release was 1970 days ago
-    When the user checks the manifest
-    Then the dependency's last release age is 1970 days
-    And its viability score is below 0.35
-
   @id:viability.release-signals.004 @rule:viability.release-signals.no-dates-means-unknown @verified @source:src/signals.ts#timelineSignals @test:src/viability.test.ts#returns no signals when the registry has no dates
   Scenario: A package whose registry gives no release dates has unknown release signals
     Given none of the dependency's versions has a release date

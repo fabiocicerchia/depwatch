@@ -52,18 +52,3 @@ Feature: Scoring Helm chart dependencies
     When the operator checks a Chart.lock pinning "https://charts.example.com#redis" at 17.11.3
     Then "redis" is reported with latest version 18.0.0
     And its drift is measured between the 2023-06-01 and 2024-03-01 release dates
-
-  @id:ecosystem-support.infrastructure.021 @rule:ecosystems.helm.deprecated-chart-is-end-of-life @inferred @source:src/ecosystems/helm.ts#helm @questionable
-  Scenario: A deprecated chart is reported as end-of-life in the deep check
-    Given the repository index marks a version of "https://charts.example.com#legacy" as deprecated
-    And the chart lists no GitHub source
-    When the operator runs a deep check of a Chart.lock using that chart
-    Then "legacy" is reported as archived
-
-  @id:ecosystem-support.infrastructure.022 @rule:ecosystems.helm.deprecation-overridden-by-github-source @inferred @source:src/signals.ts#fetchDeepMeta @questionable
-  Scenario: A deprecated chart whose source is an active GitHub repository is not reported as end-of-life
-    Given the repository index marks "https://charts.example.com#legacy" as deprecated
-    And the chart's newest entry lists source https://github.com/example/legacy, which is not archived
-    When the operator runs a deep check of a Chart.lock using that chart
-    Then "legacy" is not reported as archived
-    And its last commit date is taken from the GitHub repository

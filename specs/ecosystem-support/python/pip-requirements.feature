@@ -17,19 +17,6 @@ Feature: Reading pip requirements files
       | requests<3       | 3       | not resolved |
       | requests!=2.30.0 | 2.30.0  | not resolved |
 
-  @id:ecosystem-support.python.024 @rule:python.requirements.non-package-lines-ignored @verified @source:src/lib/libyear/engine.ts#parseRequirements @test:src/lib/engine.test.ts#resolves == pins in requirements.txt but not the other operators @questionable
-  Scenario Outline: Option lines, comments and unversioned requirements add nothing to the report
-    Given requirements.txt contains the line "<line>"
-    When the operator checks the requirements file
-    Then no dependency is reported for that line
-
-    Examples:
-      | line                 |
-      | -r base.txt          |
-      | -e .                 |
-      | # pinned for CVE fix |
-      | requests             |
-
   @id:ecosystem-support.python.025 @rule:python.requirements.extras-and-inline-comments-stripped @verified @source:src/lib/libyear/engine.ts#parseRequirements @test:src/lib/engine.test.ts#resolves == pins in requirements.txt but not the other operators
   Scenario: Extras and trailing comments do not change the package name or version
     Given requirements.txt contains the line "flask[async] >= 3.0  # inline"

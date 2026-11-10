@@ -55,14 +55,6 @@ Feature: Accepting today's findings and reporting only what gets worse
       | "left-pad" was added since and is in the "replace" quadrant            | "left-pad"                            |
       | the check is of "other/package.json", which the baseline does not list | every finding of "other/package.json" |
 
-  @id:policy-gates.baselines.006 @rule:policy.baselines.totals-exclude-accepted @verified @source:src/baseline.ts#withoutAccepted @test:src/baseline.test.ts#drops the accepted deps and recomputes the total @test:src/baseline.test.ts#leaves a fully accepted manifest reading as zero @test:src/cli-baseline.test.ts#accepts everything it recorded
-  Scenario: Accepted dependencies are left out of the report and its total
-    Given a baseline accepted "request" at 1.5 libyears and "lodash" at 9.2 libyears
-    And neither has worsened since
-    When the operator runs a check against the baseline
-    Then the report lists no dependencies
-    And the total drift reads 0 libyears
-
   @id:policy-gates.baselines.007 @rule:policy.baselines.unreadable-baseline-accepts-nothing @verified @source:src/baseline.ts#parse @test:src/baseline.test.ts#rejects nonsense and unknown versions @test:src/cli-baseline.test.ts#ignores a baseline it cannot understand rather than accepting nothing silently
   Scenario Outline: A baseline that cannot be understood accepts nothing
     Given the baseline file is <content>

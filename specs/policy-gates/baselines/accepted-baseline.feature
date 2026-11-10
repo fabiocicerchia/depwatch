@@ -24,19 +24,6 @@ Feature: Accepting today's findings
     And the total drift is 0.00 libyears
     And stderr shows "depwatch: 2 finding(s) accepted by .depwatch-baseline.json"
 
-  @id:policy-gates.baselines.010 @rule:baselines.accept.worsened-findings-resurface @verified @source:src/baseline.ts#acceptedIn @test:src/cli-baseline.test.ts#still reports a dependency that got worse @test:src/cli-baseline.test.ts#still reports a dependency that fell to a worse quadrant @test:src/cli-baseline.test.ts#still reports a dependency that was not there when it was written
-  Scenario Outline: A finding that got worse since it was accepted is reported again
-    Given both findings were accepted in ".depwatch-baseline.json"
-    And <change>
-    When the operator runs "depwatch check package.json"
-    Then only "<reported>" is listed
-
-    Examples:
-      | change                                                             | reported |
-      | "lodash" has drifted to 11 libyears behind                         | lodash   |
-      | "lodash" has fallen into the replace quadrant                      | lodash   |
-      | a new dependency "left-pad" in the replace quadrant has been added | left-pad |
-
   @id:policy-gates.baselines.011 @rule:baselines.accept.gates-judge-only-unaccepted @inferred @source:src/cli.ts#checkCommand @questionable
   Scenario: CI thresholds are judged only on findings that were not accepted
     Given both findings were accepted in ".depwatch-baseline.json"

@@ -22,12 +22,6 @@ Feature: Viewing the dependency report in the editor
     And further results arriving within the next second are shown together in one update about a second later
     And a report tab that is hidden at the time catches up when it is shown again
 
-  @id:vscode.reports.report-panel.013 @rule:reports.report-panel.row-jumps-to-dependency @inferred @source:extensions/vscode/src/panel.ts#ReportPanel
-  Scenario: Clicking a dependency in the report jumps to it in its manifest
-    Given the report lists "lodash" from "packages/web/package.json"
-    When the developer clicks the "lodash" entry in the report table
-    Then "packages/web/package.json" opens with the cursor on the line that declares "lodash"
-
   @id:vscode.reports.report-panel.014 @rule:reports.report-panel.gates-judged-per-manifest @inferred @source:extensions/vscode/src/panel.ts#ReportPanel
   Scenario Outline: CI gates in the report are judged per manifest and name the manifest that failed
     Given the project's CI gates allow at most <limit> libyears of drift

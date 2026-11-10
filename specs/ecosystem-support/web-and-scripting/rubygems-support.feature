@@ -60,9 +60,3 @@ Feature: Measuring Ruby gem drift from Gemfile.lock
       | https://github.com/example/widget | https://widget.example.com | https://github.com/example/widget |
       | absent                            | https://widget.example.com | https://widget.example.com        |
       | absent                            | absent                     | none                              |
-
-  @id:ecosystem-support.web-and-scripting.017 @rule:ecosystems.rubygems.gem-purl-maps-to-rubygems @verified @source:src/ecosystems/rubygems.ts#rubygems @test:src/ecosystems/registry.test.ts#maps PURL types
-  Scenario: SBOM components with a gem package URL are scored as RubyGems
-    Given an SBOM lists a component with package URL "pkg:gem/rails@7.1.3"
-    When the operator checks the SBOM
-    Then the component is scored as rails 7.1.3 in the RubyGems ecosystem

@@ -19,19 +19,6 @@ Feature: Reading dependencies from pyproject.toml
       | [tool.poetry.dependencies]           | django = { version = ">=4.2,<5", extras = ["bcrypt"] } | django   | 4.2     |
       | [tool.poetry.group.dev.dependencies] | pytest = "^8.1.0"                                      | pytest   | 8.1.0   |
 
-  @id:ecosystem-support.python.017 @rule:python.pyproject.pep621-arrays-give-floors-or-pins @verified @source:src/ecosystems/python.ts#parsePep621Pyproject @test:src/ecosystems/python.test.ts#reads a PEP 621 [project] dependencies array (uv/pip)
-  Scenario Outline: PEP 621 dependency arrays report exact pins as pinned and ranges at their floor
-    Given the pyproject.toml has a [project] table with no [tool.poetry] section
-    And its dependencies array contains "<requirement>"
-    When the operator checks the manifest
-    Then the report shows <outcome>
-
-    Examples:
-      | requirement      | outcome                                       |
-      | requests>=2.31.0 | requests at 2.31.0 as a range floor           |
-      | httpx==0.27.0    | httpx at 0.27.0 as a pinned version           |
-      | rich             | no entry for rich, since it states no version |
-
   @id:ecosystem-support.python.018 @rule:python.pyproject.interpreter-not-a-dependency @verified @source:src/ecosystems/python.ts#isPythonPlatformReq @test:src/ecosystems/python.test.ts#reads a poetry [tool.poetry.dependencies] table
   Scenario: The Python interpreter requirement is never reported as a dependency
     Given the pyproject.toml declares python = "^3.11" among its Poetry dependencies

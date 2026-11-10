@@ -18,14 +18,6 @@ Feature: Accepting and clearing the baseline
     And the 7 findings disappear from view, reusing the scans already in hand while they are within the refresh interval
     And a message reads "depwatch: accepted 7 finding(s) into <baseline file>. Only what gets worse will show from now on." with an "Open baseline" action
 
-  @id:vscode.baseline.accept-findings.004 @rule:baseline.accept.reaccept-keeps-earlier-acceptances @inferred @source:extensions/vscode/src/commands.ts#baselineCommands
-  Scenario: Accepting again keeps what was accepted the first time
-    Given a baseline already accepts 5 findings that are hidden
-    And 2 new findings are now shown
-    When the developer accepts the current findings
-    Then the message reports 7 accepted findings
-    And all 7 stay hidden
-
   @id:vscode.baseline.accept-findings.005 @rule:baseline.clear.shows-every-finding @inferred @source:extensions/vscode/src/commands.ts#baselineCommands @questionable
   Scenario Outline: Clearing the baseline deletes it and shows every finding again, or says there was none
     Given a workspace folder is open

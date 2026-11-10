@@ -32,17 +32,3 @@ Feature: Looking up published versions from package registries
     When the operator checks a manifest that depends on "acme/http-client"
     Then the package's published versions include "2.3.1"
     And no published version is listed as "v2.3.1"
-
-  @id:registry-access.version-history.006 @rule:registry.lookup.failure-reason-reported @inferred @source:src/lib/registry-client.ts#fetchPackage
-  Scenario Outline: A failed registry lookup gives a reason instead of stopping the check
-    Given the manifest depends on "<package>" and on other packages the registry answers for
-    And <registry situation>
-    When the operator checks the manifest
-    Then "<package>" is reported as not scored with the reason "<reason>"
-    And the other dependencies are still scored
-
-    Examples:
-      | package   | registry situation                                            | reason                        |
-      | ghost-pkg | the registry does not know "ghost-pkg"                        | not found in registry         |
-      | flaky-pkg | the registry answers the lookup for "flaky-pkg" with HTTP 503 | registry HTTP 503             |
-      | empty-pkg | the registry lists no published versions for "empty-pkg"      | registry returned no versions |

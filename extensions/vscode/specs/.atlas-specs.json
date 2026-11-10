@@ -1101,7 +1101,19 @@
   "src/tree": [],
   "vscode/esbuild": []
  },
- "retired": [],
+ "retired": [
+  "vscode.baseline.accept-findings.004",
+  "vscode.baseline.clear-baseline.001",
+  "vscode.in-editor-findings.diagnostics.009",
+  "vscode.in-editor-findings.diagnostics.010",
+  "vscode.in-editor-findings.diagnostics.003",
+  "vscode.in-editor-findings.hover-explanations.002",
+  "vscode.automatic-rescans.rescan-on-save.001",
+  "vscode.reports.export.006",
+  "vscode.reports.report-panel.009",
+  "vscode.reports.report-panel.013",
+  "vscode.setup.settings.005"
+ ],
  "scenarios": {
   "vscode.automatic-rescans.lockfile-changes.001": {
    "file": "extensions/vscode/specs/automatic-rescans/lockfile-changes/lock-file-rescans.feature",
@@ -1172,16 +1184,6 @@
    "tests": [
     "extensions/vscode/src/schedule.test.ts#restarts on a new interval"
    ]
-  },
-  "vscode.automatic-rescans.rescan-on-save.001": {
-   "file": "extensions/vscode/specs/automatic-rescans/rescan-on-save/rescan-changed-manifests.feature",
-   "fingerprint": "c94f06eabf14",
-   "human": false,
-   "rule": "automatic-rescans.on-save.rescan-after-save",
-   "source": "extensions/vscode/src/extension.ts#watchManifests",
-   "status": "inferred",
-   "test": "",
-   "tests": []
   },
   "vscode.automatic-rescans.rescan-on-save.002": {
    "file": "extensions/vscode/specs/automatic-rescans/rescan-on-save/rescan-changed-manifests.feature",
@@ -1283,16 +1285,6 @@
    "test": "",
    "tests": []
   },
-  "vscode.baseline.accept-findings.004": {
-   "file": "extensions/vscode/specs/baseline/accept-findings/managing-baseline.feature",
-   "fingerprint": "a44590437aad",
-   "human": false,
-   "rule": "baseline.accept.reaccept-keeps-earlier-acceptances",
-   "source": "extensions/vscode/src/commands.ts#baselineCommands",
-   "status": "inferred",
-   "test": "",
-   "tests": []
-  },
   "vscode.baseline.accept-findings.005": {
    "file": "extensions/vscode/specs/baseline/accept-findings/managing-baseline.feature",
    "fingerprint": "a44590437aad",
@@ -1313,18 +1305,6 @@
    "test": "extensions/vscode/src/extension.test.ts#watches the manifests it scans and the locks that change them",
    "tests": [
     "extensions/vscode/src/extension.test.ts#watches the manifests it scans and the locks that change them"
-   ]
-  },
-  "vscode.baseline.clear-baseline.001": {
-   "file": "extensions/vscode/specs/baseline/clear-baseline/clearing-the-baseline.feature",
-   "fingerprint": "a44590437aad",
-   "human": false,
-   "rule": "baseline.clear.nothing-to-clear",
-   "source": "extensions/vscode/src/commands.ts#baselineCommands",
-   "status": "verified",
-   "test": "extensions/vscode/src/extension.test.ts#says there was no baseline to clear when the file is not there",
-   "tests": [
-    "extensions/vscode/src/extension.test.ts#says there was no baseline to clear when the file is not there"
    ]
   },
   "vscode.baseline.clear-baseline.002": {
@@ -1616,16 +1596,6 @@
    "test": "",
    "tests": []
   },
-  "vscode.in-editor-findings.diagnostics.003": {
-   "file": "extensions/vscode/specs/in-editor-findings/diagnostics/dependency-squiggles.feature",
-   "fingerprint": "1d6b5f436d53",
-   "human": false,
-   "rule": "in-editor-findings.diagnostics.registry-link",
-   "source": "extensions/vscode/src/annotate.ts#Annotator",
-   "status": "inferred",
-   "test": "",
-   "tests": []
-  },
   "vscode.in-editor-findings.diagnostics.004": {
    "file": "extensions/vscode/specs/in-editor-findings/diagnostics/dependency-squiggles.feature",
    "fingerprint": "1d6b5f436d53",
@@ -1676,41 +1646,11 @@
    "test": "",
    "tests": []
   },
-  "vscode.in-editor-findings.diagnostics.009": {
-   "file": "extensions/vscode/specs/in-editor-findings/diagnostics/diagnostic-severities.feature",
-   "fingerprint": "835216d58e1d",
-   "human": false,
-   "rule": "findings.diagnostics.severity-per-quadrant",
-   "source": "extensions/vscode/src/config.ts#severityFor",
-   "status": "inferred",
-   "test": "",
-   "tests": []
-  },
-  "vscode.in-editor-findings.diagnostics.010": {
-   "file": "extensions/vscode/specs/in-editor-findings/diagnostics/diagnostic-severities.feature",
-   "fingerprint": "835216d58e1d",
-   "human": false,
-   "rule": "findings.diagnostics.degraded-uses-degraded-severity",
-   "source": "extensions/vscode/src/config.ts#severityFor",
-   "status": "inferred",
-   "test": "",
-   "tests": []
-  },
   "vscode.in-editor-findings.hover-explanations.001": {
    "file": "extensions/vscode/specs/in-editor-findings/hover-explanations/dependency-hover.feature",
    "fingerprint": "1d6b5f436d53",
    "human": false,
    "rule": "in-editor-findings.hover.explains-dependency",
-   "source": "extensions/vscode/src/annotate.ts#Annotator",
-   "status": "inferred",
-   "test": "",
-   "tests": []
-  },
-  "vscode.in-editor-findings.hover-explanations.002": {
-   "file": "extensions/vscode/specs/in-editor-findings/hover-explanations/dependency-hover.feature",
-   "fingerprint": "1d6b5f436d53",
-   "human": false,
-   "rule": "in-editor-findings.hover.unscored-dependency",
    "source": "extensions/vscode/src/annotate.ts#Annotator",
    "status": "inferred",
    "test": "",
@@ -2075,16 +2015,6 @@
     "extensions/vscode/src/report-view.test.ts#themes itself from VS Code inside a webview and from the docs palette outside"
    ]
   },
-  "vscode.reports.export.006": {
-   "file": "extensions/vscode/specs/reports/export/report-export-panel.feature",
-   "fingerprint": "758c4207784b",
-   "human": false,
-   "rule": "reports.export.standalone-html-page",
-   "source": "extensions/vscode/src/panel.ts#ReportPanel",
-   "status": "inferred",
-   "test": "",
-   "tests": []
-  },
   "vscode.reports.report-panel.001": {
    "file": "extensions/vscode/specs/reports/report-panel/report-panel-commands.feature",
    "fingerprint": "4ebcd0ff05a1",
@@ -2174,16 +2104,6 @@
    "test": "",
    "tests": []
   },
-  "vscode.reports.report-panel.009": {
-   "file": "extensions/vscode/specs/reports/report-panel/report-page.feature",
-   "fingerprint": "da0dda7bef74",
-   "human": false,
-   "rule": "reports.page.row-jumps-to-dependency",
-   "source": "extensions/vscode/src/html.ts#CLICK_SCRIPT",
-   "status": "inferred",
-   "test": "",
-   "tests": []
-  },
   "vscode.reports.report-panel.010": {
    "file": "extensions/vscode/specs/reports/report-panel/report-page.feature",
    "fingerprint": "da0dda7bef74",
@@ -2209,16 +2129,6 @@
    "fingerprint": "758c4207784b",
    "human": false,
    "rule": "reports.report-panel.live-updates-while-open",
-   "source": "extensions/vscode/src/panel.ts#ReportPanel",
-   "status": "inferred",
-   "test": "",
-   "tests": []
-  },
-  "vscode.reports.report-panel.013": {
-   "file": "extensions/vscode/specs/reports/report-panel/report-panel.feature",
-   "fingerprint": "758c4207784b",
-   "human": false,
-   "rule": "reports.report-panel.row-jumps-to-dependency",
    "source": "extensions/vscode/src/panel.ts#ReportPanel",
    "status": "inferred",
    "test": "",
@@ -2514,16 +2424,6 @@
    "human": false,
    "rule": "settings.gates.configured-when-either-budget-set",
    "source": "extensions/vscode/src/config.ts#readConfig",
-   "status": "inferred",
-   "test": "",
-   "tests": []
-  },
-  "vscode.setup.settings.005": {
-   "file": "extensions/vscode/specs/setup/settings/settings-changes.feature",
-   "fingerprint": "ebd74d27c908",
-   "human": false,
-   "rule": "setup.settings.results-affecting-change-rescans",
-   "source": "extensions/vscode/src/extension.ts#activate",
    "status": "inferred",
    "test": "",
    "tests": []

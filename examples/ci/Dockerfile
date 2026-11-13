@@ -11,7 +11,7 @@
 # else to copy.
 
 # Digest-pinned: the tag alone would let the base image change under a rebuild.
-ARG NODE_IMAGE=node:22-alpine@sha256:c610fcdfb1d5b4740dd70c284ed3cb16bb857e0f7166196e36a5501df7a3aa32
+ARG NODE_IMAGE=node:22-alpine@sha256:1314fb30ec37592d5845e5a160d522c0e680972aa534549940b8d73bde88481a
 
 FROM ${NODE_IMAGE} AS build
 ARG DEPWATCH_REF=main

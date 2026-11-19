@@ -5,6 +5,13 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.7](https://github.com/fabiocicerchia/depwatch/compare/v1.6.6...v1.6.7) (2026-11-19)
+
+
+### Bug Fixes
+
+* **ci:** quote boneyard release label so the PR number is sent ([#106](https://github.com/fabiocicerchia/depwatch/issues/106)) ([dbfa8ea](https://github.com/fabiocicerchia/depwatch/commit/dbfa8ea51d5d4d31d5953762f91aacbf5ee0642b))
+
 ## [1.6.6](https://github.com/fabiocicerchia/depwatch/compare/v1.6.5...v1.6.6) (2026-09-20)
 
 
